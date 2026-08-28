@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="img/icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=0.3.1">
+<link rel="stylesheet" href="css/style.css?v=0.4.0">
 <title>Orders — Peach State</title>
 <style>
 body{background:var(--cream-deep)}
@@ -19,8 +19,8 @@ body{background:var(--cream-deep)}
 .iconbtn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);
   display:flex;align-items:center;justify-content:center;color:#fff}
 .iconbtn svg{width:20px;height:20px}
-.tabs{display:flex;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
-.tab{flex:1;min-height:52px;font-size:14px;font-weight:600;color:var(--text-muted);border-bottom:3px solid transparent}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.tab{flex:0 0 auto;padding:0 18px;white-space:nowrap;min-height:52px;font-size:14px;font-weight:600;color:var(--text-muted);border-bottom:3px solid transparent}
 .tab.on{color:var(--terracotta);border-bottom-color:var(--terracotta)}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px 20px 4px;max-width:1200px;margin:0 auto}
 .stat{background:#fff;border:1px solid var(--line);border-radius:2px;padding:16px}
@@ -57,14 +57,16 @@ body{background:var(--cream-deep)}
   <button class="tab" data-tab="all" onclick="setTab('all')">All orders</button>
   <button class="tab" data-tab="enq" onclick="setTab('enq')">Enquiries</button>
   <button class="tab" data-tab="new" onclick="setTab('new')">New order</button>
+  <button class="tab" data-tab="groups" onclick="setTab('groups')">Club shops</button>
+  <button class="tab" data-tab="content" onclick="setTab('content')">Wording</button>
 </div>
 
 <div class="stats" id="stats"></div>
 <div class="list" id="panel"></div>
 <div class="toast" id="toast"></div>
-<script src="js/config.js?v=0.3.1"></script>
-<script src="js/api.js?v=0.3.1"></script>
-<script src="js/partials.js?v=0.3.1"></script>
-<script src="js/admin.js?v=0.3.1"></script>
+<script src="js/config.js?v=0.4.0"></script>
+<script src="js/api.js?v=0.4.0"></script>
+<script src="js/partials.js?v=0.4.0"></script>
+<script src="js/admin.js?v=0.4.0"></script>
 </body>
 </html>

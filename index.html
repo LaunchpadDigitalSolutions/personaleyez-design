@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=0.3.1">
+<link rel="stylesheet" href="css/style.css?v=0.4.0">
 <title>Peach State — Personalised Design, Hartlepool</title>
 <meta name="description" content="Personalised embroidery and print, made by hand in Hartlepool. School uniform, workwear and things worth keeping.">
 </head>
@@ -21,8 +21,8 @@
   <div class="hero-media"><img loading="lazy" data-img="wearing" src="" alt="Cream sweatshirt with embroidered lettering"></div>
   <div class="hero-type">
     <span class="label">Hartlepool · Est. 184 York Road</span>
-    <h1 class="display-xl" style="margin-top:20px">MADE<br>JUST<br><span class="italic tera">for you.</span></h1>
-    <p class="hero-note">Embroidery and print, stitched by hand in our own studio. One name or one hundred — the care is the same.</p>
+    <h1 class="display-xl" style="margin-top:20px"><span data-edit="hero_line1">MADE</span><br><span data-edit="hero_line2">JUST</span><br><span class="italic tera" data-edit="hero_line3">for you.</span></h1>
+    <p class="hero-note" data-edit="hero_note">Embroidery and print, stitched by hand in our own studio. One name or one hundred — the care is the same.</p>
     <a href="services.html" class="link">Discover more <span class="arrow">&rarr;</span></a>
   </div>
 </section>
@@ -30,7 +30,7 @@
 <!-- 2 · STATEMENT -->
 <section class="statement band-cream">
   <span class="label">A little Southern soul, a lot of Hartlepool</span>
-  <h2 class="display-lg" style="margin-top:26px">Nothing here leaves the shop <span class="italic tera">unloved.</span></h2>
+  <h2 class="display-lg" style="margin-top:26px" data-edit="statement">Nothing here leaves the shop unloved.</h2>
 </section>
 
 <!-- 3 · FULL BLEED -->
@@ -116,7 +116,7 @@
 
 <!-- 8 · QUOTE -->
 <section class="quote band-peach">
-  <blockquote>Sweet style, Southern vibes, stitched in the North East.</blockquote>
+  <blockquote data-edit="quote">Sweet style, Southern vibes, stitched in the North East.</blockquote>
   <cite>Peach State · Personalised Design</cite>
 </section>
 
@@ -152,8 +152,9 @@
 </nav>
 
 <footer class="site-footer" id="site-footer"></footer>
-<script src="js/config.js?v=0.3.1"></script>
-<script src="js/api.js?v=0.3.1"></script>
-<script src="js/partials.js?v=0.3.1"></script>
+<script src="js/config.js?v=0.4.0"></script>
+<script src="js/api.js?v=0.4.0"></script>
+<script src="js/partials.js?v=0.4.0"></script>
+<script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("index");applyContent();});</script>
 </body>
 </html>

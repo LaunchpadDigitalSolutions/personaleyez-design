@@ -1,7 +1,8 @@
 /* ============================================================
    admin.js — Jo's order dashboard
    ============================================================ */
-let orders = [], enquiries = [], tab = "live";
+let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
+let openGroup = null, openGroupProducts = [];
 const $ = id => document.getElementById(id);
 const LIVE = ["enquiry", "in_production", "ready"];
 const STATUS_LABEL = { enquiry: "Enquiry", in_production: "In production",
@@ -23,7 +24,9 @@ const money = n => n == null ? "—" : "£" + Number(n).toFixed(2);
 
 async function load() {
   try {
-    [orders, enquiries] = await Promise.all([listOrders(150), listEnquiries(60)]);
+    [orders, enquiries, groups] = await Promise.all([
+      listOrders(150), listEnquiries(60), listGroups()
+    ]);
     $("health").style.display = "none";
   } catch (e) { $("health").style.display = "block"; return; }
   stats(); render();
@@ -116,6 +119,8 @@ function newOrderForm() {
 
 function render() {
   const p = $("panel");
+  if (tab === "groups")  { renderGroups(p);  return; }
+  if (tab === "content") { renderContent(p); return; }
   if (tab === "new") { p.innerHTML = newOrderForm(); return; }
   if (tab === "enq") {
     p.innerHTML = enquiries.length ? enquiries.map(enqRow).join("")
@@ -181,4 +186,231 @@ async function saveOrder() {
   btn.disabled = false;
 }
 
-document.addEventListener("DOMContentLoaded", () => { load(); setInterval(load, 30000); });
+
+
+/* ============================================================
+   CLUB / TEAM SHOPS
+   Jo creates a shop, sets the code, adds the products. No dev needed.
+   ============================================================ */
+
+function slugify(s){
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function suggestCode(){
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s=""; for(let i=0;i<6;i++) s += c[Math.floor(Math.random()*c.length)];
+  return s;
+}
+
+function renderGroups(p){
+  if(openGroup){ renderGroupDetail(p); return; }
+
+  p.innerHTML = `
+    <div class="newcard" style="margin-bottom:18px">
+      <h2 style="font-size:20px;font-family:var(--display)">Add a club shop</h2>
+      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
+        Give them the club name and the code, and they can order their own kit.</p>
+      <div class="fld"><label for="ng-name">Club or team name</label>
+        <input id="ng-name" type="text" placeholder="Starlight Dance Academy" oninput="autoSlug()"></div>
+      <div class="fld"><label for="ng-slug">Web name (what they type in)</label>
+        <input id="ng-slug" type="text" placeholder="starlight-dance"></div>
+      <div class="fld"><label for="ng-code">Access code</label>
+        <input id="ng-code" type="text" style="text-transform:uppercase"></div>
+      <div class="fld"><label for="ng-kind">Type</label>
+        <select id="ng-kind">
+          <option value="club">Dance club / team</option>
+          <option value="school">School</option>
+          <option value="business">Business</option>
+        </select></div>
+      <div class="fld"><label for="ng-intro">Welcome message (optional)</label>
+        <textarea id="ng-intro" style="min-height:70px" placeholder="Kit for the 2026 season. Orders close 30th September."></textarea></div>
+      <div class="notice" id="ng-notice"></div>
+      <button class="btn-solid" id="ng-save" onclick="saveGroup()" style="margin-top:20px">Create shop</button>
+    </div>
+
+    ${groups.length ? groups.map(g => `
+      <div class="orow">
+        <div class="orow-top">
+          <span class="oref">${g.name}</span>
+          <span class="stat-word ${g.active?"s-ready":"s-collected"}">${g.active?"Live":"Paused"}</span>
+          <span class="otime">${ago(g.created_at)}</span>
+        </div>
+        <div class="ometa">Web name <strong>${g.slug}</strong> &nbsp;·&nbsp; Code <strong>${g.access_code}</strong></div>
+        <div class="oact">
+          <button onclick="openGroupPanel('${g.id}')">Manage products</button>
+          <button class="sec" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
+          <button class="sec" onclick="toggleGroup('${g.id}',${!g.active})">${g.active?"Pause":"Reactivate"}</button>
+        </div>
+      </div>`).join("")
+    : `<p style="text-align:center;color:var(--muted);padding:50px 0">No club shops yet.</p>`}`;
+
+  if($("ng-code")) $("ng-code").value = suggestCode();
+}
+
+function autoSlug(){
+  const n = $("ng-name").value;
+  if($("ng-slug")) $("ng-slug").value = slugify(n);
+}
+
+async function saveGroup(){
+  const name = $("ng-name").value.trim();
+  const slug = slugify($("ng-slug").value || name);
+  const code = $("ng-code").value.trim().toUpperCase();
+  const n = $("ng-notice"), btn = $("ng-save");
+  if(!name){ n.className="notice show err"; n.textContent="Give the club a name."; return; }
+  if(!code){ n.className="notice show err"; n.textContent="Set an access code."; return; }
+
+  btn.disabled = true; n.className="notice show busy"; n.textContent="Creating…";
+  try{
+    await createGroup({ name, slug, access_code:code, kind:$("ng-kind").value,
+                        intro:$("ng-intro").value.trim() || null, active:true });
+    toast("Shop created"); await load(); setTab("groups");
+  }catch(e){
+    n.className="notice show err";
+    n.textContent = e.message === "PS-302"
+      ? "Couldn't create that — the web name might already be taken."
+      : "Couldn't create that ("+e.message+").";
+  }
+  btn.disabled = false;
+}
+
+async function toggleGroup(id, active){
+  try{ await updateGroup(id,{active}); toast(active?"Reactivated":"Paused"); load(); }
+  catch(e){ toast("Couldn't update"); }
+}
+
+function copyClubLink(slug, code){
+  const url = location.origin + location.pathname.replace("admin.html","clubs.html") + "?c=" + slug;
+  const msg = `Your shop: ${url}\nClub name: ${slug}\nAccess code: ${code}`;
+  navigator.clipboard.writeText(msg).then(()=>toast("Link and code copied")).catch(()=>toast(url));
+}
+
+async function openGroupPanel(id){
+  openGroup = groups.find(g => g.id === id);
+  try{ openGroupProducts = await listGroupProducts(id); }
+  catch(e){ openGroupProducts = []; }
+  render();
+}
+function closeGroupPanel(){ openGroup = null; openGroupProducts = []; render(); }
+
+function renderGroupDetail(p){
+  const g = openGroup;
+  p.innerHTML = `
+    <button class="sec" onclick="closeGroupPanel()"
+      style="min-height:44px;padding:0 18px;border-radius:2px;background:var(--cream-deep);margin-bottom:16px">
+      &larr; All club shops</button>
+
+    <div class="orow">
+      <div class="orow-top"><span class="oref">${g.name}</span></div>
+      <div class="ometa">Web name <strong>${g.slug}</strong> · Code <strong>${g.access_code}</strong></div>
+    </div>
+
+    <div class="newcard" style="margin:18px 0">
+      <h2 style="font-size:19px;font-family:var(--display)">Add an item</h2>
+      <div class="fld"><label for="np-name">Item name</label>
+        <input id="np-name" type="text" placeholder="Club hoodie"></div>
+      <div class="fld"><label for="np-desc">Description (optional)</label>
+        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back"></div>
+      <div class="fld"><label for="np-price">Price (£)</label>
+        <input id="np-price" type="number" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label for="np-sizes">Sizes, comma separated</label>
+        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L"></div>
+      <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
+        <input id="np-cols" type="text" placeholder="Navy, Black"></div>
+      <div class="fld"><label for="np-img">Image URL (optional)</label>
+        <input id="np-img" type="url" placeholder="https://…"></div>
+      <div class="notice" id="np-notice"></div>
+      <button class="btn-solid" id="np-save" onclick="saveGroupProduct()" style="margin-top:18px">Add item</button>
+    </div>
+
+    ${openGroupProducts.length ? openGroupProducts.map(pr => `
+      <div class="orow">
+        <div class="orow-top"><span class="oref" style="font-size:15px">${pr.name}</span>
+          <span class="otime">${pr.price!=null?money(pr.price):"—"}</span></div>
+        ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
+        <div class="ometa">${pr.sizes?"Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
+        <div class="oact"><button class="sec" onclick="removeGroupProduct('${pr.id}')">Remove</button></div>
+      </div>`).join("")
+    : `<p style="text-align:center;color:var(--muted);padding:40px 0">No items in this shop yet.</p>`}`;
+}
+
+async function saveGroupProduct(){
+  const v = id => $(id).value.trim();
+  const n = $("np-notice"), btn = $("np-save");
+  if(!v("np-name")){ n.className="notice show err"; n.textContent="Give the item a name."; return; }
+  btn.disabled = true; n.className="notice show busy"; n.textContent="Adding…";
+  try{
+    await createGroupProduct({
+      group_id: openGroup.id, name: v("np-name"),
+      description: v("np-desc") || null,
+      price: v("np-price") ? Number(v("np-price")) : null,
+      sizes: v("np-sizes") || null, colours: v("np-cols") || null,
+      image_url: v("np-img") || null,
+      sort_order: openGroupProducts.length
+    });
+    openGroupProducts = await listGroupProducts(openGroup.id);
+    toast("Item added"); render();
+  }catch(e){ n.className="notice show err"; n.textContent="Couldn't add that ("+e.message+")."; }
+  btn.disabled = false;
+}
+
+async function removeGroupProduct(id){
+  try{
+    await deleteGroupProduct(id);
+    openGroupProducts = await listGroupProducts(openGroup.id);
+    toast("Removed"); render();
+  }catch(e){ toast("Couldn't remove that"); }
+}
+
+/* ============================================================
+   EDITABLE COPY
+   ============================================================ */
+const EDITABLE = [
+  ["index","hero_line1","Hero line 1","MADE"],
+  ["index","hero_line2","Hero line 2","JUST"],
+  ["index","hero_line3","Hero line 3 (italic)","for you."],
+  ["index","hero_note","Hero paragraph","Embroidery and print, stitched by hand in our own studio."],
+  ["index","statement","Big statement","Nothing here leaves the shop unloved."],
+  ["index","collection_head","Collection heading","Three things, done properly."],
+  ["index","quote","Pull quote","Sweet style, Southern vibes, stitched in the North East."],
+  ["schools","repay_head","Repayment heading","Spread the cost of September."],
+  ["schools","repay_body","Repayment paragraph","It's an expensive month, especially with more than one at school."]
+];
+
+function renderContent(p){
+  p.innerHTML = `
+    <div class="newcard">
+      <h2 style="font-size:20px;font-family:var(--display)">Wording</h2>
+      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
+        Change the words on the site. Leave a box empty to keep what's there now.</p>
+      ${EDITABLE.map(([page,key,label,def]) => {
+        const row = contentRows.find(r => r.page===page && r.ckey===key);
+        const val = row ? row.value : "";
+        return `<div class="fld">
+          <label for="ct-${page}-${key}">${label} <span style="text-transform:none;letter-spacing:0;color:var(--muted)">· ${page}</span></label>
+          <textarea id="ct-${page}-${key}" style="min-height:64px" placeholder="${def.replace(/"/g,"&quot;")}">${val}</textarea>
+        </div>`;
+      }).join("")}
+      <div class="notice" id="ct-notice"></div>
+      <button class="btn-solid" id="ct-save" onclick="saveAllContent()" style="margin-top:22px">Save wording</button>
+    </div>`;
+}
+
+async function saveAllContent(){
+  const n = $("ct-notice"), btn = $("ct-save");
+  btn.disabled = true; n.className="notice show busy"; n.textContent="Saving…";
+  try{
+    for(const [page,key] of EDITABLE.map(e=>[e[0],e[1]])){
+      const el = $(`ct-${page}-${key}`);
+      if(el && el.value.trim()) await saveContent(page, key, el.value.trim());
+    }
+    contentRows = await listContent();
+    n.className="notice show ok"; n.textContent="Saved. Refresh the site to see it.";
+  }catch(e){ n.className="notice show err"; n.textContent="Couldn't save ("+e.message+")."; }
+  btn.disabled = false;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try{ contentRows = await listContent(); }catch(e){}
+  load(); setInterval(load, 30000);
+});

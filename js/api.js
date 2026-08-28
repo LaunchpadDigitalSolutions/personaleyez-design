@@ -46,3 +46,80 @@ async function listEnquiries(limit = 50) {
 async function healthCheck() {
   try { await sb("ps_orders?select=id&limit=1", {}, "PS-105"); return true; } catch (e) { return false; }
 }
+
+/* ============================================================
+   Groups / club portals — PS-3xx
+   Customers never read ps_groups directly; the access code is
+   checked server-side by the ps_group_login function.
+   ============================================================ */
+
+async function groupLogin(slug, code){
+  const res = await fetch(SB_URL + "/rest/v1/rpc/ps_group_login", {
+    method:"POST", headers:HEADERS,
+    body: JSON.stringify({ p_slug: slug, p_code: code })
+  });
+  if(!res.ok){ console.error("PS-300", res.status, await res.text()); throw new Error("PS-300"); }
+  return res.json();
+}
+
+async function listGroups(){
+  return sb("ps_groups?select=*&order=created_at.desc", {}, "PS-301");
+}
+async function createGroup(g){
+  const out = await sb("ps_groups", {
+    method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify(g)
+  }, "PS-302");
+  return out[0];
+}
+async function updateGroup(id, patch){
+  return sb("ps_groups?id=eq."+id, {
+    method:"PATCH", headers:{Prefer:"return=representation"}, body:JSON.stringify(patch)
+  }, "PS-303");
+}
+async function deleteGroup(id){
+  return sb("ps_groups?id=eq."+id, { method:"DELETE" }, "PS-304");
+}
+async function listGroupProducts(groupId){
+  return sb("ps_group_products?group_id=eq."+groupId+"&select=*&order=sort_order,name", {}, "PS-305");
+}
+async function createGroupProduct(p){
+  const out = await sb("ps_group_products", {
+    method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify(p)
+  }, "PS-306");
+  return out[0];
+}
+async function deleteGroupProduct(id){
+  return sb("ps_group_products?id=eq."+id, { method:"DELETE" }, "PS-307");
+}
+
+/* ============================================================
+   Editable copy — PS-4xx
+   ============================================================ */
+
+let CONTENT = {};
+
+async function loadContent(page){
+  try{
+    const rows = await sb("ps_content?page=eq."+encodeURIComponent(page)+"&select=ckey,value", {}, "PS-400");
+    rows.forEach(r => CONTENT[r.ckey] = r.value);
+  }catch(e){ /* fall back to whatever is hardcoded in the page */ }
+}
+
+/* Swap any [data-edit="key"] element for its stored value, if one exists. */
+function applyContent(){
+  document.querySelectorAll("[data-edit]").forEach(el => {
+    const v = CONTENT[el.dataset.edit];
+    if (v != null && v !== "") el.textContent = v;
+  });
+}
+
+async function listContent(){
+  return sb("ps_content?select=*&order=page,ckey", {}, "PS-401");
+}
+async function saveContent(page, ckey, value){
+  return sb("ps_content?on_conflict=page,ckey", {
+    method:"POST",
+    headers:{ Prefer:"resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify({ page, ckey, value, updated_at:new Date().toISOString() })
+  }, "PS-402");
+}
