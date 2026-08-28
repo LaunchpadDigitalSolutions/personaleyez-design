@@ -167,11 +167,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .offset figure{margin:0}
 .offset figcaption{margin-top:var(--s3);padding:0 22px}
 .offset img{width:100%;object-fit:cover}
-/* Mobile: first image wide and bleeding left, second inset and
-   pulled up on the right — an overlap rather than a stack. */
+/* Default: stacked with an indent, never an overlap — captions must
+   always sit clear of the next image at every width. */
 .offset .raise{width:82%;margin-left:0}
 .offset .raise img{aspect-ratio:4/5}
-.offset .lower{width:62%;margin-left:auto;margin-right:22px;margin-top:-64px;position:relative;z-index:2}
+.offset .lower{width:66%;margin-left:auto;margin-right:22px}
 .offset .lower img{aspect-ratio:3/4}
 .offset .lower figcaption{padding:0}
 
@@ -340,13 +340,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .pair img{width:100vw;margin-left:-20px;aspect-ratio:4/5}
   .sec .wrap .pair img{margin-left:-20px}
 
-  /* OFFSET → stacked, staggered by indent rather than by overlap.
-     Captions always sit clear of the next image. */
-  .offset{display:block;padding:0 20px}
+  /* OFFSET on mobile: base rule already stacks these safely. Only the
+     small-screen type tweaks live here. */
+  .offset{padding:0 20px}
   .offset figure{margin:0 0 var(--s6)}
   .offset figure:last-child{margin-bottom:0}
-  .offset .raise img{aspect-ratio:4/5}
-  .offset .lower{width:76%;margin-left:24%}
   .offset .lower img{aspect-ratio:1/1}
   .offset figcaption{display:block;margin-top:var(--s3);
     font-size:10.5px;line-height:1.5;letter-spacing:.18em}
@@ -403,7 +401,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .hero-type{margin-top:-72px;margin-right:15%}
   .fullbleed{aspect-ratio:16/10}
   .offset .raise{width:66%}
-  .offset .lower{width:44%;margin-top:-110px;margin-right:44px}
+  .offset .lower{width:44%;margin-top:-110px;margin-right:44px;
+    position:relative;z-index:2}
   .collage{gap:12px}
   .pair > img,.pair.rev > img{width:calc(100% - 60px)}
   .pair.rev > img{margin-left:60px}
