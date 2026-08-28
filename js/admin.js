@@ -69,9 +69,9 @@ function orderRow(o) {
     ${o.notes ? `<div class="ometa" style="color:var(--warning)">Note: ${o.notes}</div>` : ""}
     <div class="oact">
       ${n ? `<button onclick="advance('${o.id}','${n.to}')">${n.label}</button>` : ""}
-      <button class="sec" onclick="copyLink('${o.order_ref}')">Copy tracking link</button>
+      <button class="ghost" onclick="copyLink('${o.order_ref}')">Copy tracking link</button>
       ${o.status !== "collected" && o.status !== "cancelled"
-        ? `<button class="sec" onclick="advance('${o.id}','cancelled')">Cancel</button>` : ""}
+        ? `<button class="ghost" onclick="advance('${o.id}','cancelled')">Cancel</button>` : ""}
     </div>
   </div>`;
 }
@@ -238,8 +238,8 @@ function renderGroups(p){
         <div class="ometa">Web name <strong>${g.slug}</strong> &nbsp;·&nbsp; Code <strong>${g.access_code}</strong></div>
         <div class="oact">
           <button onclick="openGroupPanel('${g.id}')">Manage products</button>
-          <button class="sec" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
-          <button class="sec" onclick="toggleGroup('${g.id}',${!g.active})">${g.active?"Pause":"Reactivate"}</button>
+          <button class="ghost" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
+          <button class="ghost" onclick="toggleGroup('${g.id}',${!g.active})">${g.active?"Pause":"Reactivate"}</button>
         </div>
       </div>`).join("")
     : `<p style="text-align:center;color:var(--muted);padding:50px 0">No club shops yet.</p>`}`;
@@ -296,7 +296,7 @@ function closeGroupPanel(){ openGroup = null; openGroupProducts = []; render(); 
 function renderGroupDetail(p){
   const g = openGroup;
   p.innerHTML = `
-    <button class="sec" onclick="closeGroupPanel()"
+    <button class="ghost" onclick="closeGroupPanel()"
       style="min-height:44px;padding:0 18px;border-radius:2px;background:var(--cream-deep);margin-bottom:16px">
       &larr; All club shops</button>
 
@@ -329,7 +329,7 @@ function renderGroupDetail(p){
           <span class="otime">${pr.price!=null?money(pr.price):"—"}</span></div>
         ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
         <div class="ometa">${pr.sizes?"Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
-        <div class="oact"><button class="sec" onclick="removeGroupProduct('${pr.id}')">Remove</button></div>
+        <div class="oact"><button class="ghost" onclick="removeGroupProduct('${pr.id}')">Remove</button></div>
       </div>`).join("")
     : `<p style="text-align:center;color:var(--muted);padding:40px 0">No items in this shop yet.</p>`}`;
 }

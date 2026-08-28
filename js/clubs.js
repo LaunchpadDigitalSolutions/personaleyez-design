@@ -75,7 +75,7 @@ function renderProducts(){
     const cols  = (p.colours||"").split(",").map(s=>s.trim()).filter(Boolean);
     return `<div class="piece">
       ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
-                    : `<div class="imgwrap" style="aspect-ratio:3/4;background:var(--cream-deep)"></div>`}
+                    : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${p.name}</span></div>`}
       <h3>${p.name}</h3>
       ${p.price != null ? `<p style="color:var(--charcoal);font-family:var(--display);font-size:19px">${money(p.price)}</p>` : ""}
       ${p.description ? `<p>${p.description}</p>` : ""}
@@ -144,6 +144,7 @@ async function placeGroupOrder(){
     });
     $("s-ref").textContent = o.order_ref;
     $("s-tracklink").href = "track.html?ref=" + o.order_ref;
+    clearNote("s-notice");
     $("s-checkout").style.display = "none";
     $("s-basketbox").style.display = "none";
     $("s-products").style.display = "none";

@@ -445,7 +445,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .hero-tail{display:none}
   .hero-note{font-size:17px}
 
-  .statement{padding:var(--s10) 44px}
+  .statement{padding:var(--s9) 44px}
   .fullbleed{aspect-ratio:21/9}
   .fullbleed-cap{left:44px;bottom:48px;right:44px;max-width:22ch}
 
@@ -466,8 +466,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .offset .raise{margin-bottom:var(--s8)}
   .collage{grid-template-columns:repeat(4,1fr);padding:0 44px}
   .foot-grid{grid-template-columns:1.6fr 1fr 1fr 1.2fr}
-  .sec{padding:var(--s10) 0}
-  .quote{padding:var(--s10) 44px}
+  .sec{padding:var(--s9) 0}
+  .quote{padding:var(--s9) 44px}
 }
 
 /* ---------- very small phones ---------- */
@@ -479,3 +479,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .collection{gap:var(--s5) 12px}
   .nav-mobile a.navlink{font-size:30px}
 }
+
+/* ---------- club product without a photo ---------- */
+.imgwrap.noimg{background:var(--cream-deep);display:flex;align-items:center;
+  justify-content:center;padding:24px;text-align:center}
+.imgwrap.noimg span{font-family:var(--display);font-size:19px;color:var(--muted);line-height:1.2}
