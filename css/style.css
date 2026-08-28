@@ -283,6 +283,104 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .health{display:none;background:#F7E2DC;color:#9B3B1E;font-size:13.5px;
   text-align:center;padding:13px 16px;letter-spacing:.02em}
 
+
+/* ============================================================
+   MOBILE COMPOSITION (up to 699px)
+   Deliberately different from the desktop stack: tighter rhythm,
+   horizontal collection rail, compact process rows, full-bleed
+   imagery that fills the screen rather than sitting in a column.
+   ============================================================ */
+@media (max-width:699px){
+  .wrap,.wrap-narrow{padding:0 20px}
+  .sec{padding:var(--s7) 0}
+  .sec-sm{padding:var(--s6) 0}
+
+  /* Headline owns the first screen */
+  .display-xl{font-size:clamp(58px,19vw,84px);line-height:.86;letter-spacing:-.045em}
+  .display-lg{font-size:clamp(36px,11vw,52px);line-height:.98}
+  .display-md{font-size:clamp(27px,7.4vw,36px);line-height:1.08}
+  .hero-type{padding-top:var(--s5)}
+  .hero-media{aspect-ratio:3/4}
+
+  /* Statements: shorter, punchier, less air */
+  .statement{padding:var(--s7) 20px}
+  .statement .display-lg{max-width:12ch}
+
+  /* Full-bleed images get taller so they actually land */
+  .fullbleed{aspect-ratio:4/5}
+  .fullbleed-cap{left:20px;right:20px;bottom:22px}
+
+  /* COLLECTION → horizontal rail with a peek of the next piece.
+     Breaks the endless vertical stack. */
+  .collection{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:0 20px var(--s3);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .collection::-webkit-scrollbar{display:none}
+  .collection .piece{flex:0 0 78%;scroll-snap-align:start;margin-top:0}
+  .collection .piece img{aspect-ratio:3/4}
+  .collection .piece h3{font-size:22px;margin-top:14px}
+  .collection .piece p{font-size:14.5px}
+  .railhint{display:flex;align-items:center;gap:8px;padding:var(--s3) 20px 0;
+    font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .railhint svg{width:15px;height:15px}
+
+  /* PROCESS → compact numbered rows, not four tall blocks */
+  .process{gap:0;padding:0 20px}
+  .pstep{display:grid;grid-template-columns:34px 1fr;column-gap:14px;
+    padding:var(--s4) 0;border-top:1px solid var(--line)}
+  .pstep::before{margin-bottom:0;grid-row:1/3;font-size:13px;padding-top:4px}
+  .pstep h3{font-size:19px;margin-bottom:3px}
+  .pstep p{font-size:14.5px;line-height:1.55}
+
+  /* PAIRS: image full-bleed to the screen edge, type inset */
+  .pair{gap:var(--s5)}
+  .pair img{width:100vw;margin-left:-20px;aspect-ratio:4/5}
+  .sec .wrap .pair img{margin-left:-20px}
+
+  /* OFFSET → one big, one small and inset, not two equal stacks */
+  .offset{grid-template-columns:1fr;gap:var(--s5);padding:0 20px}
+  .offset .raise img{aspect-ratio:4/5}
+  .offset .lower{width:66%;margin-left:auto}
+  .offset .lower img{aspect-ratio:1/1}
+
+  /* COLLAGE → first image spans, rest form a tighter mosaic */
+  .collage{gap:8px;padding:0 20px;grid-template-columns:1fr 1fr}
+  .collage .tall{grid-row:span 2;aspect-ratio:1/2.04}
+  .collage img{aspect-ratio:1/1}
+
+  /* QUOTE */
+  .quote{padding:var(--s7) 20px}
+  .quote blockquote{font-size:clamp(25px,7.4vw,34px);max-width:15ch}
+
+  /* Detail lists sit closer together */
+  .dl li{padding:var(--s3) 0}
+  .dl span{font-size:19px}
+
+  /* Footer stacks with more separation than default gap */
+  .foot-grid{gap:var(--s6)}
+  .site-footer{padding:var(--s7) 0 var(--s5)}
+  .site-footer img.flogo{height:54px}
+
+  /* Contact: form first on mobile, supporting detail after */
+  .pair.form-first{display:flex;flex-direction:column}
+  .pair.form-first > .col-type{order:2}
+  .pair.form-first > div:not(.col-type){order:1}
+
+  /* Tracker input sits high and reads large */
+  .trackbox{padding:var(--s5) 0}
+  .track-ref{font-size:28px}
+
+  /* Sticky enquire bar — always one tap from converting */
+  .mobilebar{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;
+    background:var(--charcoal);padding-bottom:env(safe-area-inset-bottom)}
+  .mobilebar a{flex:1;min-height:56px;display:flex;align-items:center;
+    justify-content:center;gap:8px;color:var(--cream);font-size:11px;
+    font-weight:500;letter-spacing:.18em;text-transform:uppercase}
+  .mobilebar a+a{border-left:1px solid rgba(251,245,238,.18)}
+  .mobilebar a.accent{background:var(--terracotta)}
+  body{padding-bottom:56px}
+}
+@media (min-width:700px){ .mobilebar,.railhint{display:none} }
+
 /* ============================================================
    SCALE UP
    ============================================================ */
@@ -333,6 +431,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .hero-media{aspect-ratio:auto;height:100%;order:2}
   .hero-type{order:1;display:flex;flex-direction:column;justify-content:center;
     padding:var(--s9) var(--s8) var(--s9) 44px}
+  .hero-tail{display:none}
   .hero-note{font-size:17px}
 
   .statement{padding:var(--s10) 44px}
