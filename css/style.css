@@ -447,7 +447,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
   .statement{padding:var(--s9) 44px}
   .fullbleed{aspect-ratio:21/9}
-  .fullbleed-cap{left:44px;bottom:48px;right:44px;max-width:22ch}
+  .fullbleed-cap{left:44px;bottom:48px;right:44px;max-width:620px}
 
   .pair{grid-template-columns:1.15fr 1fr;gap:var(--s8)}
   .pair .col-type{padding:0}
