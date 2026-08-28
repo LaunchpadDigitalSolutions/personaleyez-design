@@ -30,7 +30,14 @@ const BRAND = {
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const CLIENT_REF  = "peachstate";
-const APP_VERSION = "0.4.4";
+const APP_VERSION = "0.5.0";
+
+/* ---------- Admin PIN ----------
+   DEMO ONLY. This is client-side, so anyone who opens dev tools can read it.
+   It stops a casual visitor poking around; it is NOT security.
+   Before go-live: Cloudflare Access on /admin* AND lock ps_groups /
+   ps_group_products down so the anon key cannot read access codes. */
+const ADMIN_PIN = "2468";
 
 /* ---------- Imagery ----------
    Placeholder art direction. Replace with the client's own

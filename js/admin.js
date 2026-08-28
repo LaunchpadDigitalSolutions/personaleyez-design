@@ -425,7 +425,43 @@ async function saveAllContent(){
   btn.disabled = false;
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  try{ contentRows = await listContent(); }catch(e){}
-  load(); setInterval(load, 30000);
+/* ============================================================
+   DEMO PIN GATE
+   Cosmetic only — the PIN ships in the client bundle. Real
+   protection is Cloudflare Access plus tighter RLS; see README.
+   ============================================================ */
+function unlockAdmin(){
+  document.getElementById("pingate").classList.add("hidden");
+  if (!window.__adminBooted) {
+    window.__adminBooted = true;
+    listContent().then(r => contentRows = r).catch(()=>{});
+    load();
+    setInterval(load, 30000);
+  }
+}
+
+function tryPin(){
+  const v = document.getElementById("pin").value.trim();
+  const err = document.getElementById("pinerr");
+  if (v === ADMIN_PIN) {
+    try { sessionStorage.setItem("ps_admin", "1"); } catch(e) {}
+    err.classList.remove("show");
+    unlockAdmin();
+  } else {
+    err.classList.add("show");
+    document.getElementById("pin").value = "";
+    document.getElementById("pin").focus();
+  }
+}
+
+function lockAdmin(){
+  try { sessionStorage.removeItem("ps_admin"); } catch(e) {}
+  location.reload();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  let unlocked = false;
+  try { unlocked = sessionStorage.getItem("ps_admin") === "1"; } catch(e) {}
+  if (unlocked) unlockAdmin();
+  else setTimeout(()=>{ const p=document.getElementById("pin"); if(p) p.focus(); }, 300);
 });

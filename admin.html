@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="icon" href="img/icon-180.png?v=0.4.4">
-<link rel="stylesheet" href="css/style.css?v=0.4.4">
+<link rel="icon" href="img/icon-180.png?v=0.5.0">
+<link rel="stylesheet" href="css/style.css?v=0.5.0">
 <title>Orders — Peach State</title>
 <style>
 body{background:var(--cream-deep)}
@@ -42,11 +42,42 @@ body{background:var(--cream-deep)}
 .newcard{background:#fff;border:1px solid var(--line);border-radius:2px;
   padding:20px;max-width:640px;margin:0 auto}
 @media(min-width:768px){.stats{grid-template-columns:repeat(4,1fr)}}
+
+/* ---- demo PIN gate ---- */
+.pingate{position:fixed;inset:0;z-index:500;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.pingate.hidden{display:none}
+.pinbox{width:100%;max-width:340px;text-align:center}
+.pinlogo{height:130px;width:auto;margin:0 auto 28px}
+.pinbox h1{font-family:var(--display);font-size:27px;margin:0 0 6px;font-weight:400}
+.pinbox p{color:var(--muted);font-size:15px;margin:0 0 28px}
+.pinbox input{text-align:center;font-family:var(--display);font-size:32px;
+  letter-spacing:.32em;border-bottom:1px solid var(--line);padding:12px 0}
+.pinbox .btn-solid{margin-top:26px}
+.pinerr{display:none;color:#9B3B1E;font-size:14px;margin-top:14px}
+.pinerr.show{display:block}
 </style>
 </head>
 <body>
+<!-- ============================================================
+     DEMO PIN GATE — cosmetic only, see js/config.js
+     ============================================================ -->
+<div class="pingate" id="pingate">
+  <div class="pinbox">
+    <img src="img/logo.png" alt="Peach State" class="pinlogo">
+    <h1>Order management</h1>
+    <p>Enter your PIN to continue.</p>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off"
+           maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')tryPin()">
+    <div class="pinerr" id="pinerr">That's not right — try again.</div>
+    <button class="btn-solid" onclick="tryPin()">Unlock</button>
+  </div>
+</div>
 <div class="adminbar"><div class="wrap">
   <div style="flex:1"><h1 data-brand="name" style="font-family:var(--display)"></h1><small>Order management</small></div>
+  <button class="iconbtn" onclick="lockAdmin()" aria-label="Lock" style="margin-right:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
   <button class="iconbtn" onclick="load()" aria-label="Refresh">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button>
 </div></div>
@@ -64,9 +95,9 @@ body{background:var(--cream-deep)}
 <div class="stats" id="stats"></div>
 <div class="list" id="panel"></div>
 <div class="toast" id="toast"></div>
-<script src="js/config.js?v=0.4.4"></script>
-<script src="js/api.js?v=0.4.4"></script>
-<script src="js/partials.js?v=0.4.4"></script>
-<script src="js/admin.js?v=0.4.4"></script>
+<script src="js/config.js?v=0.5.0"></script>
+<script src="js/api.js?v=0.5.0"></script>
+<script src="js/partials.js?v=0.5.0"></script>
+<script src="js/admin.js?v=0.5.0"></script>
 </body>
 </html>

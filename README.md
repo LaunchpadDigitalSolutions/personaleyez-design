@@ -41,11 +41,25 @@ type. Deliberately **not** a card-based ecommerce template.
 The site already carries the Peach State identity; `legalName` stays as
 Personaleyez Design Ltd for the footer until Companies House is updated.
 
+## Admin access
+
+`admin.html` sits behind a PIN (set in `js/config.js` as `ADMIN_PIN`, currently
+`2468`). It unlocks for the browser session and there's a padlock button in the
+bar to lock it again.
+
+**This is a demo convenience, not security.** The PIN ships in the client
+bundle, and the Supabase anon key in `config.js` can query `ps_groups`
+directly — so club access codes are reachable without ever loading the admin
+page. Fine while the data is invented. Not fine once a real club is in there.
+
 ## Before launch
 - [ ] Replace ALL placeholder photography with the client's own — every image is AI-generated
 - [ ] Confirm email address, opening hours, Facebook URL
 - [ ] Confirm whether the rebrand is also a repositioning (boutique vs workwear emphasis)
-- [ ] Lock `admin.html` behind Cloudflare Access
+- [ ] Cloudflare Access on `/admin*` (replaces the demo PIN)
+- [ ] Revoke anon SELECT on `ps_groups` / `ps_group_products`; move admin
+      writes behind `security definer` functions that check a server-side
+      passphrase. Until this is done, access codes are publicly queryable.
 - [ ] Point the GoDaddy domain — CHECK MX RECORDS FIRST, client has email on it
 
 ---
