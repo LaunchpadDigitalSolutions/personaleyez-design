@@ -19,8 +19,8 @@ function renderHeader(){
   document.getElementById("site-header").innerHTML = `
     <div class="header-inner">
       <a href="index.html" class="brandlink">
-        <img class="bm-mark" src="img/mark-only.png" alt="">
-        <img class="bm-word" src="img/wordmark.png" alt="Peach State — Personalised Design">
+        <img class="bm-mark" src="img/mark-only.png?v=${APP_VERSION}" alt="">
+        <img class="bm-word" src="img/wordmark.png?v=${APP_VERSION}" alt="Peach State — Personalised Design">
       </a>
       <nav class="nav-desktop">${links}</nav>
       <div class="header-actions">
@@ -61,7 +61,7 @@ function toggleNav(){
 function renderFooter(){
   const y = new Date().getFullYear();
   document.getElementById("site-footer").innerHTML = `
-    <div class="footmark"><img src="img/logo.png" alt="Peach State — Personalised Design"></div>
+    <div class="footmark"><img src="img/logo.png?v=${APP_VERSION}" alt="Peach State — Personalised Design"></div>
     <div class="wrap">
       <div class="foot-grid">
         <div>
