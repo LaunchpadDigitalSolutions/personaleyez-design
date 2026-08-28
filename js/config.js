@@ -30,7 +30,7 @@ const BRAND = {
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const CLIENT_REF  = "peachstate";
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.2.1";
 
 /* ---------- Imagery ----------
    Placeholder art direction. Replace with the client's own
@@ -55,5 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-brand-href]").forEach(el => {
     const v = BRAND[el.dataset.brandHref]; if (v) el.setAttribute("href", v); });
   document.querySelectorAll("[data-img]").forEach(el => {
-    const v = IMG[el.dataset.img]; if (v) el.src = v; });
+    const v = IMG[el.dataset.img];
+    if (v) { el.src = v; } else { el.style.background = "var(--cream-deep)"; }
+    el.addEventListener("error", () => {
+      el.style.background = "var(--cream-deep)";
+      el.removeAttribute("alt");
+    }, { once: true });
+  });
 });
