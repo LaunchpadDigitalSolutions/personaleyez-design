@@ -30,7 +30,7 @@ const BRAND = {
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const CLIENT_REF  = "peachstate";
-const APP_VERSION = "0.2.1";
+const APP_VERSION = "0.3.0";
 
 /* ---------- Imagery ----------
    Placeholder art direction. Replace with the client's own
