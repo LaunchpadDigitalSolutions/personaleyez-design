@@ -80,3 +80,20 @@ extend by adding `data-edit` attributes and a row to `EDITABLE` in `js/admin.js`
 
 This is deliberately *not* a full page builder — it's safe text swaps. Layout,
 images and structure stay in code, so Jo can't accidentally break the design.
+
+## Tests
+
+```bash
+npm test                 # against the live custom domain
+npm run test:preview     # against peach-state.pages.dev
+```
+
+The suite creates its own data under a per-run `ZZTEST…` tag and removes what
+it can. **Orders and enquiries are deliberately undeletable with the public
+key** — nothing holding the anon key should be able to erase a customer's
+order — so those rows are left behind and reported. Purge them in Supabase SQL:
+
+```sql
+delete from ps_orders     where customer_name like 'ZZTEST%';
+delete from ps_enquiries  where name          like 'ZZTEST%';
+```

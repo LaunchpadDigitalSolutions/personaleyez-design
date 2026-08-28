@@ -19,7 +19,8 @@ const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" };
 
-const TAG = "ZZTEST";
+const RUN = Math.random().toString(36).slice(2, 7).toUpperCase();
+const TAG = "ZZTEST" + RUN;   // unique per run — orders/enquiries can't be deleted (by design)
 let pass = 0, fail = 0;
 const failures = [];
 
@@ -40,18 +41,25 @@ const rpc = (fn, body) =>
   fetch(SB_URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: H, body: JSON.stringify(body) })
     .then(r => r.json());
 
-/* ---------- cleanup, safe to run at any point ---------- */
+/* ---------- cleanup ----------
+   ps_orders and ps_enquiries deliberately have NO delete policy — the public
+   key must never be able to erase a customer's order. Those rows are left
+   behind and reported at the end; purge them with the SQL in the README. */
 async function cleanup() {
   try {
-    const gs = await sb(`ps_groups?slug=like.${TAG.toLowerCase()}*&select=id`);
+    const gs = await sb(`ps_groups?slug=like.zztest*&select=id`);
     for (const g of gs) {
       await sb(`ps_group_products?group_id=eq.${g.id}`, { method: "DELETE" });
       await sb(`ps_groups?id=eq.${g.id}`, { method: "DELETE" });
     }
-    await sb(`ps_orders?customer_name=like.${TAG}*`, { method: "DELETE" });
-    await sb(`ps_enquiries?name=like.${TAG}*`, { method: "DELETE" });
-    await sb(`ps_content?ckey=eq.${TAG.toLowerCase()}_key`, { method: "DELETE" });
+    await sb(`ps_content?ckey=like.zztest*`, { method: "DELETE" });
   } catch (e) { console.log("  (cleanup warning: " + e.message + ")"); }
+}
+
+async function leftovers() {
+  const o = await sb(`ps_orders?customer_name=like.ZZTEST*&select=order_ref`);
+  const e = await sb(`ps_enquiries?name=like.ZZTEST*&select=id`);
+  return { orders: o.length, enquiries: e.length };
 }
 
 /* ============================================================ */
@@ -160,12 +168,12 @@ async function run() {
     body: JSON.stringify({ name: TAG + " Enquirer", phone: "07700900000", category: "workwear", message: "E2E" })
   });
   const enq = await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer&select=*`);
-  ok("enquiry saved", enq.length === 1);
-  ok("  defaults to unhandled", enq[0].handled === false);
+  ok("enquiry saved", enq.length === 1, "found " + enq.length);
+  ok("  defaults to unhandled", enq.length > 0 && enq[0].handled === false);
 
   /* ---------- 7. Editable content ---------- */
   group("Content editor");
-  const key = TAG.toLowerCase() + "_key";
+  const key = "zztest_" + RUN.toLowerCase();
   const put = v => fetch(`${SB_URL}/rest/v1/ps_content?on_conflict=page,ckey`, {
     method: "POST",
     headers: { ...H, Prefer: "resolution=merge-duplicates,return=representation" },
@@ -176,6 +184,25 @@ async function run() {
   ok("content upserts rather than duplicating", Array.isArray(second) && second[0].value === "second");
   const rows = await sb(`ps_content?ckey=eq.${key}&select=*`);
   ok("  only one row per page+key", rows.length === 1);
+
+  /* ---------- 7b. Deletion must be impossible with the public key ---------- */
+  group("Security");
+  let orderDeleteBlocked = false;
+  try { await sb(`ps_orders?order_ref=eq.${ref}`, { method: "DELETE" }); }
+  catch { orderDeleteBlocked = true; }
+  const stillThere = await sb(`ps_orders?order_ref=eq.${ref}&select=order_ref`);
+  ok("orders cannot be deleted with the public key",
+     orderDeleteBlocked || stillThere.length === 1);
+  let enqDeleteBlocked = false;
+  try { await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer`, { method: "DELETE" }); }
+  catch { enqDeleteBlocked = true; }
+  const enqLeft = await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer&select=id`);
+  ok("enquiries cannot be deleted with the public key",
+     enqDeleteBlocked || enqLeft.length === 1);
+  // The club login RPC must never echo the code back to the browser.
+  const probe = await rpc("ps_group_login", { p_slug: slug, p_code: "ZZCODE" });
+  ok("login response never contains the access code",
+     !JSON.stringify(probe).toUpperCase().includes("ZZCODE"));
 
   /* ---------- 8. Schema guarantees ---------- */
   group("Schema");
@@ -190,8 +217,12 @@ async function run() {
   await cleanup();
 
   /* ---------- summary ---------- */
+  const left = await leftovers();
   console.log("\n" + "=".repeat(52));
   console.log(`\x1b[1m${pass} passed, ${fail} failed\x1b[0m`);
+  if (left.orders || left.enquiries)
+    console.log(`Test rows left behind (delete-blocked by design): ` +
+                `${left.orders} order(s), ${left.enquiries} enquiry(ies). See README.`);
   if (fail) { console.log("\nFailures:"); failures.forEach(f => console.log("  - " + f)); }
   process.exit(fail ? 1 : 0);
 }
