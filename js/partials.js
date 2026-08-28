@@ -17,7 +17,10 @@ function renderHeader(){
     `<a href="${h}" class="${h===here?"on":""}">${t}</a>`).join("");
   document.getElementById("site-header").innerHTML = `
     <div class="header-inner">
-      <a href="index.html" class="brandlink"><img src="img/logo.png" alt="Peach State — Personalised Design"></a>
+      <a href="index.html" class="brandlink">
+        <img class="bm-mark" src="img/mark-only.png" alt="">
+        <img class="bm-word" src="img/wordmark.png" alt="Peach State — Personalised Design">
+      </a>
       <nav class="nav-desktop">${links}</nav>
       <div class="header-actions">
         <a href="${BRAND.phoneLink}">${BRAND.phone}</a>
@@ -27,14 +30,23 @@ function renderHeader(){
         <svg id="burger-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round">
           <path d="M3 8h18M3 16h18"/></svg>
       </button>
-    </div>
-    <nav class="nav-mobile" id="nav-mobile">
+    </div>`;
+
+  // The header uses backdrop-filter, which creates a containing block for
+  // fixed-position children. The nav panel must live on <body> or it will
+  // position against the header instead of the viewport.
+  if (!document.getElementById("nav-mobile")) {
+    const nav = document.createElement("nav");
+    nav.className = "nav-mobile";
+    nav.id = "nav-mobile";
+    nav.innerHTML = `
       ${NAV.map(([h,t]) => `<a class="navlink" href="${h}">${t}</a>`).join("")}
       <div class="navfoot">
         <span class="label">Call the studio</span>
         <a href="${BRAND.phoneLink}">${BRAND.phone}</a>
-      </div>
-    </nav>`;
+      </div>`;
+    document.body.appendChild(nav);
+  }
 }
 
 function toggleNav(){
@@ -48,11 +60,11 @@ function toggleNav(){
 function renderFooter(){
   const y = new Date().getFullYear();
   document.getElementById("site-footer").innerHTML = `
+    <div class="footmark"><img src="img/logo.png" alt="Peach State — Personalised Design"></div>
     <div class="wrap">
       <div class="foot-grid">
         <div>
-          <img class="flogo" src="img/logo.png" alt="Peach State">
-          <p style="margin-top:24px">Personalised embroidery and print, made by hand in Hartlepool. Schools, businesses, and the things people keep.</p>
+          <p>Personalised embroidery and print, made by hand in Hartlepool. Schools, businesses, and the things people keep.</p>
         </div>
         <div>
           <span class="label">Explore</span>
