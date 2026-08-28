@@ -3,53 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#18181b">
+<meta name="theme-color" content="#FBF5EE">
+<link rel="icon" href="img/icon-180.png">
+<link rel="apple-touch-icon" href="img/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<title>Track Your Order | Personaleyez Design</title>
-<meta name="description" content="Check where your embroidery or print order is up to. Enter your order reference.">
+<title>Track Your Order — Peach State</title>
+<meta name="description" content="Check where your Peach State order is up to.">
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
-<div class="health" id="health">We can't reach the order system right now — please give us a ring instead.</div>
+<div class="health" id="health">We can't reach the order system just now — please give us a ring.</div>
 
-<section class="section">
-  <div class="wrap">
-    <div class="tracker">
-      <div class="eyebrow">Order tracking</div>
-      <h1 style="font-size:34px">Where's my order?</h1>
-      <p class="lead">Pop in the reference we gave you when you ordered — it looks like PD-4K7QP.</p>
+<section class="sec">
+  <div class="wrap-narrow">
+    <span class="label">Order tracking</span>
+    <h1 class="display-lg" style="margin-top:20px">Where's my <span class="italic tera">order?</span></h1>
+    <p class="body" style="margin-top:24px">Pop in the reference we gave you when you ordered. It looks like <strong style="font-family:var(--display);letter-spacing:.02em">PD-4K7QP</strong>.</p>
 
-      <div class="track-form">
-        <label for="ref" style="font-size:14.5px;font-weight:600">Order reference</label>
-        <input id="ref" type="text" placeholder="PD-XXXXX" maxlength="9" autocomplete="off"
-               style="text-transform:uppercase" onkeydown="if(event.key==='Enter')lookup()">
-        <button class="btn btn-primary" id="lookup-btn" onclick="lookup()">Check my order</button>
-      </div>
-
-      <div class="notice" id="notice"></div>
-
-      <div class="track-result" id="result">
-        <div class="track-card">
-          <div class="track-head">
-            <div class="track-ref" id="r-ref"></div>
-            <div class="track-desc" id="r-desc"></div>
-            <span class="pill" id="r-pill"></span>
-          </div>
-          <ul class="timeline" id="r-timeline"></ul>
-        </div>
-        <p class="lead" style="font-size:15px;margin-top:24px">
-          Something not right? Give us a ring on
-          <a href="#" data-brand-href="phoneLink" style="color:var(--accent);font-weight:600" data-brand="phone"></a>.
-        </p>
-      </div>
-
-      <p class="lead" style="font-size:15px;margin-top:40px">
-        Haven't got a reference? No bother — ring the shop and we'll look it up for you.
-      </p>
+    <div class="fld" style="margin-top:40px">
+      <label for="ref">Order reference</label>
+      <input id="ref" type="text" placeholder="PD-XXXXX" maxlength="9" autocomplete="off"
+             style="text-transform:uppercase;font-family:var(--display);font-size:26px"
+             onkeydown="if(event.key==='Enter')lookup()">
     </div>
+    <button class="btn-solid" id="lookup-btn" onclick="lookup()" style="margin-top:28px">Check my order</button>
+    <div class="notice" id="notice"></div>
+
+    <div id="result" style="display:none">
+      <div class="trackbox">
+        <div class="track-ref" id="r-ref"></div>
+        <div class="track-desc" id="r-desc"></div>
+        <span class="stat-word" id="r-pill"></span>
+        <ul class="timeline" id="r-timeline"></ul>
+      </div>
+      <p class="body" style="margin-top:28px">Something not right? Ring us on
+        <a href="#" data-brand-href="phoneLink" style="color:var(--terracotta)" data-brand="phone"></a>.</p>
+    </div>
+
+    <p class="body dim" style="margin-top:56px;font-size:15px">
+      No reference? No bother — ring the studio and we'll look it up for you.</p>
   </div>
 </section>
 

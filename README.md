@@ -1,42 +1,49 @@
-# Personaleyez Design — website
+# Peach State — Personalised Design
 
-Site and order tracker for Personaleyez Design Ltd, 184 York Road, Hartlepool.
-Rebrands to **Peach State** in October 2026.
+Website and order tracker for **Peach State** (trading as Personaleyez Design Ltd
+until the October 2026 rebrand), 184 York Road, Hartlepool.
 
-## Rebrand in one file
-Everything brand-specific lives in `js/config.js` — name, legal name, phone,
-address, hours, logo flag. Change `BRAND.name` and `BRAND.legalName` in October
-and the whole site follows. Drop a logo at `img/logo.png` and set `hasLogo: true`.
+## Art direction
+Independent Southern boutique / editorial — cream ground, peach and terracotta
+as moments of impact, sage as the quiet voice. Fraunces (display serif) over
+Jost (restrained sans). Asymmetric grids, full-bleed photography, oversized
+type. Deliberately **not** a card-based ecommerce template.
+
+| Token | Value |
+|---|---|
+| Cream | `#FBF5EE` |
+| Peach | `#F6B49A` |
+| Terracotta | `#E0704B` |
+| Sage | `#7E8F73` |
+| Charcoal | `#2B2622` |
 
 ## Pages
 | File | Purpose |
 |---|---|
-| `index.html` | Home |
-| `services.html` | Embroidery, print, workwear, personalised |
+| `index.html` | Editorial homepage — hero, statement, full-bleed, collection, personalisation, process, collage, tracker |
+| `services.html` | Embroidery, print, workwear, gifts — alternating editorial pairs |
 | `schools.html` | School uniform + repayment plans |
 | `track.html` | Customer order tracking (`?ref=PD-XXXXX` deep links) |
 | `contact.html` | Enquiry form |
-| `admin.html` | Jo's order dashboard — create orders, move status, handle enquiries |
+| `admin.html` | Order dashboard — create orders, move status, handle enquiries |
 
 ## Order status flow
 `enquiry → in_production → ready → collected` (plus `cancelled`)
 
 ## Tables (Supabase `coiwwbroycaznkmhevde`)
-- `ps_orders` — orders, reference, status, quote, deposit, due date
-- `ps_enquiries` — website contact form
+`ps_orders` · `ps_enquiries`
 
 ## Error codes
 `PS-1xx` orders · `PS-2xx` enquiries
 
-## Standards
-Mobile-first from 375px · 44px+ touch targets · 16px inputs · health check
-before render · version stamp Ctrl+Shift+V · palette and fonts per the
-`launchpad-ui-design` skill (Retail & E-commerce).
+## Brand switching
+`js/config.js` holds name, legal name, contact details, hours and the image map.
+The site already carries the Peach State identity; `legalName` stays as
+Personaleyez Design Ltd for the footer until Companies House is updated.
 
-## Outstanding
-- Confirm email address, opening hours and Facebook URL with the client
-- Replace AI placeholder photography with real shop and product photos
-- Real logo into `img/logo.png`
-- Accent colour is the skill's retail indigo — re-tint to the Peach State palette at rebrand
-- Lock `admin.html` behind Cloudflare Access before it goes live
-- Point the GoDaddy domain once confirmed (check MX records first — client has email on it)
+## Before launch
+- [ ] Replace ALL placeholder photography with the client's own — every image is AI-generated
+- [ ] Confirm email address, opening hours, Facebook URL
+- [ ] Confirm whether the rebrand is also a repositioning (boutique vs workwear emphasis)
+- [ ] Lock `admin.html` behind Cloudflare Access
+- [ ] Point the GoDaddy domain — CHECK MX RECORDS FIRST, client has email on it

@@ -53,7 +53,7 @@ function orderRow(o) {
   return `<div class="orow">
     <div class="orow-top">
       <span class="oref">${o.order_ref}</span>
-      <span class="pill p-${o.status}">${STATUS_LABEL[o.status]}</span>
+      <span class="stat-word s-${o.status}">${STATUS_LABEL[o.status]}</span>
       <span class="otime">${ago(o.created_at)}</span>
     </div>
     <div class="ocust">${o.customer_name} · <a href="tel:${o.customer_phone}" style="color:var(--accent)">${o.customer_phone}</a></div>
@@ -77,8 +77,8 @@ function enqRow(e) {
   return `<div class="orow">
     <div class="orow-top">
       <span class="oref">${e.name}</span>
-      ${e.handled ? '<span class="pill p-collected">Handled</span>'
-                  : '<span class="pill p-enquiry">New</span>'}
+      ${e.handled ? '<span class="stat-word s-collected">Handled</span>'
+                  : '<span class="stat-word s-enquiry">New</span>'}
       <span class="otime">${ago(e.created_at)}</span>
     </div>
     <div class="ometa">${e.category || ""}
