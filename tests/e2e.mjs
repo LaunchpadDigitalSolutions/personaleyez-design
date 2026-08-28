@@ -66,8 +66,11 @@ async function run() {
     const r = await fetch(`${BASE}/${p}`);
     const html = await r.text();
     ok(`GET /${p || "(index)"} → 200`, r.status === 200, "got " + r.status);
+    // Only flag ${...} that leaked into rendered markup, not template
+    // literals inside the page's own <script> blocks.
+    const markup = html.replace(/<script[\s\S]*?<\/script>/g, "");
     ok(`  /${p || "(index)"} has no unreplaced template vars`,
-       !html.includes("${") || p === "admin.html", "found ${ in output");
+       !markup.includes("${"), "found ${ in rendered markup");
   }
 
   /* ---------- 2. Static assets ---------- */
