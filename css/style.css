@@ -270,7 +270,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .site-footer .wrap{padding-top:var(--s7)}
 .foot-grid{display:grid;gap:var(--s7)}
 .site-footer .label{color:rgba(251,245,238,.45);display:block;margin-bottom:var(--s4)}
-.site-footer nav a{display:block;padding:7px 0;color:rgba(251,245,238,.8);font-size:15.5px}
+.site-footer nav a{display:flex;align-items:center;min-height:44px;padding:4px 0;
+  color:rgba(251,245,238,.8);font-size:15.5px}
 .site-footer nav a:hover{color:var(--peach)}
 .site-footer p{color:rgba(251,245,238,.6);font-size:15px;line-height:1.7;max-width:38ch}
 .foot-bottom{margin-top:var(--s7);padding-top:var(--s5);border-top:1px solid rgba(251,245,238,.14);

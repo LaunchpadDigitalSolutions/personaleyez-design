@@ -3,6 +3,7 @@
    ============================================================ */
 let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
 let openGroup = null, openGroupProducts = [];
+let lastCreatedRef = null;   // survives the auto-refresh re-render
 const $ = id => document.getElementById(id);
 const LIVE = ["enquiry", "in_production", "ready"];
 const STATUS_LABEL = { enquiry: "Enquiry", in_production: "In production",
@@ -46,6 +47,7 @@ function stats() {
 }
 
 function setTab(t) {
+  if (tab === "new" && t !== "new") lastCreatedRef = null;
   tab = t;
   document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === t));
   render();
@@ -93,7 +95,14 @@ function enqRow(e) {
 }
 
 function newOrderForm() {
-  return `<div class="newcard">
+  const banner = lastCreatedRef
+    ? `<div class="notice show ok" style="margin:0 0 18px">
+         Created <strong style="font-family:var(--display);font-size:18px">${lastCreatedRef}</strong>
+         — give this reference to the customer.
+         <button onclick="copyRef('${lastCreatedRef}')"
+           style="margin-left:10px;text-decoration:underline;font-size:13px">Copy</button>
+       </div>` : "";
+  return `${banner}<div class="newcard">
     <h2 style="font-size:20px">Add an order</h2>
     <div class="fld"><label for="n-name">Customer name</label><input id="n-name" type="text"></div>
     <div class="fld"><label for="n-phone">Phone</label><input id="n-phone" type="tel"></div>
@@ -131,6 +140,11 @@ function render() {
   p.innerHTML = list.length ? list.map(orderRow).join("")
     : `<p style="text-align:center;color:var(--text-muted);padding:60px 0">
          ${tab === "live" ? "No open orders." : "No orders yet."}</p>`;
+}
+
+function copyRef(ref){
+  navigator.clipboard.writeText(ref)
+    .then(()=>toast("Reference copied")).catch(()=>toast(ref));
 }
 
 async function advance(id, status) {
@@ -175,11 +189,12 @@ async function saveOrder() {
       notes: g("n-notes") || null,
       status: "enquiry"
     });
-    n.className = "notice show ok";
-    n.innerHTML = `Created <strong>${o.order_ref}</strong> — give this reference to the customer.`;
+    lastCreatedRef = o.order_ref;
+    toast("Created " + o.order_ref);
     ["n-name","n-phone","n-email","n-desc","n-total","n-notes","n-due"].forEach(id => $(id).value = "");
     $("n-qty").value = 1; $("n-dep").value = 0;
-    load();
+    await load();
+    render();          // redraw so the reference banner is visible
   } catch (e) {
     n.className = "notice show err"; n.textContent = "Couldn't save that (" + e.message + ").";
   }
