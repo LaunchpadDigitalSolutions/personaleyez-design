@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#18181b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<title>Contact &amp; Quotes | Personaleyez Design, Hartlepool</title>
+<meta name="description" content="Get a quote for embroidery, printing, school uniform or workwear. 184 York Road, Hartlepool TS26 9EA. Call 01429 866266.">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <div class="eyebrow">Get in touch</div>
+        <h1 style="font-size:38px">Tell us what you need</h1>
+        <p class="lead">Rough idea is fine — we'll come back with a price and any questions. If it's urgent, ringing is quickest.</p>
+
+        <ul class="contact-list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+            <span><b>Phone</b><span><a href="#" data-brand-href="phoneLink" data-brand="phone" style="color:var(--accent);font-weight:600"></a></span></span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span><b>Come and see us</b><span><span data-brand="address1"></span>, <span data-brand="address2"></span>, <span data-brand="postcode"></span></span></span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span><b>Opening hours</b><ul class="hours" id="hours"></ul></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="formcard">
+        <h2 style="font-size:22px">Ask for a quote</h2>
+        <div class="fld"><label for="c-name">Your name</label><input id="c-name" type="text" autocomplete="name"></div>
+        <div class="fld"><label for="c-phone">Phone</label><input id="c-phone" type="tel" autocomplete="tel"></div>
+        <div class="fld"><label for="c-email">Email <span class="hint">(optional)</span></label><input id="c-email" type="email" autocomplete="email"></div>
+        <div class="fld"><label for="c-cat">What's it for?</label>
+          <select id="c-cat">
+            <option value="school">School uniform</option>
+            <option value="workwear">Workwear or business uniform</option>
+            <option value="personalised">Personalised gift</option>
+            <option value="other">Something else</option>
+          </select></div>
+        <div class="fld"><label for="c-msg">What do you need?</label>
+          <textarea id="c-msg" placeholder="e.g. 12 navy polos with our logo on the left breast, needed for the end of the month"></textarea></div>
+        <div class="notice" id="c-notice"></div>
+        <button class="btn btn-primary" id="c-send" onclick="submitEnquiry()" style="width:100%;margin-top:24px">Send enquiry</button>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:16px">
+          We'll only use your details to reply to this enquiry.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/partials.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("hours").innerHTML =
+    BRAND.hours.map(([d,t])=>`<li><span>${d}</span><span>${t}</span></li>`).join("");
+});
+
+function cSay(cls,msg){const n=document.getElementById("c-notice");n.className="notice show "+cls;n.textContent=msg;}
+
+async function submitEnquiry(){
+  const name=document.getElementById("c-name").value.trim();
+  const phone=document.getElementById("c-phone").value.trim();
+  const email=document.getElementById("c-email").value.trim();
+  const cat=document.getElementById("c-cat").value;
+  const msg=document.getElementById("c-msg").value.trim();
+  const btn=document.getElementById("c-send");
+
+  if(!name){cSay("err","We need your name.");return;}
+  if(!phone&&!email){cSay("err","Leave us a phone number or an email so we can reply.");return;}
+  if(!msg){cSay("err","Tell us a bit about what you need.");return;}
+
+  btn.disabled=true;cSay("busy","Sending…");
+  try{
+    await sendEnquiry({name,phone,email:email||null,category:cat,message:msg});
+    cSay("ok","Thanks — that's come through. We'll be in touch shortly.");
+    ["c-name","c-phone","c-email","c-msg"].forEach(id=>document.getElementById(id).value="");
+  }catch(e){
+    cSay("err","That didn't send. Please give us a ring on "+BRAND.phone+".");
+  }
+  btn.disabled=false;
+}
+</script>
+</body>
+</html>
