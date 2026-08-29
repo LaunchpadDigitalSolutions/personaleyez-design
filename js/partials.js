@@ -90,6 +90,7 @@ function renderFooter(){
       <div class="foot-bottom">
         © ${y} ${BRAND.legalName} &nbsp;·&nbsp; Website by
         <a href="https://launchpadme.co.uk">Launchpad Digital</a>
+        &nbsp;·&nbsp; <a href="admin.html">Staff login</a>
       </div>
     </div>`;
 }
