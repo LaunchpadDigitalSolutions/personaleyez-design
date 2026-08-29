@@ -1,6 +1,14 @@
 /* ============================================================
    admin.js — Jo's order dashboard
    ============================================================ */
+/* Required by every ps_admin_* RPC call (js/api.js) for group/product
+   writes - must match the passphrase check in those Postgres functions.
+   Lives here (admin.js), not config.js, so it only ships to whoever
+   loads admin.html - not to every public page. Still client-side, so
+   this is a step up from the open anon policy it replaces, not a
+   substitute for Cloudflare Access on /admin* (see README). */
+const ADMIN_PASSPHRASE = "CSZjmD0Mohgj7EieDXoCu7Onhg1T";
+
 let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
 let openGroup = null, openGroupProducts = [];
 let lastCreatedRef = null;   // survives the auto-refresh re-render
