@@ -63,33 +63,45 @@ async function groupLogin(slug, code){
 }
 
 async function listGroups(){
-  return sb("ps_groups?select=*&order=created_at.desc", {}, "PS-301");
+  return sb("rpc/ps_admin_list_groups", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE })
+  }, "PS-301");
 }
 async function createGroup(g){
-  const out = await sb("ps_groups", {
-    method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify(g)
+  return sb("rpc/ps_admin_create_group", {
+    method:"POST", body: JSON.stringify({
+      p_pass: ADMIN_PASSPHRASE, p_name: g.name, p_slug: g.slug, p_code: g.access_code,
+      p_kind: g.kind, p_intro: g.intro, p_active: g.active
+    })
   }, "PS-302");
-  return out[0];
 }
 async function updateGroup(id, patch){
-  return sb("ps_groups?id=eq."+id, {
-    method:"PATCH", headers:{Prefer:"return=representation"}, body:JSON.stringify(patch)
+  return sb("rpc/ps_admin_update_group", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_active: patch.active })
   }, "PS-303");
 }
 async function deleteGroup(id){
-  return sb("ps_groups?id=eq."+id, { method:"DELETE" }, "PS-304");
+  return sb("rpc/ps_admin_delete_group", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
+  }, "PS-304");
 }
 async function listGroupProducts(groupId){
-  return sb("ps_group_products?group_id=eq."+groupId+"&select=*&order=sort_order,name", {}, "PS-305");
+  return sb("rpc/ps_admin_list_group_products", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_group_id: groupId })
+  }, "PS-305");
 }
 async function createGroupProduct(p){
-  const out = await sb("ps_group_products", {
-    method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify(p)
+  return sb("rpc/ps_admin_create_group_product", {
+    method:"POST", body: JSON.stringify({
+      p_pass: ADMIN_PASSPHRASE, p_group_id: p.group_id, p_name: p.name, p_description: p.description,
+      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url, p_sort_order: p.sort_order
+    })
   }, "PS-306");
-  return out[0];
 }
 async function deleteGroupProduct(id){
-  return sb("ps_group_products?id=eq."+id, { method:"DELETE" }, "PS-307");
+  return sb("rpc/ps_admin_delete_group_product", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
+  }, "PS-307");
 }
 
 /* ============================================================
