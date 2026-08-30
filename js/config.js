@@ -18,9 +18,13 @@ const BRAND = {
   postcode:  "TS26 9EA",
 
   hours: [
-    ["Monday – Friday", "9:00 – 17:00"],
-    ["Saturday",        "9:00 – 13:00"],
-    ["Sunday",          "Closed"]
+    ["Monday",    "10:00 – 18:00"],
+    ["Tuesday",   "10:00 – 16:00"],
+    ["Wednesday", "10:00 – 16:00"],
+    ["Thursday",  "10:00 – 18:00"],
+    ["Friday",    "10:00 – 16:00"],
+    ["Saturday",  "10:00 – 16:00"],
+    ["Sunday",    "Closed"]
   ],
 
   facebook: ""                              // CONFIRM WITH CLIENT
@@ -30,7 +34,7 @@ const BRAND = {
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const CLIENT_REF  = "peachstate";
-const APP_VERSION = "0.5.6";
+const APP_VERSION = "0.5.7";
 
 /* ---------- Admin PIN ----------
    DEMO ONLY. This is client-side, so anyone who opens dev tools can read it.
