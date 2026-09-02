@@ -98,6 +98,14 @@ async function createGroupProduct(p){
     })
   }, "PS-306");
 }
+async function updateGroupProduct(id, p){
+  return sb("rpc/ps_admin_update_group_product", {
+    method:"POST", body: JSON.stringify({
+      p_pass: ADMIN_PASSPHRASE, p_id: id, p_name: p.name, p_description: p.description,
+      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url
+    })
+  }, "PS-308");
+}
 async function deleteGroupProduct(id){
   return sb("rpc/ps_admin_delete_group_product", {
     method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })

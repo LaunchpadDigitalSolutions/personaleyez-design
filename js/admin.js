@@ -10,7 +10,7 @@
 const ADMIN_PASSPHRASE = "CSZjmD0Mohgj7EieDXoCu7Onhg1T";
 
 let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
-let openGroup = null, openGroupProducts = [];
+let openGroup = null, openGroupProducts = [], editingGroupProduct = null;
 let lastCreatedRef = null;   // survives the auto-refresh re-render
 const $ = id => document.getElementById(id);
 const LIVE = ["enquiry", "in_production", "ready"];
@@ -338,10 +338,11 @@ async function openGroupPanel(id){
   catch(e){ openGroupProducts = []; }
   render();
 }
-function closeGroupPanel(){ openGroup = null; openGroupProducts = []; render(); }
+function closeGroupPanel(){ openGroup = null; openGroupProducts = []; editingGroupProduct = null; render(); }
 
 function renderGroupDetail(p){
   const g = openGroup;
+  const editing = editingGroupProduct;
   p.innerHTML = `
     <button class="ghost" onclick="closeGroupPanel()"
       style="min-height:44px;padding:0 18px;border-radius:2px;background:var(--cream-deep);margin-bottom:16px">
@@ -352,22 +353,25 @@ function renderGroupDetail(p){
       <div class="ometa">Web name <strong>${g.slug}</strong> · Code <strong>${g.access_code}</strong></div>
     </div>
 
-    <div class="newcard" style="margin:18px 0">
-      <h2 style="font-size:19px;font-family:var(--display)">Add an item</h2>
+    <div class="newcard" style="margin:18px 0" id="np-card">
+      <h2 style="font-size:19px;font-family:var(--display)">${editing ? "Edit item" : "Add an item"}</h2>
       <div class="fld"><label for="np-name">Item name</label>
-        <input id="np-name" type="text" placeholder="Club hoodie" autocomplete="off"></div>
+        <input id="np-name" type="text" placeholder="Club hoodie" autocomplete="off" value="${editing?attr(editing.name):""}"></div>
       <div class="fld"><label for="np-desc">Description (optional)</label>
-        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off"></div>
+        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off" value="${editing?attr(editing.description):""}"></div>
       <div class="fld"><label for="np-price">Price (£)</label>
-        <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off"></div>
+        <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off" value="${editing&&editing.price!=null?editing.price:""}"></div>
       <div class="fld"><label for="np-sizes">Sizes, comma separated</label>
-        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off"></div>
+        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off" value="${editing?attr(editing.sizes):""}"></div>
       <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
-        <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off"></div>
+        <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off" value="${editing?attr(editing.colours):""}"></div>
       <div class="fld"><label for="np-img">Image URL (optional)</label>
-        <input id="np-img" type="url" placeholder="https://…" autocomplete="off"></div>
+        <input id="np-img" type="url" placeholder="https://…" autocomplete="off" value="${editing?attr(editing.image_url):""}"></div>
       <div class="notice" id="np-notice"></div>
-      <button class="btn-solid" id="np-save" onclick="saveGroupProduct()" style="margin-top:18px">Add item</button>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn-solid" id="np-save" onclick="saveGroupProduct()" style="flex:1">${editing ? "Save changes" : "Add item"}</button>
+        ${editing ? `<button class="ghost" onclick="cancelEditGroupProduct()">Cancel</button>` : ""}
+      </div>
     </div>
 
     ${openGroupProducts.length ? openGroupProducts.map(pr => `
@@ -376,34 +380,53 @@ function renderGroupDetail(p){
           <span class="otime">${pr.price!=null?money(pr.price):"—"}</span></div>
         ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
         <div class="ometa">${pr.sizes?"Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
-        <div class="oact"><button class="ghost" onclick="removeGroupProduct('${pr.id}')">Remove</button></div>
+        <div class="oact">
+          <button class="ghost" onclick="editGroupProduct('${pr.id}')">Edit</button>
+          <button class="ghost" onclick="removeGroupProduct('${pr.id}')">Remove</button>
+        </div>
       </div>`).join("")
     : `<p style="text-align:center;color:var(--muted);padding:40px 0">No items in this shop yet.</p>`}`;
 }
+
+function attr(v){ return v == null ? "" : String(v).replace(/"/g,"&quot;"); }
+
+function editGroupProduct(id){
+  editingGroupProduct = openGroupProducts.find(p => p.id === id);
+  render();
+  $("np-card")?.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+function cancelEditGroupProduct(){ editingGroupProduct = null; render(); }
 
 async function saveGroupProduct(){
   const v = id => $(id).value.trim();
   const n = $("np-notice"), btn = $("np-save");
   if(!v("np-name")){ n.className="notice show err"; n.textContent="Give the item a name."; return; }
-  btn.disabled = true; n.className="notice show busy"; n.textContent="Adding…";
+  const payload = {
+    name: v("np-name"), description: v("np-desc") || null,
+    price: v("np-price") ? Number(v("np-price")) : null,
+    sizes: v("np-sizes") || null, colours: v("np-cols") || null,
+    image_url: v("np-img") || null
+  };
+  btn.disabled = true; n.className="notice show busy"; n.textContent = editingGroupProduct ? "Saving…" : "Adding…";
   try{
-    await createGroupProduct({
-      group_id: openGroup.id, name: v("np-name"),
-      description: v("np-desc") || null,
-      price: v("np-price") ? Number(v("np-price")) : null,
-      sizes: v("np-sizes") || null, colours: v("np-cols") || null,
-      image_url: v("np-img") || null,
-      sort_order: openGroupProducts.length
-    });
+    if(editingGroupProduct){
+      await updateGroupProduct(editingGroupProduct.id, payload);
+      editingGroupProduct = null;
+      toast("Item updated");
+    }else{
+      await createGroupProduct({ ...payload, group_id: openGroup.id, sort_order: openGroupProducts.length });
+      toast("Item added");
+    }
     openGroupProducts = await listGroupProducts(openGroup.id);
-    toast("Item added"); render();
-  }catch(e){ n.className="notice show err"; n.textContent="Couldn't add that ("+e.message+")."; }
+    render();
+  }catch(e){ n.className="notice show err"; n.textContent="Couldn't save that ("+e.message+")."; }
   btn.disabled = false;
 }
 
 async function removeGroupProduct(id){
   try{
     await deleteGroupProduct(id);
+    if(editingGroupProduct && editingGroupProduct.id === id) editingGroupProduct = null;
     openGroupProducts = await listGroupProducts(openGroup.id);
     toast("Removed"); render();
   }catch(e){ toast("Couldn't remove that"); }
