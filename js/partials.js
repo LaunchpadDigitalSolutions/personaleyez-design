@@ -3,6 +3,7 @@
    ============================================================ */
 const NAV = [
   ["index.html",    "Home"],
+  ["shop.html",     "Shop"],
   ["services.html", "What We Make"],
   ["schools.html",  "Schools"],
   ["clubs.html",    "Club Shops"],

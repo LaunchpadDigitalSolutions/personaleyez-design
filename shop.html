@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EE">
+<link rel="icon" href="img/icon-180.png?v=0.6.0">
+<link rel="apple-touch-icon" href="img/icon-180.png?v=0.6.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=0.6.0">
+<title>Shop — Peach State</title>
+<meta name="description" content="Personalised gifts and everyday pieces, made on York Road — buy online, pay by card.">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<div class="health" id="health">We can't reach the shop just now — please give us a ring.</div>
+
+<section class="sec" id="shop">
+  <div class="wrap">
+    <span class="label">Shop</span>
+    <h1 class="display-lg" style="margin-top:18px">Made just <span class="italic tera">for you.</span></h1>
+    <p class="body" style="margin-top:22px">Pick something below and pay by card — we'll have it ready and let you know.</p>
+  </div>
+
+  <div class="collection" id="p-products" style="margin-top:56px"></div>
+
+  <div class="wrap" style="margin-top:64px">
+    <div class="trackbox" id="p-basketbox" style="display:none">
+      <span class="label">Your basket</span>
+      <ul class="dl" id="p-basket"></ul>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px">
+        <span class="label">Total</span>
+        <span class="track-ref" id="p-total">£0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap-narrow" id="p-checkout" style="display:none;margin-top:48px">
+    <h2 class="display-md">Who's it for?</h2>
+    <div class="fld"><label for="p-cname">Your name</label><input id="p-cname" type="text" autocomplete="name"></div>
+    <div class="fld"><label for="p-cphone">Phone</label><input id="p-cphone" type="tel" autocomplete="tel"></div>
+    <div class="fld"><label for="p-cemail">Email (optional)</label><input id="p-cemail" type="email" autocomplete="email"></div>
+    <div class="fld"><label for="p-cnote">Personalisation / notes (optional)</label>
+      <textarea id="p-cnote" placeholder="e.g. embroider 'Ella M' on the hoodie"></textarea></div>
+    <div class="notice" id="p-notice"></div>
+    <button class="btn-solid" id="p-pay" onclick="startShopCheckout()" style="margin-top:30px">Pay with card</button>
+    <p class="body dim" style="font-size:13.5px;margin-top:16px">
+      You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
+  </div>
+</section>
+
+<nav class="mobilebar">
+  <a href="#" data-brand-href="phoneLink">Call</a>
+  <a href="contact.html" class="accent">Enquire</a>
+</nav>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/config.js?v=0.6.0"></script>
+<script src="js/api.js?v=0.6.0"></script>
+<script src="js/partials.js?v=0.6.0"></script>
+<script src="js/shop.js?v=0.6.0"></script>
+</body>
+</html>

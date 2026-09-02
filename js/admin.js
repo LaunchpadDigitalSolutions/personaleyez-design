@@ -65,10 +65,16 @@ function stats() {
     <div class="stat"><b>${money(owed)}</b><span>Still to collect</span></div>`;
 }
 
+let shopLoaded = false;
 function setTab(t) {
   if (tab === "new" && t !== "new") lastCreatedRef = null;
   tab = t;
   document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === t));
+  if (t === "shop" && !shopLoaded) {
+    shopLoaded = true;
+    loadShopProducts().then(render);
+    return;
+  }
   render();
 }
 
@@ -148,6 +154,7 @@ function newOrderForm() {
 function render() {
   const p = $("panel");
   if (tab === "groups")  { renderGroups(p);  return; }
+  if (tab === "shop")    { renderShop(p);    return; }
   if (tab === "content") { renderContent(p); return; }
   if (tab === "new") { p.innerHTML = newOrderForm(); return; }
   if (tab === "enq") {
