@@ -38,7 +38,18 @@ async function load() {
     ]);
     $("health").style.display = "none";
   } catch (e) { $("health").style.display = "block"; return; }
-  stats(); render();
+  stats();
+  // The 30s auto-refresh used to redraw the whole panel underneath
+  // whoever was mid-typing into a form (New order, Add a club shop,
+  // Add an item), wiping out anything they'd entered. Skip the redraw
+  // while focus is on a field inside the panel - data is still fetched
+  // above, the screen just waits until they're not actively typing.
+  const active = document.activeElement;
+  const panel = $("panel");
+  const isTyping = active && panel && panel.contains(active) &&
+    ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName);
+  if (isTyping) return;
+  render();
 }
 
 function stats() {
