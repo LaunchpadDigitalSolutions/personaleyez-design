@@ -105,6 +105,40 @@ async function deleteGroupProduct(id){
 }
 
 /* ============================================================
+   Shop — PS-5xx
+   Public catalog read (RLS: anon sees active=true only). Writes are
+   admin-only via the passphrase-gated functions, same pattern as groups.
+   ============================================================ */
+
+async function listShopProducts(){
+  return sb("ps_products?select=*&active=eq.true&order=sort_order,name", {}, "PS-500");
+}
+async function adminListShopProducts(){
+  return sb("rpc/ps_admin_list_shop_products", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE })
+  }, "PS-501");
+}
+async function createShopProduct(p){
+  return sb("rpc/ps_admin_create_shop_product", {
+    method:"POST", body: JSON.stringify({
+      p_pass: ADMIN_PASSPHRASE, p_name: p.name, p_description: p.description,
+      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours,
+      p_image_url: p.image_url, p_category: p.category, p_sort_order: p.sort_order
+    })
+  }, "PS-502");
+}
+async function updateShopProduct(id, patch){
+  return sb("rpc/ps_admin_update_shop_product", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_active: patch.active })
+  }, "PS-503");
+}
+async function deleteShopProduct(id){
+  return sb("rpc/ps_admin_delete_shop_product", {
+    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
+  }, "PS-504");
+}
+
+/* ============================================================
    Editable copy — PS-4xx
    ============================================================ */
 
