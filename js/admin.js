@@ -234,11 +234,11 @@ function renderGroups(p){
       <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
         Give them the club name and the code, and they can order their own kit.</p>
       <div class="fld"><label for="ng-name">Club or team name</label>
-        <input id="ng-name" type="text" placeholder="Starlight Dance Academy" oninput="autoSlug()"></div>
+        <input id="ng-name" type="text" placeholder="Starlight Dance Academy" oninput="autoSlug()" autocomplete="off"></div>
       <div class="fld"><label for="ng-slug">Web name (what they type in)</label>
-        <input id="ng-slug" type="text" placeholder="starlight-dance"></div>
+        <input id="ng-slug" type="text" placeholder="starlight-dance" autocomplete="off"></div>
       <div class="fld"><label for="ng-code">Access code</label>
-        <input id="ng-code" type="text" style="text-transform:uppercase"></div>
+        <input id="ng-code" type="text" style="text-transform:uppercase" autocomplete="off"></div>
       <div class="fld"><label for="ng-kind">Type</label>
         <select id="ng-kind">
           <option value="club">Dance club / team</option>
@@ -331,17 +331,17 @@ function renderGroupDetail(p){
     <div class="newcard" style="margin:18px 0">
       <h2 style="font-size:19px;font-family:var(--display)">Add an item</h2>
       <div class="fld"><label for="np-name">Item name</label>
-        <input id="np-name" type="text" placeholder="Club hoodie"></div>
+        <input id="np-name" type="text" placeholder="Club hoodie" autocomplete="off"></div>
       <div class="fld"><label for="np-desc">Description (optional)</label>
-        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back"></div>
+        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off"></div>
       <div class="fld"><label for="np-price">Price (£)</label>
-        <input id="np-price" type="number" step="0.01" inputmode="decimal"></div>
+        <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off"></div>
       <div class="fld"><label for="np-sizes">Sizes, comma separated</label>
-        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L"></div>
+        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off"></div>
       <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
-        <input id="np-cols" type="text" placeholder="Navy, Black"></div>
+        <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off"></div>
       <div class="fld"><label for="np-img">Image URL (optional)</label>
-        <input id="np-img" type="url" placeholder="https://…"></div>
+        <input id="np-img" type="url" placeholder="https://…" autocomplete="off"></div>
       <div class="notice" id="np-notice"></div>
       <button class="btn-solid" id="np-save" onclick="saveGroupProduct()" style="margin-top:18px">Add item</button>
     </div>
