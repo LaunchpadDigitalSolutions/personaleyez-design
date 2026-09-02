@@ -99,6 +99,66 @@ async function pushImageToSquare(token, itemId, bytes, contentType) {
   return true;
 }
 
+/* ============================================================
+   DELETE /api/product-photo
+   Body: JSON { item_id }
+   Removes our own R2 copy AND any image objects Square has
+   attached to that item, so a test/wrong photo doesn't linger in
+   Jo's Square media library after the fact.
+   Error codes: PSQ-3xx
+   ============================================================ */
+
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "PSQ-301: expected JSON body" }, 400);
+  }
+  const itemId = body.item_id;
+  if (!itemId) return json({ error: "PSQ-302: missing item_id" }, 400);
+
+  if (env.PRODUCT_IMAGES) {
+    try { await env.PRODUCT_IMAGES.delete(itemId); }
+    catch (e) { console.error("PSQ-303", e.message); }
+  }
+
+  let removedFromSquare = false;
+  let squareWarning = null;
+  if (env.SQUARE_ACCESS_TOKEN) {
+    try {
+      removedFromSquare = await removeImagesFromSquare(env.SQUARE_ACCESS_TOKEN, itemId);
+    } catch (e) {
+      console.error("PSQ-304", e.message);
+      squareWarning = "PSQ-304: removed here, but couldn't clean up Square (" + e.message + ")";
+    }
+  }
+
+  return json({ removed: true, removed_from_square: removedFromSquare, square_warning: squareWarning });
+}
+
+async function removeImagesFromSquare(token, itemId) {
+  const getRes = await fetch(
+    "https://connect.squareup.com/v2/catalog/object/" + itemId + "?include_related_objects=true",
+    { headers: { "Authorization": "Bearer " + token, "Square-Version": "2025-01-23" } }
+  );
+  if (!getRes.ok) throw new Error("lookup failed " + getRes.status);
+  const data = await getRes.json();
+  const imageIds = data.object?.item_data?.image_ids || [];
+  if (!imageIds.length) return true; // nothing attached - nothing to do
+
+  for (const imageId of imageIds) {
+    const delRes = await fetch("https://connect.squareup.com/v2/catalog/object/" + imageId, {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + token, "Square-Version": "2025-01-23" }
+    });
+    if (!delRes.ok) throw new Error("delete " + imageId + " failed " + delRes.status);
+  }
+  return true;
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
