@@ -97,7 +97,7 @@ async function onSquarePhotoChosen(event){
 
     const item = squareItems.find(i => i.id === itemId);
     if(item) item.photo_url = data.photo_url + "?v=" + Date.now();
-    toast("Photo saved");
+    toast(data.pushed_to_square ? "Photo saved and pushed to Square" : "Photo saved (didn't reach Square - check connection)");
     render();
   }catch(e){
     toast("Couldn't upload that photo");

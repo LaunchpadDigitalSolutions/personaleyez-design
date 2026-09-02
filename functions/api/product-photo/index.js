@@ -1,9 +1,10 @@
 /* ============================================================
    POST /api/product-photo
    Body: multipart/form-data with fields "item_id" and "file".
-   Stores the image in R2, keyed by the Square item id, overwriting
-   any previous photo for that item (upload = replace, on purpose -
-   one photo per product, no cleanup step needed).
+   Stores the image in R2 (keyed by Square item id, so our admin page
+   and shop.html can show it instantly), then pushes the same photo
+   into Square's own catalog attached to that item - so it shows up
+   in Jo's Square app, POS and online store too, not just our site.
    Error codes: PSQ-1xx
    ============================================================ */
 
@@ -50,7 +51,52 @@ export async function onRequestPost(context) {
     return json({ error: "PSQ-107: upload failed" }, 502);
   }
 
-  return json({ photo_url: "/api/product-photo/" + itemId });
+  // Best-effort push to Square. If this fails, the photo is still
+  // live on our own site (from R2 above) - we just note it didn't
+  // reach Square this time, rather than failing the whole upload.
+  let pushedToSquare = false;
+  let squareWarning = null;
+  if (env.SQUARE_ACCESS_TOKEN) {
+    try {
+      pushedToSquare = await pushImageToSquare(env.SQUARE_ACCESS_TOKEN, itemId, bytes, file.type);
+    } catch (e) {
+      console.error("PSQ-108", e.message);
+      squareWarning = "PSQ-108: saved here, but didn't reach Square (" + e.message + ")";
+    }
+  }
+
+  return json({
+    photo_url: "/api/product-photo/" + itemId,
+    pushed_to_square: pushedToSquare,
+    square_warning: squareWarning
+  });
+}
+
+async function pushImageToSquare(token, itemId, bytes, contentType) {
+  const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+  const sqForm = new FormData();
+  sqForm.append("request", JSON.stringify({
+    idempotency_key: crypto.randomUUID(),
+    object_id: itemId,
+    is_primary: true,
+    image: { type: "IMAGE", id: "#photo", image_data: {} }
+  }));
+  sqForm.append("file", new Blob([bytes], { type: contentType }), "photo." + ext);
+
+  const res = await fetch("https://connect.squareup.com/v2/catalog/images", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Square-Version": "2025-01-23"
+    },
+    body: sqForm
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error("Square " + res.status + ": " + detail.slice(0, 200));
+  }
+  return true;
 }
 
 function json(body, status = 200) {
