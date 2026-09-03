@@ -17,7 +17,7 @@ export async function onRequestGet(context) {
 
   let catalogRes;
   try {
-    catalogRes = await fetch("https://connect.squareup.com/v2/catalog/list?types=ITEM", {
+    catalogRes = await fetch("https://connect.squareup.com/v2/catalog/list?types=ITEM,CATEGORY", {
       headers: {
         "Authorization": "Bearer " + env.SQUARE_ACCESS_TOKEN,
         "Square-Version": "2025-01-23"
@@ -36,9 +36,14 @@ export async function onRequestGet(context) {
   const data = await catalogRes.json();
   const objects = data.objects || [];
 
+  const categoryNames = {};
+  objects.filter(o => o.type === "CATEGORY").forEach(o => {
+    categoryNames[o.id] = o.category_data?.name || "Unnamed category";
+  });
+
   // Flatten Square's nested item -> item_data -> variations shape into
   // something simple for the admin page to render.
-  const items = objects.map(obj => {
+  const items = objects.filter(o => o.type === "ITEM").map(obj => {
     const d = obj.item_data || {};
     const variations = (d.variations || []).map(v => {
       const vd = v.item_variation_data || {};
@@ -51,11 +56,15 @@ export async function onRequestGet(context) {
       };
     });
     const prices = variations.map(v => v.price).filter(p => p != null);
+    // Square API has moved from a single category_id to a categories
+    // array over time - check both so this keeps working either way.
+    const catId = d.category_id || d.categories?.[0]?.id || null;
     return {
       id: obj.id,
       name: d.name || "Unnamed item",
       description: d.description || null,
-      category_id: d.category_id || null,
+      category_id: catId,
+      category_name: catId ? (categoryNames[catId] || null) : null,
       variations,
       price_from: prices.length ? Math.min(...prices) : null
     };
