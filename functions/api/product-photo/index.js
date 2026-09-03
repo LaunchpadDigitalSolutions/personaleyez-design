@@ -128,7 +128,7 @@ export async function onRequestDelete(context) {
 
   let removedFromSquare = false;
   let squareWarning = null;
-  if (env.SQUARE_ACCESS_TOKEN) {
+  if (env.SQUARE_ACCESS_TOKEN && !itemId.startsWith("club-")) {
     try {
       removedFromSquare = await removeImagesFromSquare(env.SQUARE_ACCESS_TOKEN, itemId);
     } catch (e) {
