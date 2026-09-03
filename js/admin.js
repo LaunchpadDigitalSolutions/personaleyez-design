@@ -365,8 +365,17 @@ function renderGroupDetail(p){
         <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off" value="${editing?attr(editing.sizes):""}"></div>
       <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
         <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off" value="${editing?attr(editing.colours):""}"></div>
-      <div class="fld"><label for="np-img">Image URL (optional)</label>
-        <input id="np-img" type="url" placeholder="https://…" autocomplete="off" value="${editing?attr(editing.image_url):""}"></div>
+      <div class="fld"><label>Photo (optional)</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="np-img-preview" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;
+               background:var(--cream-deep);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">
+            ${editing && editing.image_url ? `<img src="${editing.image_url}" style="width:100%;height:100%;object-fit:cover">` : "No photo"}
+          </div>
+          <button type="button" class="ghost" onclick="chooseGroupProductPhoto()">${editing && editing.image_url ? "Replace photo" : "Upload photo"}</button>
+        </div>
+        <input type="hidden" id="np-img" value="${editing?attr(editing.image_url):""}">
+        <input type="file" id="gp-file-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onGroupProductPhotoChosen(event)">
+      </div>
       <div class="notice" id="np-notice"></div>
       <div style="display:flex;gap:10px;margin-top:18px">
         <button class="btn-solid" id="np-save" onclick="saveGroupProduct()" style="flex:1">${editing ? "Save changes" : "Add item"}</button>
@@ -388,7 +397,42 @@ function renderGroupDetail(p){
     : `<p style="text-align:center;color:var(--muted);padding:40px 0">No items in this shop yet.</p>`}`;
 }
 
-function attr(v){ return v == null ? "" : String(v).replace(/"/g,"&quot;"); }
+function chooseGroupProductPhoto(){
+  if(!editingGroupProduct){
+    toast("Save the item first, then edit it to add a photo");
+    return;
+  }
+  $("gp-file-input").click();
+}
+
+async function onGroupProductPhotoChosen(event){
+  const file = event.target.files[0];
+  if(!file || !editingGroupProduct) return;
+
+  const preview = $("np-img-preview");
+  const originalHtml = preview.innerHTML;
+  preview.textContent = "…";
+
+  try{
+    const form = new FormData();
+    form.append("item_id", editingGroupProduct.id);
+    form.append("file", file);
+    form.append("skip_square", "true");
+    const res = await fetch("/api/product-photo", { method:"POST", body: form });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "upload failed");
+
+    const url = data.photo_url + "?v=" + Date.now();
+    $("np-img").value = url;
+    editingGroupProduct.image_url = url;
+    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+    toast("Photo uploaded");
+  }catch(e){
+    preview.innerHTML = originalHtml;
+    toast("Couldn't upload that photo");
+  }
+  event.target.value = "";
+}
 
 function editGroupProduct(id){
   editingGroupProduct = openGroupProducts.find(p => p.id === id);

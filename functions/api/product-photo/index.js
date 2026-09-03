@@ -27,6 +27,7 @@ export async function onRequestPost(context) {
 
   const itemId = form.get("item_id");
   const file = form.get("file");
+  const skipSquare = form.get("skip_square") === "true";
 
   if (!itemId || typeof itemId !== "string") {
     return json({ error: "PSQ-103: missing item_id" }, 400);
@@ -56,7 +57,7 @@ export async function onRequestPost(context) {
   // reach Square this time, rather than failing the whole upload.
   let pushedToSquare = false;
   let squareWarning = null;
-  if (env.SQUARE_ACCESS_TOKEN) {
+  if (!skipSquare && env.SQUARE_ACCESS_TOKEN) {
     try {
       pushedToSquare = await pushImageToSquare(env.SQUARE_ACCESS_TOKEN, itemId, bytes, file.type);
     } catch (e) {
