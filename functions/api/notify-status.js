@@ -9,7 +9,7 @@
    Error codes: PSE-1xx
    ============================================================ */
 
-import { sendEmail, customerEmailFor } from "../_lib/resend.js";
+import { sendEmail, customerEmailFor } from "../lib/resend.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;

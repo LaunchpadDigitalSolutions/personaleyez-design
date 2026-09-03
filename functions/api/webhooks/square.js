@@ -8,7 +8,7 @@
    https://developer.squareup.com/docs/webhooks/step3validate
    ============================================================ */
 
-import { sendEmail, customerEmailFor, ownerNewOrderEmail, ownerEmail } from "../_lib/resend.js";
+import { sendEmail, customerEmailFor, ownerNewOrderEmail, ownerEmail } from "../lib/resend.js";
 
 async function isValidSignature(signatureKey, notificationUrl, rawBody, receivedSignature) {
   const key = await crypto.subtle.importKey(
