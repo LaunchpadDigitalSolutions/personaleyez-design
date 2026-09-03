@@ -234,6 +234,13 @@ async function saveOrder() {
     });
     lastCreatedRef = o.order_ref;
     toast("Created " + o.order_ref);
+    // Same fire-and-forget pattern as advance() - order's already saved
+    // regardless of whether the email sends.
+    fetch("/api/notify-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: o.id, status: "enquiry" })
+    }).catch(() => {});
     ["n-name","n-phone","n-email","n-desc","n-total","n-notes","n-due"].forEach(id => $(id).value = "");
     $("n-qty").value = 1; $("n-dep").value = 0;
     await load();
