@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EE">
+<link rel="icon" href="img/icon-180.png?v=0.6.7">
+<link rel="apple-touch-icon" href="img/icon-180.png?v=0.6.7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=0.6.7">
+<title>Order school uniform — Peach State</title>
+<meta name="description" content="Pick your school, choose your uniform, and order online — embroidered logo included, initials on request.">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<div class="health" id="health">We can't reach the shop just now — please give us a ring.</div>
+
+<section class="sec" id="su">
+  <div class="wrap">
+    <span class="label">School uniform</span>
+    <h1 class="display-lg" style="margin-top:18px">Pick your school<span class="italic tera">.</span></h1>
+    <p class="body" style="margin-top:22px">Choose your school below, then the pieces you need. Every item comes with the school crest embroidered on — initials can be added too.</p>
+  </div>
+
+  <div class="wrap" style="margin-top:40px">
+    <div id="su-tabs" class="su-tabs"></div>
+
+    <div id="su-preview" class="su-preview"></div>
+
+    <div id="su-list" class="su-list" style="margin-top:24px"></div>
+
+    <div id="su-picker" class="su-picker" style="display:none;margin-top:24px"></div>
+  </div>
+
+  <div class="wrap" style="margin-top:48px">
+    <div class="trackbox" id="su-basketbox" style="display:none">
+      <span class="label">Your order</span>
+      <ul class="dl" id="su-basket"></ul>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px">
+        <span class="label">Total</span>
+        <span class="track-ref" id="su-total">£0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap-narrow" id="su-checkout" style="display:none;margin-top:48px">
+    <h2 class="display-md">Who's it for?</h2>
+    <div class="fld"><label for="su-cname">Your name</label><input id="su-cname" type="text" autocomplete="name"></div>
+    <div class="fld"><label for="su-cphone">Phone</label><input id="su-cphone" type="tel" autocomplete="tel"></div>
+    <div class="fld"><label for="su-cemail">Email (optional)</label><input id="su-cemail" type="email" autocomplete="email"></div>
+    <div class="notice" id="su-notice"></div>
+    <button class="btn-solid" id="su-pay" onclick="startUniformCheckout()" style="margin-top:30px">Pay with card</button>
+    <p class="body dim" style="font-size:13.5px;margin-top:16px">
+      You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
+  </div>
+</section>
+
+<nav class="mobilebar">
+  <a href="#" data-brand-href="phoneLink">Call</a>
+  <a href="contact.html" class="accent">Enquire</a>
+</nav>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/config.js?v=0.6.7"></script>
+<script src="js/api.js?v=0.6.7"></script>
+<script src="js/partials.js?v=0.6.7"></script>
+<script src="js/schools-shop.js?v=0.6.7"></script>
+</body>
+</html>

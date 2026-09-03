@@ -500,3 +500,28 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .imgwrap.noimg{background:var(--cream-deep);display:flex;align-items:center;
   justify-content:center;padding:24px;text-align:center}
 .imgwrap.noimg span{font-family:var(--display);font-size:19px;color:var(--muted);line-height:1.2}
+
+/* ---------- school uniform ordering ---------- */
+.su-tabs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.su-tab{flex-shrink:0;border-radius:24px;padding:11px 20px;font-size:14px;font-weight:500;
+  background:#fff;color:var(--sage-deep);border:0.5px solid var(--line);white-space:nowrap}
+.su-tab.on{background:var(--terracotta);color:#fff;border-color:var(--terracotta)}
+.su-preview{margin-top:20px;aspect-ratio:4/3;border-radius:var(--s3);overflow:hidden;
+  background:var(--cream-deep);display:flex;align-items:center;justify-content:center}
+.su-preview img{width:100%;height:100%;object-fit:cover}
+.su-preview-empty{font-family:var(--display);font-size:18px;color:var(--muted);padding:0 24px;text-align:center}
+.su-row{cursor:pointer;padding:18px 16px;border-bottom:0.5px solid var(--line);border-radius:var(--s2)}
+.su-row.on{background:var(--cream-deep)}
+.su-row-name{font-size:16px;font-weight:500;color:var(--ink)}
+.su-row-meta{font-size:13px;color:var(--muted);margin-top:3px}
+.su-row-price{font-size:15px;font-weight:500;color:var(--terracotta-deep);margin-top:8px}
+.su-picker{background:#fff;border:0.5px solid var(--line);border-radius:var(--s3);padding:24px}
+.su-toggles{margin-top:18px;border-top:0.5px solid var(--line);padding-top:16px}
+.su-toggles label{display:flex;justify-content:space-between;align-items:center;
+  font-size:14px;margin-bottom:12px}
+.su-toggles label:last-child{margin-bottom:0}
+
+@media (min-width:701px){
+  .su-preview{aspect-ratio:16/9}
+}
+
