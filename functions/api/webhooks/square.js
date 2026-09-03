@@ -8,6 +8,8 @@
    https://developer.squareup.com/docs/webhooks/step3validate
    ============================================================ */
 
+import { sendEmail, customerEmailFor, ownerNewOrderEmail, ownerEmail } from "../_lib/resend.js";
+
 async function isValidSignature(signatureKey, notificationUrl, rawBody, receivedSignature) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -83,6 +85,18 @@ export async function onRequestPost(context) {
     // Square retries failed webhooks, so a 500 here means it'll try again
     // rather than silently losing the payment update.
     return new Response("PSC-106: couldn't update order", { status: 500 });
+  }
+
+  // Fire off both emails - these never affect whether the payment itself
+  // succeeded, so failures here are logged and swallowed, not thrown.
+  const order = await dbRes.json();
+  if (order && order.order_ref) {
+    const customerTpl = customerEmailFor("enquiry", order);
+    if (customerTpl && order.customer_email) {
+      await sendEmail(env, { to: order.customer_email, ...customerTpl });
+    }
+    const ownerTpl = ownerNewOrderEmail(order);
+    await sendEmail(env, { to: ownerEmail(env), ...ownerTpl });
   }
 
   return new Response("ok", { status: 200 });

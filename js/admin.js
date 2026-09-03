@@ -180,7 +180,18 @@ function copyRef(ref){
 }
 
 async function advance(id, status) {
-  try { await updateOrder(id, { status }); toast("Updated"); load(); }
+  try {
+    await updateOrder(id, { status });
+    toast("Updated");
+    load();
+    // Fire-and-forget - the status change already succeeded regardless
+    // of whether the email sends.
+    fetch("/api/notify-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: id, status })
+    }).catch(() => {});
+  }
   catch (e) { toast(e.message); }
 }
 async function markHandled(id) {
