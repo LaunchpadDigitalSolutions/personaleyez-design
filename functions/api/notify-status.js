@@ -4,12 +4,63 @@
    Called by the admin dashboard right after it moves an order to
    in_production or ready. Looks the order up, emails the customer,
    and (for ready) marks ready_notified so it's never sent twice.
-   Never blocks the status change itself - admin.js fires this after
-   the update already succeeded and ignores the result.
+
+   Email helpers inlined (see webhooks/square.js note) - Cloudflare's
+   zero-config Pages Functions build can't resolve imports to
+   non-route sibling files.
    Error codes: PSE-1xx
    ============================================================ */
 
-import { sendEmail, customerEmailFor } from "../lib/resend.js";
+const EMAIL_FROM = "Peach State <orders@peachstate.co.uk>";
+
+async function sendEmail(env, { to, subject, html }) {
+  if (!env.RESEND_API_KEY) { console.error("PSE-001: RESEND_API_KEY not configured"); return false; }
+  if (!to) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + env.RESEND_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: EMAIL_FROM, to, subject, html })
+    });
+    if (!res.ok) { console.error("PSE-002", res.status, await res.text()); return false; }
+    return true;
+  } catch (e) { console.error("PSE-003", e.message); return false; }
+}
+
+const EMAIL_WRAP = body => `
+  <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:24px;color:#3a3a2e">
+    <h2 style="color:#8a9a7e;margin:0 0 16px">Peach State</h2>
+    ${body}
+    <p style="margin-top:32px;font-size:13px;color:#999">Personalised Design · peachstate.co.uk</p>
+  </div>`;
+
+function customerEmailFor(status, order) {
+  const ref = order.order_ref;
+  const templates = {
+    enquiry: {
+      subject: `Order received — ${ref}`,
+      html: EMAIL_WRAP(`
+        <p>Hi ${order.customer_name || "there"},</p>
+        <p>Thanks — we've received your order <strong>${ref}</strong> and it's now in our queue.</p>
+        <p>${order.description || ""}</p>
+        <p>We'll email you again once it's in production, and again when it's ready to collect.</p>`)
+    },
+    in_production: {
+      subject: `Your order is in production — ${ref}`,
+      html: EMAIL_WRAP(`
+        <p>Hi ${order.customer_name || "there"},</p>
+        <p>Good news — order <strong>${ref}</strong> is now being made.</p>
+        <p>We'll email you as soon as it's ready to collect.</p>`)
+    },
+    ready: {
+      subject: `Ready to collect — ${ref}`,
+      html: EMAIL_WRAP(`
+        <p>Hi ${order.customer_name || "there"},</p>
+        <p>Order <strong>${ref}</strong> is ready for collection whenever suits you.</p>`)
+    }
+  };
+  return templates[status] || null;
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -42,7 +93,6 @@ export async function onRequestPost(context) {
   const order = rows[0];
   if (!order) return json({ error: "PSE-105: order not found" }, 404);
 
-  // "ready" only ever fires once per order.
   if (status === "ready" && order.ready_notified) {
     return json({ sent: false, reason: "already notified" });
   }
