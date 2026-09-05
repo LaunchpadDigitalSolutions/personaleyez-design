@@ -70,6 +70,9 @@ function setTab(t) {
   if (tab === "new" && t !== "new") lastCreatedRef = null;
   tab = t;
   document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === t));
+  // Keep the URL in sync so a refresh lands back where Jo was, not the
+  // Live tab. history.replaceState avoids stacking up back-button entries.
+  history.replaceState(null, "", "#" + t);
   if (t === "shop" && !shopLoaded) {
     shopLoaded = true;
     loadShopProducts().then(render);
@@ -354,9 +357,14 @@ async function openGroupPanel(id){
   openGroup = groups.find(g => g.id === id);
   try{ openGroupProducts = await listGroupProducts(id); }
   catch(e){ openGroupProducts = []; }
+  history.replaceState(null, "", "#groups:" + id);
   render();
 }
-function closeGroupPanel(){ openGroup = null; openGroupProducts = []; editingGroupProduct = null; render(); }
+function closeGroupPanel(){
+  openGroup = null; openGroupProducts = []; editingGroupProduct = null;
+  history.replaceState(null, "", "#groups");
+  render();
+}
 
 function renderGroupDetail(p){
   const g = openGroup;
@@ -552,8 +560,26 @@ function unlockAdmin(){
   if (!window.__adminBooted) {
     window.__adminBooted = true;
     listContent().then(r => contentRows = r).catch(()=>{});
-    load();
+    load().then(restoreTabFromHash);
     setInterval(load, 30000);
+  }
+}
+
+// Reads #tab or #groups:<id> from the URL so a refresh (or a bookmarked
+// link) lands Jo back where she was instead of always the Live tab.
+async function restoreTabFromHash(){
+  const hash = location.hash.replace(/^#/, "");
+  if (!hash) return;
+  const [wantedTab, groupId] = hash.split(":");
+  const validTabs = ["live","all","enq","new","groups","shop","products","content"];
+  if (!validTabs.includes(wantedTab)) return;
+
+  if (wantedTab === "groups" && groupId) {
+    tab = "groups";
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === "groups"));
+    await openGroupPanel(groupId);
+  } else {
+    setTab(wantedTab);
   }
 }
 
