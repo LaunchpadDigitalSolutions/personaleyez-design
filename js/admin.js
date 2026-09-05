@@ -30,6 +30,7 @@ function ago(ts) {
   return Math.floor(h / 24) + "d ago";
 }
 const money = n => n == null ? "—" : "£" + Number(n).toFixed(2);
+const attr = v => v == null ? "" : String(v).replace(/"/g, "&quot;");
 
 async function load() {
   try {
