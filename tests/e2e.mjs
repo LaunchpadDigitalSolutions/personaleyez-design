@@ -50,10 +50,15 @@ const rpc = (fn, body) =>
    behind and reported at the end; purge them with the SQL in the README. */
 async function cleanup() {
   try {
-    const gs = await sb(`ps_groups?slug=like.zztest*&select=id`);
-    for (const g of gs) {
-      await sb(`ps_group_products?group_id=eq.${g.id}`, { method: "DELETE" });
-      await sb(`ps_groups?id=eq.${g.id}`, { method: "DELETE" });
+    const list = await sb(`rpc/ps_admin_list_groups`, { method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASS }) });
+    for (const g of (list || []).filter(g => g.slug && g.slug.toLowerCase().startsWith("zztest"))) {
+      const prods = await sb(`rpc/ps_admin_list_group_products`, {
+        method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASS, p_group_id: g.id })
+      });
+      for (const p of (prods || [])) {
+        await sb(`rpc/ps_admin_delete_group_product`, { method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: p.id }) });
+      }
+      await sb(`rpc/ps_admin_delete_group`, { method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: g.id }) });
     }
     await sb(`ps_content?ckey=like.zztest*`, { method: "DELETE" });
   } catch (e) { console.log("  (cleanup warning: " + e.message + ")"); }
@@ -125,15 +130,18 @@ async function run() {
   /* ---------- 5. Club shops + access control ---------- */
   group("Club shops");
   const slug = TAG.toLowerCase() + "-club";
-  const [club] = await sb("ps_groups", {
-    method: "POST", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ slug, name: TAG + " Club", kind: "club", access_code: "ZZCODE", active: true })
-  });
-  ok("club created", !!club);
-
-  await sb("ps_group_products", {
+  const club = await sb("rpc/ps_admin_create_group", {
     method: "POST",
-    body: JSON.stringify({ group_id: club.id, name: "E2E hoodie", price: 25, sizes: "S, M, L" })
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_name: TAG + " Club", p_slug: slug,
+      p_code: "ZZCODE", p_kind: "club", p_intro: null, p_active: true })
+  });
+  ok("club created", !!club && club.slug === slug);
+
+  await sb("rpc/ps_admin_create_group_product", {
+    method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_group_id: club.id, p_name: "E2E hoodie",
+      p_description: null, p_price: 25, p_sizes: "S, M, L", p_colours: null,
+      p_image_url: null, p_sort_order: 0 })
   });
 
   const good = await rpc("ps_group_login", { p_slug: slug, p_code: "ZZCODE" });
@@ -152,17 +160,30 @@ async function run() {
   const noClub = await rpc("ps_group_login", { p_slug: "does-not-exist", p_code: "ZZCODE" });
   ok("unknown club denied", noClub.ok === false);
 
-  await sb(`ps_groups?id=eq.${club.id}`, { method: "PATCH", body: JSON.stringify({ active: false }) });
+  await sb("rpc/ps_admin_update_group", { method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: club.id, p_active: false }) });
   const paused = await rpc("ps_group_login", { p_slug: slug, p_code: "ZZCODE" });
   ok("paused club denied", paused.ok === false);
-  await sb(`ps_groups?id=eq.${club.id}`, { method: "PATCH", body: JSON.stringify({ active: true }) });
+  await sb("rpc/ps_admin_update_group", { method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: club.id, p_active: true }) });
 
   /* duplicate slug must be rejected */
   let dupeRejected = false;
   try {
-    await sb("ps_groups", { method: "POST", body: JSON.stringify({ slug, name: "dupe", access_code: "X" }) });
+    await sb("rpc/ps_admin_create_group", { method: "POST",
+      body: JSON.stringify({ p_pass: ADMIN_PASS, p_name: "dupe", p_slug: slug,
+        p_code: "X", p_kind: "club", p_intro: null, p_active: true }) });
   } catch { dupeRejected = true; }
   ok("duplicate club slug rejected", dupeRejected);
+
+  /* anon key must not be able to write to ps_groups directly, bypassing
+     the admin RPCs entirely - this is the actual security boundary. */
+  let directWriteBlocked = false;
+  try {
+    await sb("ps_groups", { method: "POST",
+      body: JSON.stringify({ slug: slug + "-direct", name: "direct", access_code: "X" }) });
+  } catch { directWriteBlocked = true; }
+  ok("direct anon write to ps_groups is blocked", directWriteBlocked);
 
   /* ---------- 6. Enquiries ---------- */
   group("Enquiries");
@@ -284,10 +305,11 @@ async function run() {
   /* ---------- 12. Group product edit (the attr() bug regression) ---------- */
   group("Club shop item edit (regression: missing attr() helper)");
   const editSlug = TAG.toLowerCase() + "-edit";
-  const [editClub] = await sb("ps_groups", {
-    method: "POST", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ slug: editSlug, name: TAG + " Edit Club", kind: "club", access_code: "ZZEDIT", active: true })
-  });
+  const [editClub] = [await sb("rpc/ps_admin_create_group", {
+    method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_name: TAG + " Edit Club", p_slug: editSlug,
+      p_code: "ZZEDIT", p_kind: "club", p_intro: null, p_active: true })
+  })];
   const createRes = await fetch(`${SB_URL}/rest/v1/rpc/ps_admin_create_group_product`, {
     method: "POST", headers: H,
     body: JSON.stringify({
@@ -312,8 +334,10 @@ async function run() {
   ok("  description actually changed", updated.description === "after");
   ok("  price actually changed", Number(updated.price) === 7.5);
 
-  await sb(`ps_group_products?id=eq.${created.id}`, { method: "DELETE" });
-  await sb(`ps_groups?id=eq.${editClub.id}`, { method: "DELETE" });
+  await sb("rpc/ps_admin_delete_group_product", { method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: created.id }) });
+  await sb("rpc/ps_admin_delete_group", { method: "POST",
+    body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: editClub.id }) });
 
   await cleanup();
 
