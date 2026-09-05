@@ -177,3 +177,28 @@ async function saveContent(page, ckey, value){
     body: JSON.stringify({ page, ckey, value, updated_at:new Date().toISOString() })
   }, "PS-402");
 }
+
+/* ============================================================
+   Bug reports - Jo reports a problem straight from the site.
+   Writes to the DB via the same anon-callable RPC pattern as
+   everything else, then separately pings a Pages Function that
+   emails Josh immediately, since a bug report sitting unread in a
+   database is no better than the WhatsApp screenshots it replaces.
+   ============================================================ */
+async function reportBug(message){
+  const report = await sb("rpc/ps_report_bug", {
+    method: "POST",
+    body: JSON.stringify({
+      p_reporter_name: "Jo", p_message: message, p_page_url: location.href,
+      p_recent_errors: window.__psRecentErrors || []
+    })
+  }, "PS-600");
+
+  fetch("/api/report-bug-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, page_url: location.href, recent_errors: window.__psRecentErrors || [] })
+  }).catch(() => {});
+
+  return report;
+}

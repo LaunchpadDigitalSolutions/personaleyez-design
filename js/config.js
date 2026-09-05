@@ -74,3 +74,41 @@ document.addEventListener("DOMContentLoaded", () => {
     }, { once: true });
   });
 });
+
+/* ============================================================
+   Site-wide error logging.
+   Every JS error - caught or not - gets recorded with a code, so a
+   bug like a missing function no longer depends on Jo happening to
+   notice, screenshot it, and message Josh. Silent by design: never
+   shows the person anything, never blocks what they were doing.
+   window.__psRecentErrors also feeds the "Report a problem" button
+   on admin.html, so a submitted report carries the actual errors
+   that happened in that session, not just Jo's description of them.
+   ============================================================ */
+window.__psRecentErrors = [];
+
+function logError(code, message, extra){
+  window.__psRecentErrors.push({ code, message, at: new Date().toISOString() });
+  if (window.__psRecentErrors.length > 10) window.__psRecentErrors.shift();
+  try{
+    fetch(SB_URL + "/rest/v1/rpc/ps_log_error", {
+      method: "POST",
+      headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        p_error_code: code, p_message: String(message).slice(0, 2000),
+        p_stack: extra && extra.stack ? String(extra.stack).slice(0, 4000) : null,
+        p_page_url: location.href,
+        p_context: extra || null
+      })
+    }).catch(() => {});
+  }catch(e){ /* logging must never itself break the page */ }
+}
+
+window.addEventListener("error", (e) => {
+  logError("JS-ERR", e.message, { stack: e.error && e.error.stack, filename: e.filename, lineno: e.lineno });
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const reason = e.reason;
+  logError("JS-REJ", reason && reason.message ? reason.message : String(reason),
+    { stack: reason && reason.stack });
+});

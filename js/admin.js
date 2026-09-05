@@ -552,6 +552,31 @@ async function saveAllContent(){
 }
 
 /* ============================================================
+   BUG REPORTS
+   ============================================================ */
+function openBugReport(){
+  $("bug-message").value = "";
+  $("bug-notice").className = "notice";
+  $("bugmodal").style.display = "flex";
+}
+function closeBugReport(){ $("bugmodal").style.display = "none"; }
+
+async function submitBugReport(){
+  const msg = $("bug-message").value.trim();
+  const n = $("bug-notice"), btn = $("bug-send");
+  if(!msg){ n.className = "notice show err"; n.textContent = "Say what happened first."; return; }
+  btn.disabled = true; n.className = "notice show busy"; n.textContent = "Sending…";
+  try{
+    await reportBug(msg);
+    toast("Sent — thanks!");
+    closeBugReport();
+  }catch(e){
+    n.className = "notice show err"; n.textContent = "Couldn't send that. Ring or WhatsApp Josh instead.";
+  }
+  btn.disabled = false;
+}
+
+/* ============================================================
    DEMO PIN GATE
    Cosmetic only — the PIN ships in the client bundle. Real
    protection is Cloudflare Access plus tighter RLS; see README.
