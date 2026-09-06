@@ -17,7 +17,7 @@
   --sage-deep:#5F6E56;
   --charcoal:#2B2622;
   --ink:#3A342E;
-  --muted:#8A7E73;
+  --muted:#6B5F52; /* darkened from #8A7E73 — original failed WCAG AA (3.66:1) on cream; this passes (5.73:1) */
   --line:#E3D6C7;
 
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
@@ -137,14 +137,17 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .statement{padding:var(--s8) 22px;text-align:left}
 .statement .display-lg{max-width:16ch;margin:0 auto}
 .band-peach{background:var(--peach-soft)}
-.band-terra{background:var(--terracotta);color:var(--cream)}
+/* band-terra/band-sage use the *-deep colour + near-solid text: the lighter
+   base colours + 65-86% opacity text measured ~2.5-2.8:1 contrast (fails
+   WCAG AA 4.5:1 for normal text). Deep variants + solid text pass ~4.5-5.5:1. */
+.band-terra{background:var(--terracotta-deep);color:var(--cream)}
 .band-terra h2,.band-terra h3{color:var(--cream)}
-.band-terra .body,.band-terra .body-lg{color:rgba(251,245,238,.86)}
-.band-terra .label{color:rgba(251,245,238,.65)}
-.band-sage{background:var(--sage);color:var(--cream)}
+.band-terra .body,.band-terra .body-lg{color:rgba(251,245,238,.97)}
+.band-terra .label{color:rgba(251,245,238,.92)}
+.band-sage{background:var(--sage-deep);color:var(--cream)}
 .band-sage h2{color:var(--cream)}
-.band-sage .body-lg{color:rgba(251,245,238,.86)}
-.band-sage .label{color:rgba(251,245,238,.65)}
+.band-sage .body-lg{color:rgba(251,245,238,.97)}
+.band-sage .label{color:rgba(251,245,238,.92)}
 .band-cream{background:var(--cream-deep)}
 
 /* ---------- full bleed image ---------- */
@@ -500,3 +503,23 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .imgwrap.noimg{background:var(--cream-deep);display:flex;align-items:center;
   justify-content:center;padding:24px;text-align:center}
 .imgwrap.noimg span{font-family:var(--display);font-size:19px;color:var(--muted);line-height:1.2}
+
+/* ---------- legal pages (privacy / terms / refund / cookies) ---------- */
+.legal-copy{margin-top:48px;max-width:64ch}
+.legal-copy h2{font-family:var(--display);font-weight:400;font-size:23px;
+  color:var(--charcoal);margin:40px 0 14px}
+.legal-copy h2:first-child{margin-top:0}
+.legal-copy p{font-size:16.5px;line-height:1.75;color:var(--ink);margin:0 0 14px}
+.legal-copy ul{margin:0 0 14px;padding-left:22px}
+.legal-copy li{font-size:16.5px;line-height:1.75;color:var(--ink);margin-bottom:6px}
+.legal-copy a{color:var(--terracotta-deep);text-decoration:underline;
+  text-underline-offset:2px}
+.legal-copy a:hover{color:var(--terracotta)}
+
+/* ---------- consent checkbox (contact / shop / club checkout) ---------- */
+.consent{display:flex;align-items:flex-start;gap:10px;margin-top:20px}
+.consent input[type=checkbox]{width:20px;height:20px;min-width:20px;margin-top:2px;
+  accent-color:var(--terracotta-deep);cursor:pointer}
+.consent label{font-size:14px;line-height:1.55;color:var(--ink);cursor:pointer}
+.consent a{color:var(--terracotta-deep);text-decoration:underline;
+  text-underline-offset:2px}
