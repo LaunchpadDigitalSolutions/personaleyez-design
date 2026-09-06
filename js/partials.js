@@ -88,8 +88,14 @@ function renderFooter(){
           <p style="margin-top:14px"><a href="${BRAND.phoneLink}" style="color:var(--peach);font-size:17px">${BRAND.phone}</a></p>
         </div>
       </div>
+      <div class="foot-legal">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="refund.html">Refund Policy</a>
+        <a href="cookies.html">Cookie Policy</a>
+      </div>
       <div class="foot-bottom">
-        © ${y} ${BRAND.legalName} &nbsp;·&nbsp; Website by
+        © ${y} ${BRAND.legalName} (Company No. 08673579) &nbsp;·&nbsp; Website by
         <a href="https://launchpadme.co.uk">Launchpad Digital</a>
         &nbsp;·&nbsp; <a href="admin.html">Staff login</a>
       </div>
