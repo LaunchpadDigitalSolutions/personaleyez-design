@@ -77,6 +77,7 @@ async function startShopCheckout(){
   if(!picks.length){ note("p-notice","err","Choose at least one item."); return; }
   if(!name){ note("p-notice","err","We need your name."); return; }
   if(phone.length < 9){ note("p-notice","err","We need a phone number."); return; }
+  if(!$("p-consent").checked){ note("p-notice","err","Please tick the box to say you're happy for us to use your details for this order."); return; }
 
   btn.disabled = true; note("p-notice","busy","Setting up your payment…");
 
