@@ -65,19 +65,19 @@ function schoolInitials(name){
    guess. Falls back to initials for anything not in this list (e.g. items
    still under "Needs Sorting"). */
 const SCHOOL_CRESTS = {
-  "Fens Primary School": "https://www.fensprimaryschool.co.uk/ckfinder/userfiles/images/logos/FensPrimaryLogo.png",
-  "Eldon Grove Academy": "https://www.eldongroveacademy.co.uk/_site/data/files/images/logo/68BFCA9128521A3C14649D26B97457CF.png",
-  "West View Primary School": "https://westview.adastraschools.org/wp-content/themes/AdAstra/img/westview-logo.png",
-  "Hart Primary School": "https://www.hartelwickfederation.org.uk/hart/wp-content/themes/hart/img/logo.png",
-  "St John Vianney RC Primary School": "https://files.schudio.com/st-john-vianney-rc-primary-school-2/images/logo/St_John_Vianney(4).png",
-  "Rossmere Primary School": "https://www.rossmereschool.org.uk/_site/data/files/images/logo/560AFEDDDF16A5724FE2046342843A2B.png",
-  "Clavering Primary School": "https://www.claveringschool.org.uk/_site/data/files/images/logo/F38CD4D60EEDFE667E91A612D869C90A.png"
+  "Fens Primary School": { url: "https://www.fensprimaryschool.co.uk/ckfinder/userfiles/images/logos/FensPrimaryLogo.png", crop: true }, // wide banner (heron + white text) — crop to just the heron
+  "Eldon Grove Academy": { url: "https://www.eldongroveacademy.co.uk/_site/data/files/images/logo/68BFCA9128521A3C14649D26B97457CF.png" },
+  "West View Primary School": { url: "https://westview.adastraschools.org/wp-content/themes/AdAstra/img/westview-logo.png" },
+  "Hart Primary School": { url: "https://www.hartelwickfederation.org.uk/hart/wp-content/themes/hart/img/logo.png" },
+  "St John Vianney RC Primary School": { url: "https://files.schudio.com/st-john-vianney-rc-primary-school-2/images/logo/St_John_Vianney(4).png" },
+  "Rossmere Primary School": { url: "https://www.rossmereschool.org.uk/_site/data/files/images/logo/560AFEDDDF16A5724FE2046342843A2B.png" },
+  "Clavering Primary School": { url: "https://www.claveringschool.org.uk/_site/data/files/images/logo/F38CD4D60EEDFE667E91A612D869C90A.png" }
 };
 
 function schoolCircle(name){
   const crest = SCHOOL_CRESTS[name];
   return crest
-    ? `<span class="su-school-circle has-crest"><img src="${crest}" alt="${name} crest" loading="lazy" onerror="this.parentElement.classList.remove('has-crest');this.remove();this.parentElement.textContent='${schoolInitials(name)}'"></span>`
+    ? `<span class="su-school-circle has-crest"><img src="${crest.url}" alt="${name} crest" loading="lazy" class="${crest.crop ? "crop-icon" : ""}" onerror="this.parentElement.classList.remove('has-crest');this.remove();this.parentElement.textContent='${schoolInitials(name)}'"></span>`
     : `<span class="su-school-circle">${schoolInitials(name)}</span>`;
 }
 
