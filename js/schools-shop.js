@@ -260,6 +260,40 @@ async function startUniformCheckout(){
   }
 }
 
+async function startInstalmentCheckout(){
+  const name  = $("su-cname").value.trim();
+  const phone = $("su-cphone").value.trim();
+  const email = $("su-cemail").value.trim();
+  const btn   = $("su-spread");
+
+  if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
+  if(!name){ note("su-notice", "err", "We need your name."); return; }
+  if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
+  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
+
+  btn.disabled = true; note("su-notice", "busy", "Setting up your payment plan…");
+  try{
+    const res = await fetch("/api/checkout-instalments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
+        customer: { name, phone, email: email || undefined },
+        note: activeSchool || undefined
+      })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.checkout_url){
+      note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
+      btn.disabled = false; return;
+    }
+    location.href = data.checkout_url;
+  }catch(e){
+    note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
+    btn.disabled = false;
+  }
+}
+
 async function placeUniformOrder(){
   const name  = $("su-cname").value.trim();
   const phone = $("su-cphone").value.trim();
