@@ -56,10 +56,26 @@
     <div class="fld"><label for="su-cname">Your name</label><input id="su-cname" type="text" autocomplete="name"></div>
     <div class="fld"><label for="su-cphone">Phone</label><input id="su-cphone" type="tel" autocomplete="tel"></div>
     <div class="fld"><label for="su-cemail">Email (optional)</label><input id="su-cemail" type="email" autocomplete="email"></div>
+    <div class="consent">
+      <input type="checkbox" id="su-consent">
+      <label for="su-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+    </div>
     <div class="notice" id="su-notice"></div>
-    <button class="btn-solid" id="su-pay" onclick="startUniformCheckout()" style="margin-top:30px">Pay with card</button>
+    <button class="btn-solid" id="su-pay" onclick="startUniformCheckout()" style="margin-top:20px">Pay online now</button>
     <p class="body dim" style="font-size:13.5px;margin-top:16px">
       You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
+    <button class="btn-line" id="su-order" onclick="placeUniformOrder()" style="width:100%;margin-top:16px">Order now, pay in store</button>
+    <p class="body dim" style="font-size:13.5px;margin-top:16px">
+      We'll confirm the price when you collect — good if you'd rather pay cash, or want to talk about a repayment plan.</p>
+  </div>
+
+  <div class="wrap-narrow" id="su-done" style="display:none;text-align:center;margin-top:48px">
+    <span class="label">Order placed</span>
+    <h2 class="display-lg" style="margin-top:18px">Thank <span class="italic tera">you.</span></h2>
+    <p class="body-lg" style="margin:24px auto 0">Your reference is <strong id="su-ref" style="font-family:var(--display)"></strong>. Pop in or ring when you're ready to sort payment — keep hold of the reference so you can check progress any time.</p>
+    <div style="display:flex;justify-content:center;margin-top:32px">
+      <a class="link" id="su-tracklink" href="track.html">Track this order <span class="arrow">&rarr;</span></a>
+    </div>
   </div>
 </section>
 
