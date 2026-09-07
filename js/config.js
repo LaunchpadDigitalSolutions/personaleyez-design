@@ -12,7 +12,7 @@ const BRAND = {
 
   phone:     "01429 866266",
   phoneLink: "tel:01429866266",
-  email:     "hello@peachstate.co.uk",      // CONFIRM WITH CLIENT
+  email:     "info@peachstate.co.uk",
   address1:  "184 York Road",
   address2:  "Hartlepool",
   postcode:  "TS26 9EA",
