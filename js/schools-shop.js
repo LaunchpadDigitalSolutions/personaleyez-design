@@ -165,6 +165,7 @@ function renderPicker(){
   if(!p){ box.style.display = "none"; return; }
   const sizes = (p.sizes || "").split(",").map(s => s.trim()).filter(Boolean);
   const cols  = (p.colours || "").split(",").map(s => s.trim()).filter(Boolean);
+  const crested = isCrestedItem(p);
   box.style.display = "block";
   box.innerHTML = `
     <h3 style="font-size:19px">${p.name}</h3>
@@ -174,12 +175,20 @@ function renderPicker(){
       <select id="su-colour">${cols.map(c => `<option>${c}</option>`).join("")}</select></div>` : ""}
     <div class="fld"><label for="su-qty">Quantity</label>
       <input id="su-qty" type="number" min="1" value="1" inputmode="numeric"></div>
-    <div class="su-toggles">
+    ${crested ? `<div class="su-toggles">
       <label><span>Embroidered school logo</span><input type="checkbox" checked disabled></label>
       <label><span>Initials stitched on <span class="dim">+£3.50</span></span>
         <input type="checkbox" id="su-initials"></label>
-    </div>
+    </div>` : ""}
     <button class="btn-solid" style="width:100%;margin-top:20px" onclick="addToBasket()">Add to order</button>`;
+}
+
+/* Only the school-branded top half (sweatshirts/cardigans/polos/hoodies)
+   carries the crest — plain bottoms in the shared "All Schools" category
+   (trousers, pinafores, skirts, playsuits, skorts) are never embroidered,
+   so they shouldn't offer or claim it. */
+function isCrestedItem(p){
+  return p.category !== "All Schools" && p.category !== "Needs Sorting";
 }
 
 function addToBasket(){
@@ -187,11 +196,12 @@ function addToBasket(){
   const qty = parseInt(($("su-qty") || {}).value) || 1;
   const size = $("su-size") ? $("su-size").value : null;
   const colour = $("su-colour") ? $("su-colour").value : null;
-  const initials = $("su-initials") && $("su-initials").checked;
+  const crested = isCrestedItem(p);
+  const initials = crested && $("su-initials") && $("su-initials").checked;
   const bits = [];
   if(size) bits.push(size);
   if(colour) bits.push(colour);
-  bits.push("logo embroidered");
+  if(crested) bits.push("logo embroidered");
   if(initials) bits.push("initials +£3.50");
 
   basket.push({
@@ -202,6 +212,8 @@ function addToBasket(){
   renderList();
   renderPreview();
   $("su-picker").style.display = "none";
+  toast(`${p.name} added to your order`);
+  $("su-basketbox").scrollIntoView({behavior: "smooth", block: "center"});
 }
 
 function renderBasket(){
