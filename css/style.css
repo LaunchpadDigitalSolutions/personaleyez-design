@@ -568,3 +568,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .consent label{font-size:14px;line-height:1.55;color:var(--ink);cursor:pointer}
 .consent a{color:var(--terracotta-deep);text-decoration:underline;
   text-underline-offset:2px}
+
+/* Fens' logo is a wide banner (icon + text) designed for a dark background —
+   crop to just the icon on the left instead of showing the whole thing
+   shrunk (which made the white text vanish on our white circle backing). */
+.su-school-circle.has-crest img.crop-icon{object-fit:cover;object-position:left center}
