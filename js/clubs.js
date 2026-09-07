@@ -127,6 +127,7 @@ async function placeGroupOrder(){
   if(!picks.length){ note("s-notice","err","Choose at least one item."); return; }
   if(!name){ note("s-notice","err","We need your name."); return; }
   if(phone.length < 9){ note("s-notice","err","We need a phone number."); return; }
+  if(!$("s-consent").checked){ note("s-notice","err","Please tick the box to say you're happy for us to use your details for this order."); return; }
 
   btn.disabled = true; note("s-notice","busy","Placing your order…");
   const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);

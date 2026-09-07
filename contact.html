@@ -12,6 +12,17 @@
 <link rel="stylesheet" href="css/style.css?v=0.6.0">
 <title>Contact — Peach State, Hartlepool</title>
 <meta name="description" content="Get a quote for embroidery, print, school uniform or workwear. 184 York Road, Hartlepool. 01429 866266.">
+<link rel="canonical" href="https://peachstate.co.uk/contact.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Peach State">
+<meta property="og:title" content="Contact — Peach State, Hartlepool">
+<meta property="og:description" content="Get a quote for embroidery, print, school uniform or workwear. 184 York Road, Hartlepool. 01429 866266.">
+<meta property="og:url" content="https://peachstate.co.uk/contact.html">
+<meta property="og:image" content="https://peachstate.co.uk/img/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contact — Peach State, Hartlepool">
+<meta name="twitter:description" content="Get a quote for embroidery, print, school uniform or workwear. 184 York Road, Hartlepool. 01429 866266.">
+<meta name="twitter:image" content="https://peachstate.co.uk/img/logo.png">
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
@@ -42,15 +53,18 @@
           </select></div>
         <div class="fld"><label for="c-msg">What do you need?</label>
           <textarea id="c-msg" placeholder="e.g. 12 navy polos, logo on the left breast, needed end of the month"></textarea></div>
+        <div class="consent">
+          <input type="checkbox" id="c-consent">
+          <label for="c-consent">I agree to my details being used to reply to this enquiry, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+        </div>
         <div class="notice" id="c-notice"></div>
-        <button class="btn-solid" id="c-send" onclick="submitEnquiry()" style="margin-top:32px">Send enquiry</button>
-        <p class="body dim" style="font-size:13.5px;margin-top:18px">We'll only use your details to reply to this enquiry.</p>
+        <button class="btn-solid" id="c-send" onclick="submitEnquiry()" style="margin-top:20px">Send enquiry</button>
       </div>
     </div>
   </div>
 </section>
 
-<div class="fullbleed" style="aspect-ratio:21/9"><img loading="lazy" data-img="flowers" src="" alt=""></div>
+<div class="fullbleed" style="aspect-ratio:21/9"><img loading="lazy" data-img="flowers" src="" alt="Flowers on the studio counter"></div>
 
 <nav class="mobilebar">
   <a href="#" data-brand-href="phoneLink">Call</a>
@@ -73,12 +87,14 @@ async function submitEnquiry(){
   if(!v("c-name")){cSay("err","We need your name.");return;}
   if(!v("c-phone")&&!v("c-email")){cSay("err","Leave a phone number or email so we can reply.");return;}
   if(!v("c-msg")){cSay("err","Tell us a bit about what you need.");return;}
+  if(!document.getElementById("c-consent").checked){cSay("err","Please tick the box to say you're happy for us to use your details to reply.");return;}
   btn.disabled=true;cSay("busy","Sending…");
   try{
     await sendEnquiry({name:v("c-name"),phone:v("c-phone"),email:v("c-email")||null,
       category:v("c-cat"),message:v("c-msg")});
     cSay("ok","Thanks — that's come through. We'll be in touch shortly.");
     ["c-name","c-phone","c-email","c-msg"].forEach(i=>document.getElementById(i).value="");
+    document.getElementById("c-consent").checked=false;
   }catch(e){ cSay("err","That didn't send. Please ring us on "+BRAND.phone+"."); }
   btn.disabled=false;
 }

@@ -12,6 +12,17 @@
 <link rel="stylesheet" href="css/style.css?v=0.6.0">
 <title>Club &amp; Team Shops — Peach State</title>
 <meta name="description" content="Dance clubs, teams and schools — sign in to your own shop to order your kit.">
+<link rel="canonical" href="https://peachstate.co.uk/clubs.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Peach State">
+<meta property="og:title" content="Club &amp; Team Shops — Peach State">
+<meta property="og:description" content="Dance clubs, teams and schools — sign in to your own shop to order your kit.">
+<meta property="og:url" content="https://peachstate.co.uk/clubs.html">
+<meta property="og:image" content="https://peachstate.co.uk/img/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Club &amp; Team Shops — Peach State">
+<meta name="twitter:description" content="Dance clubs, teams and schools — sign in to your own shop to order your kit.">
+<meta name="twitter:image" content="https://peachstate.co.uk/img/logo.png">
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
@@ -72,8 +83,12 @@
     <div class="fld"><label for="s-cemail">Email (optional)</label><input id="s-cemail" type="email" autocomplete="email"></div>
     <div class="fld"><label for="s-cnote">Name to be personalised / notes</label>
       <textarea id="s-cnote" placeholder="e.g. embroider 'Ella M' on the hoodie"></textarea></div>
+    <div class="consent">
+      <input type="checkbox" id="s-consent">
+      <label for="s-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+    </div>
     <div class="notice" id="s-notice"></div>
-    <button class="btn-solid" id="s-send" onclick="placeGroupOrder()" style="margin-top:30px">Place order</button>
+    <button class="btn-solid" id="s-send" onclick="placeGroupOrder()" style="margin-top:20px">Place order</button>
     <p class="body dim" style="font-size:13.5px;margin-top:16px">
       We'll confirm the price and let you know when it's ready. Nothing is charged here.</p>
   </div>

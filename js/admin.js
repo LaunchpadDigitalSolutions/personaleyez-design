@@ -30,6 +30,7 @@ function ago(ts) {
   return Math.floor(h / 24) + "d ago";
 }
 const money = n => n == null ? "—" : "£" + Number(n).toFixed(2);
+const attr = v => v == null ? "" : String(v).replace(/"/g, "&quot;");
 
 async function load() {
   try {
@@ -70,6 +71,9 @@ function setTab(t) {
   if (tab === "new" && t !== "new") lastCreatedRef = null;
   tab = t;
   document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === t));
+  // Keep the URL in sync so a refresh lands back where Jo was, not the
+  // Live tab. history.replaceState avoids stacking up back-button entries.
+  history.replaceState(null, "", "#" + t);
   if (t === "shop" && !shopLoaded) {
     shopLoaded = true;
     loadShopProducts().then(render);
@@ -354,9 +358,14 @@ async function openGroupPanel(id){
   openGroup = groups.find(g => g.id === id);
   try{ openGroupProducts = await listGroupProducts(id); }
   catch(e){ openGroupProducts = []; }
+  history.replaceState(null, "", "#groups:" + id);
   render();
 }
-function closeGroupPanel(){ openGroup = null; openGroupProducts = []; editingGroupProduct = null; render(); }
+function closeGroupPanel(){
+  openGroup = null; openGroupProducts = []; editingGroupProduct = null;
+  history.replaceState(null, "", "#groups");
+  render();
+}
 
 function renderGroupDetail(p){
   const g = openGroup;
@@ -543,6 +552,31 @@ async function saveAllContent(){
 }
 
 /* ============================================================
+   BUG REPORTS
+   ============================================================ */
+function openBugReport(){
+  $("bug-message").value = "";
+  $("bug-notice").className = "notice";
+  $("bugmodal").style.display = "flex";
+}
+function closeBugReport(){ $("bugmodal").style.display = "none"; }
+
+async function submitBugReport(){
+  const msg = $("bug-message").value.trim();
+  const n = $("bug-notice"), btn = $("bug-send");
+  if(!msg){ n.className = "notice show err"; n.textContent = "Say what happened first."; return; }
+  btn.disabled = true; n.className = "notice show busy"; n.textContent = "Sending…";
+  try{
+    await reportBug(msg);
+    toast("Sent — thanks!");
+    closeBugReport();
+  }catch(e){
+    n.className = "notice show err"; n.textContent = "Couldn't send that. Ring or WhatsApp Josh instead.";
+  }
+  btn.disabled = false;
+}
+
+/* ============================================================
    DEMO PIN GATE
    Cosmetic only — the PIN ships in the client bundle. Real
    protection is Cloudflare Access plus tighter RLS; see README.
@@ -552,8 +586,26 @@ function unlockAdmin(){
   if (!window.__adminBooted) {
     window.__adminBooted = true;
     listContent().then(r => contentRows = r).catch(()=>{});
-    load();
+    load().then(restoreTabFromHash);
     setInterval(load, 30000);
+  }
+}
+
+// Reads #tab or #groups:<id> from the URL so a refresh (or a bookmarked
+// link) lands Jo back where she was instead of always the Live tab.
+async function restoreTabFromHash(){
+  const hash = location.hash.replace(/^#/, "");
+  if (!hash) return;
+  const [wantedTab, groupId] = hash.split(":");
+  const validTabs = ["live","all","enq","new","groups","shop","products","content"];
+  if (!validTabs.includes(wantedTab)) return;
+
+  if (wantedTab === "groups" && groupId) {
+    tab = "groups";
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.tab === "groups"));
+    await openGroupPanel(groupId);
+  } else {
+    setTab(wantedTab);
   }
 }
 

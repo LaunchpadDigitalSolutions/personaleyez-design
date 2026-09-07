@@ -12,6 +12,17 @@
 <link rel="stylesheet" href="css/style.css?v=0.6.0">
 <title>Shop — Peach State</title>
 <meta name="description" content="Personalised gifts and everyday pieces, made on York Road — buy online, pay by card.">
+<link rel="canonical" href="https://peachstate.co.uk/shop.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Peach State">
+<meta property="og:title" content="Shop — Peach State">
+<meta property="og:description" content="Personalised gifts and everyday pieces, made on York Road — buy online, pay by card.">
+<meta property="og:url" content="https://peachstate.co.uk/shop.html">
+<meta property="og:image" content="https://peachstate.co.uk/img/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Shop — Peach State">
+<meta name="twitter:description" content="Personalised gifts and everyday pieces, made on York Road — buy online, pay by card.">
+<meta name="twitter:image" content="https://peachstate.co.uk/img/logo.png">
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
@@ -44,8 +55,12 @@
     <div class="fld"><label for="p-cemail">Email (optional)</label><input id="p-cemail" type="email" autocomplete="email"></div>
     <div class="fld"><label for="p-cnote">Personalisation / notes (optional)</label>
       <textarea id="p-cnote" placeholder="e.g. embroider 'Ella M' on the hoodie"></textarea></div>
+    <div class="consent">
+      <input type="checkbox" id="p-consent">
+      <label for="p-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+    </div>
     <div class="notice" id="p-notice"></div>
-    <button class="btn-solid" id="p-pay" onclick="startShopCheckout()" style="margin-top:30px">Pay with card</button>
+    <button class="btn-solid" id="p-pay" onclick="startShopCheckout()" style="margin-top:20px">Pay with card</button>
     <p class="body dim" style="font-size:13.5px;margin-top:16px">
       You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
   </div>

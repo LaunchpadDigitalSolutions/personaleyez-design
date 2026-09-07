@@ -88,8 +88,14 @@ function renderFooter(){
           <p style="margin-top:14px"><a href="${BRAND.phoneLink}" style="color:var(--peach);font-size:17px">${BRAND.phone}</a></p>
         </div>
       </div>
+      <div class="foot-legal">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="refund.html">Refund Policy</a>
+        <a href="cookies.html">Cookie Policy</a>
+      </div>
       <div class="foot-bottom">
-        © ${y} ${BRAND.legalName} &nbsp;·&nbsp; Website by
+        © ${y} ${BRAND.legalName} (Company No. 08673579) &nbsp;·&nbsp; Website by
         <a href="https://launchpadme.co.uk">Launchpad Digital</a>
         &nbsp;·&nbsp; <a href="admin.html">Staff login</a>
       </div>
@@ -112,3 +118,47 @@ document.addEventListener("keydown", e => {
   if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="v")
     alert("Peach State website\nv"+APP_VERSION+"\nLaunchpad Digital Solutions");
 });
+
+/* ============================================================
+   LocalBusiness structured data (SEO) — one place, driven by the
+   same BRAND object everything else uses, so it can never drift
+   out of sync with the real address/hours/phone.
+   ============================================================ */
+function injectLocalBusinessSchema(){
+  const days = {
+    Monday:"Monday", Tuesday:"Tuesday", Wednesday:"Wednesday", Thursday:"Thursday",
+    Friday:"Friday", Saturday:"Saturday", Sunday:"Sunday"
+  };
+  const openingHours = BRAND.hours
+    .filter(([,t]) => t !== "Closed")
+    .map(([d,t]) => {
+      const [open, close] = t.split("–").map(s => s.trim());
+      return { "@type":"OpeningHoursSpecification", dayOfWeek: days[d], opens: open, closes: close };
+    });
+
+  const data = {
+    "@context":"https://schema.org",
+    "@type":"ClothingStore",
+    "name":"Peach State",
+    "alternateName": BRAND.legalName,
+    "image":"https://peachstate.co.uk/img/logo.png",
+    "telephone": BRAND.phone,
+    "email": BRAND.email,
+    "address":{
+      "@type":"PostalAddress",
+      "streetAddress": BRAND.address1,
+      "addressLocality": BRAND.address2,
+      "postalCode": BRAND.postcode,
+      "addressCountry":"GB"
+    },
+    "url":"https://peachstate.co.uk/",
+    "openingHoursSpecification": openingHours,
+    "priceRange":"££"
+  };
+
+  const s = document.createElement("script");
+  s.type = "application/ld+json";
+  s.textContent = JSON.stringify(data);
+  document.head.appendChild(s);
+}
+document.addEventListener("DOMContentLoaded", injectLocalBusinessSchema);
