@@ -113,7 +113,9 @@ function renderPreview(){
 }
 
 function renderList(){
-  const items = groupBySchool(ALL_PRODUCTS)[activeSchool] || [];
+  const grouped = groupBySchool(ALL_PRODUCTS);
+  const shared = grouped["All Schools"] || [];
+  const items = (grouped[activeSchool] || []).concat(shared);
   $("su-list").innerHTML = items.length ? items.map(p => `
     <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" onclick="selectItem('${p.id}')">
       <div>
@@ -225,7 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
   try{ ALL_PRODUCTS = (await listShopProducts()).filter(p => p.category); }
   catch(e){ ALL_PRODUCTS = []; }
-  SCHOOLS = Object.keys(groupBySchool(ALL_PRODUCTS));
+  SCHOOLS = Object.keys(groupBySchool(ALL_PRODUCTS)).filter(s => s !== "All Schools");
   if(SCHOOLS.length){
     renderPhases();
   }else{
