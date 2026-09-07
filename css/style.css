@@ -512,6 +512,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 /* Circular school picker — grid of tappable school circles, matching the
    original mockup (LaunchServe-style icon menu), not a horizontal tab row. */
 .su-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 12px;justify-items:center}
+.su-split{display:flex;flex-direction:column;gap:24px;margin-top:24px}
+.su-controls{order:2}
+.su-preview{order:1}
 .su-school{display:flex;flex-direction:column;align-items:center;gap:8px;
   background:none;border:none;padding:0;width:100%;max-width:100px}
 .su-school-circle{width:64px;height:64px;border-radius:50%;background:var(--cream-deep);
@@ -523,7 +526,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   border-color:var(--terracotta-deep)}
 .su-school.on .su-school-name{color:var(--terracotta-deep);font-weight:500}
 @media(min-width:480px){ .su-tabs{grid-template-columns:repeat(4,1fr)} }
-.su-preview{margin-top:20px;aspect-ratio:4/3;border-radius:var(--s3);overflow:hidden;
+.su-preview{margin-top:0;aspect-ratio:4/3;border-radius:var(--s3);overflow:hidden;
   background:var(--cream-deep);display:flex;align-items:center;justify-content:center}
 .su-preview img{width:100%;height:100%;object-fit:cover}
 .su-preview-empty{font-family:var(--display);font-size:18px;color:var(--muted);padding:0 24px;text-align:center}
@@ -539,7 +542,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .su-toggles label:last-child{margin-bottom:0}
 
 @media (min-width:701px){
-  .su-preview{aspect-ratio:16/9}
+  /* Left/right split: clothing options on the left, image on the right,
+     stacked on mobile since there isn't room to split there. */
+  .su-split{display:grid;grid-template-columns:1fr 340px;gap:var(--s6);align-items:start}
+  .su-controls{order:initial}
+  .su-preview{order:initial;position:sticky;top:100px;aspect-ratio:1/1}
 }
 
 /* ---------- legal pages (privacy / terms / refund / cookies) ---------- */
@@ -561,8 +568,3 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .consent label{font-size:14px;line-height:1.55;color:var(--ink);cursor:pointer}
 .consent a{color:var(--terracotta-deep);text-decoration:underline;
   text-underline-offset:2px}
-
-/* ---------- school crest circles ---------- */
-.su-school-circle.has-crest{background:#fff;overflow:hidden;padding:8px;border-color:var(--line)}
-.su-school-circle.has-crest img{width:100%;height:100%;object-fit:contain}
-.su-school.on .su-school-circle.has-crest{border-color:var(--terracotta-deep);border-width:2px}
