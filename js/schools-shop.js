@@ -65,7 +65,10 @@ function schoolInitials(name){
    guess. Falls back to initials for anything not in this list (e.g. items
    still under "Needs Sorting"). */
 const SCHOOL_CRESTS = {
-  "Fens Primary School": { url: "https://www.fensprimaryschool.co.uk/ckfinder/userfiles/images/logos/FensPrimaryLogo.png", crop: true }, // wide banner (heron + white text) — crop to just the heron
+  // Fens Primary School deliberately omitted — their published logo is a wide
+  // banner (heron + white text) meant for a dark background. CSS-cropping it
+  // guessed wrong and CORS blocks pixel-analysing it properly, so it falls
+  // back to initials rather than show something half-right.
   "Eldon Grove Academy": { url: "https://www.eldongroveacademy.co.uk/_site/data/files/images/logo/68BFCA9128521A3C14649D26B97457CF.png" },
   "West View Primary School": { url: "https://westview.adastraschools.org/wp-content/themes/AdAstra/img/westview-logo.png" },
   "Hart Primary School": { url: "https://www.hartelwickfederation.org.uk/hart/wp-content/themes/hart/img/logo.png" },
