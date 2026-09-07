@@ -223,6 +223,7 @@ async function startUniformCheckout(){
   if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
   if(!name){ note("su-notice", "err", "We need your name."); return; }
   if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
+  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
 
   btn.disabled = true; note("su-notice", "busy", "Setting up your payment…");
   try{
@@ -245,6 +246,42 @@ async function startUniformCheckout(){
     note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
     btn.disabled = false;
   }
+}
+
+async function placeUniformOrder(){
+  const name  = $("su-cname").value.trim();
+  const phone = $("su-cphone").value.trim();
+  const email = $("su-cemail").value.trim();
+  const btn   = $("su-order");
+
+  if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
+  if(!name){ note("su-notice", "err", "We need your name."); return; }
+  if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
+  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
+
+  btn.disabled = true; note("su-notice", "busy", "Placing your order…");
+  const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
+  const desc  = basket.map(b => `${b.qty} × ${b.name}${b.opts.length ? " (" + b.opts.join(", ") + ")" : ""}`).join("; ");
+
+  try{
+    const o = await createOrder({
+      customer_name: name, customer_phone: phone, customer_email: email || null,
+      category: "school", description: desc,
+      quantity: basket.reduce((s, b) => s + b.qty, 0),
+      quoted_total: total || null,
+      notes: activeSchool || null,
+      status: "enquiry"
+    });
+    $("su-ref").textContent = o.order_ref;
+    $("su-tracklink").href = "track.html?ref=" + o.order_ref;
+    $("su-checkout").style.display = "none";
+    $("su-basketbox").style.display = "none";
+    $("su-done").style.display = "block";
+    $("su-done").scrollIntoView({behavior:"smooth", block:"center"});
+  }catch(e){
+    note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
+  }
+  btn.disabled = false;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
