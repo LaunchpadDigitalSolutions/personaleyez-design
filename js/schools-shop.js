@@ -6,7 +6,7 @@
    already has, nothing new for her to learn.
    ============================================================ */
 
-let ALL_PRODUCTS = [], SCHOOLS = [], activeSchool = null, activeItem = null, basket = [];
+let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, activeItem = null, basket = [];
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 
@@ -23,11 +23,72 @@ function groupBySchool(products){
   return map;
 }
 
+/* ------------------------------------------------------------
+   Primary / Secondary phase lookup — sourced from Hartlepool
+   Borough Council's own school directory (hartlepool.gov.uk),
+   since most school names don't literally say "Primary" or
+   "Secondary" (e.g. "High Tunstall College of Science"). Only
+   the 5 secondaries need listing explicitly; anything with
+   "Primary" in the name is primary; anything else unmatched
+   falls into "Other" rather than being silently guessed at, so
+   a typo or new school in Jo's Square categories is visible
+   instead of hidden.
+   ------------------------------------------------------------ */
+const SECONDARY_SCHOOLS = [
+  "dyke house sports and technology college", "dyke house academy", "dyke house",
+  "english martyrs catholic school and sixth form college", "english martyrs school and sixth form college", "english martyrs",
+  "high tunstall college of science", "high tunstall",
+  "manor community academy", "manor college of technology", "manor",
+  "st hild's church of england school", "st hilds church of england school", "st hild's", "st hilds"
+];
+const SPECIAL_SCHOOLS = [
+  "catcote academy", "the horizon school", "horizon school", "springwell school"
+];
+
+function classifyPhase(name){
+  const n = (name || "").toLowerCase().trim();
+  if (SECONDARY_SCHOOLS.some(s => n.includes(s))) return "secondary";
+  if (SPECIAL_SCHOOLS.some(s => n.includes(s))) return "special";
+  if (n.includes("primary") || n.includes("academy")) return "primary"; // covers e.g. Eldon Grove/Eskdale/Rossmere Academy
+  return "other";
+}
+
+const PHASE_LABEL = { primary:"Primary Schools", secondary:"Secondary Schools", special:"Special Schools", other:"Other" };
+const PHASE_ORDER = ["primary","secondary","special","other"];
+
 function schoolInitials(name){
   return name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 }
+
+/* ---------- screen 1: pick a phase ---------- */
+function renderPhases(){
+  const byPhase = {};
+  SCHOOLS.forEach(s => { const p = classifyPhase(s); (byPhase[p] = byPhase[p] || []).push(s); });
+  const phases = PHASE_ORDER.filter(p => byPhase[p] && byPhase[p].length);
+
+  $("su-phases").innerHTML = phases.map(p => `
+    <button class="su-school${p === activePhase ? " on" : ""}" onclick="selectPhase('${p}')">
+      <span class="su-school-circle">${byPhase[p].length}</span>
+      <span class="su-school-name">${PHASE_LABEL[p]}</span>
+    </button>`).join("");
+
+  return byPhase;
+}
+
+function selectPhase(phase){
+  activePhase = phase; activeSchool = null; activeItem = null;
+  renderPhases();
+  renderTabs();
+  $("su-schools-wrap").style.display = "block";
+  $("su-preview").innerHTML = "";
+  $("su-list").innerHTML = "";
+  $("su-picker").style.display = "none";
+}
+
+/* ---------- screen 2: pick a school within that phase ---------- */
 function renderTabs(){
-  $("su-tabs").innerHTML = SCHOOLS.map(s => `
+  const inPhase = SCHOOLS.filter(s => classifyPhase(s) === activePhase);
+  $("su-tabs").innerHTML = inPhase.map(s => `
     <button class="su-school${s === activeSchool ? " on" : ""}" onclick="selectSchool('${s.replace(/'/g,"\\'")}')">
       <span class="su-school-circle">${schoolInitials(s)}</span>
       <span class="su-school-name">${s}</span>
@@ -166,12 +227,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   catch(e){ ALL_PRODUCTS = []; }
   SCHOOLS = Object.keys(groupBySchool(ALL_PRODUCTS));
   if(SCHOOLS.length){
-    activeSchool = SCHOOLS[0];
-    renderTabs();
-    renderList();
-    renderPreview();
+    renderPhases();
   }else{
-    $("su-tabs").innerHTML = "";
+    $("su-phases").innerHTML = "";
     $("su-list").innerHTML = `<p class="body dim">No schools set up yet — check back soon.</p>`;
   }
 });
