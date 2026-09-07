@@ -23,10 +23,15 @@ function groupBySchool(products){
   return map;
 }
 
+function schoolInitials(name){
+  return name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+}
 function renderTabs(){
-  $("su-tabs").innerHTML = SCHOOLS.map(s =>
-    `<button class="su-tab${s === activeSchool ? " on" : ""}" onclick="selectSchool('${s.replace(/'/g,"\\'")}')">${s}</button>`
-  ).join("");
+  $("su-tabs").innerHTML = SCHOOLS.map(s => `
+    <button class="su-school${s === activeSchool ? " on" : ""}" onclick="selectSchool('${s.replace(/'/g,"\\'")}')">
+      <span class="su-school-circle">${schoolInitials(s)}</span>
+      <span class="su-school-name">${s}</span>
+    </button>`).join("");
 }
 
 function selectSchool(school){
