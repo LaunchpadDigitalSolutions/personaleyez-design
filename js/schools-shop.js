@@ -213,121 +213,25 @@ function addToBasket(){
   renderPreview();
   $("su-picker").style.display = "none";
   toast(`${p.name} added to your order`);
-  $("su-basketbox").scrollIntoView({behavior: "smooth", block: "center"});
 }
 
 function renderBasket(){
-  const box = $("su-basketbox"), co = $("su-checkout");
-  if(!basket.length){ box.style.display = "none"; co.style.display = "none"; return; }
-  box.style.display = "block"; co.style.display = "block";
-  $("su-basket").innerHTML = basket.map(b =>
-    `<li><b>${b.qty} × ${b.name} · ${b.opts.join(" · ")}</b><span>${money(b.unit * b.qty)}</span></li>`).join("");
+  const bar = $("su-sticky");
+  if(!basket.length){ bar.style.display = "none"; return; }
+  bar.style.display = "block";
+  const items = basket.reduce((s, b) => s + b.qty, 0);
   const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
-  $("su-total").textContent = money(total);
+  $("su-sticky-count").textContent = items === 1 ? "1 item" : `${items} items`;
+  $("su-sticky-total").textContent = money(total);
 }
 
-async function startUniformCheckout(){
-  const name  = $("su-cname").value.trim();
-  const phone = $("su-cphone").value.trim();
-  const email = $("su-cemail").value.trim();
-  const btn   = $("su-pay");
-
-  if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
-  if(!name){ note("su-notice", "err", "We need your name."); return; }
-  if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
-  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
-
-  btn.disabled = true; note("su-notice", "busy", "Setting up your payment…");
-  try{
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
-        customer: { name, phone, email: email || undefined },
-        note: activeSchool || undefined
-      })
-    });
-    const data = await res.json();
-    if(!res.ok || !data.checkout_url){
-      note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-      btn.disabled = false; return;
-    }
-    location.href = data.checkout_url;
-  }catch(e){
-    note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-    btn.disabled = false;
-  }
-}
-
-async function startInstalmentCheckout(){
-  const name  = $("su-cname").value.trim();
-  const phone = $("su-cphone").value.trim();
-  const email = $("su-cemail").value.trim();
-  const btn   = $("su-spread");
-
-  if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
-  if(!name){ note("su-notice", "err", "We need your name."); return; }
-  if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
-  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
-
-  btn.disabled = true; note("su-notice", "busy", "Setting up your payment plan…");
-  try{
-    const res = await fetch("/api/checkout-instalments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
-        customer: { name, phone, email: email || undefined },
-        note: activeSchool || undefined
-      })
-    });
-    const data = await res.json();
-    if(!res.ok || !data.checkout_url){
-      note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-      btn.disabled = false; return;
-    }
-    location.href = data.checkout_url;
-  }catch(e){
-    note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-    btn.disabled = false;
-  }
-}
-
-async function placeUniformOrder(){
-  const name  = $("su-cname").value.trim();
-  const phone = $("su-cphone").value.trim();
-  const email = $("su-cemail").value.trim();
-  const btn   = $("su-order");
-
-  if(!basket.length){ note("su-notice", "err", "Add at least one item first."); return; }
-  if(!name){ note("su-notice", "err", "We need your name."); return; }
-  if(phone.length < 9){ note("su-notice", "err", "We need a phone number."); return; }
-  if(!$("su-consent").checked){ note("su-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
-
-  btn.disabled = true; note("su-notice", "busy", "Placing your order…");
-  const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
-  const desc  = basket.map(b => `${b.qty} × ${b.name}${b.opts.length ? " (" + b.opts.join(", ") + ")" : ""}`).join("; ");
-
-  try{
-    const o = await createOrder({
-      customer_name: name, customer_phone: phone, customer_email: email || null,
-      category: "school", description: desc,
-      quantity: basket.reduce((s, b) => s + b.qty, 0),
-      quoted_total: total || null,
-      notes: activeSchool || null,
-      status: "enquiry"
-    });
-    $("su-ref").textContent = o.order_ref;
-    $("su-tracklink").href = "track.html?ref=" + o.order_ref;
-    $("su-checkout").style.display = "none";
-    $("su-basketbox").style.display = "none";
-    $("su-done").style.display = "block";
-    $("su-done").scrollIntoView({behavior:"smooth", block:"center"});
-  }catch(e){
-    note("su-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-  }
-  btn.disabled = false;
+/* Hands the basket to the dedicated checkout page — sessionStorage rather
+   than a URL param since a full uniform order can run to a dozen+ lines
+   with sizes/colours/embroidery notes attached to each. */
+function goToUniformCheckout(){
+  sessionStorage.setItem("su_basket", JSON.stringify(basket));
+  sessionStorage.setItem("su_school", activeSchool || "");
+  location.href = "schools-checkout.html";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

@@ -34,51 +34,20 @@
         <div class="su-controls">
           <div id="su-list" class="su-list"></div>
           <div id="su-picker" class="su-picker" style="display:none;margin-top:24px"></div>
-
-          <div class="trackbox" id="su-basketbox" style="display:none;margin-top:32px">
-            <span class="label">Your order</span>
-            <ul class="dl" id="su-basket"></ul>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px">
-              <span class="label">Total</span>
-              <span class="track-ref" id="su-total">£0.00</span>
-            </div>
-          </div>
-
-          <div id="su-checkout" style="display:none;margin-top:32px">
-            <h2 class="display-md">Who's it for?</h2>
-            <div class="fld"><label for="su-cname">Your name</label><input id="su-cname" type="text" autocomplete="name"></div>
-            <div class="fld"><label for="su-cphone">Phone</label><input id="su-cphone" type="tel" autocomplete="tel"></div>
-            <div class="fld"><label for="su-cemail">Email (optional)</label><input id="su-cemail" type="email" autocomplete="email"></div>
-            <div class="consent">
-              <input type="checkbox" id="su-consent">
-              <label for="su-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
-            </div>
-            <div class="notice" id="su-notice"></div>
-            <button class="btn-solid" id="su-pay" onclick="startUniformCheckout()" style="margin-top:20px">Pay online now</button>
-            <p class="body dim" style="font-size:13.5px;margin-top:16px">
-              You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
-            <button class="btn-line" id="su-order" onclick="placeUniformOrder()" style="width:100%;margin-top:16px">Order now, pay in store</button>
-            <p class="body dim" style="font-size:13.5px;margin-top:16px">
-              We'll confirm the price when you collect — good if you'd rather pay cash, or want to talk about a repayment plan.</p>
-            <button class="btn-line" id="su-spread" onclick="startInstalmentCheckout()" style="width:100%;margin-top:16px">Spread the cost — 3 payments</button>
-            <p class="body dim" style="font-size:13.5px;margin-top:16px">
-              Pay a third today, a third in 30 days and a third in 60 days. Square emails you when each one's due — nothing to remember.</p>
-          </div>
-
-          <div id="su-done" style="display:none;text-align:center;margin-top:32px">
-            <span class="label">Order placed</span>
-            <h2 class="display-lg" style="margin-top:18px">Thank <span class="italic tera">you.</span></h2>
-            <p class="body-lg" style="margin:24px auto 0">Your reference is <strong id="su-ref" style="font-family:var(--display)"></strong>. Pop in or ring when you're ready to sort payment — keep hold of the reference so you can check progress any time.</p>
-            <div style="display:flex;justify-content:center;margin-top:32px">
-              <a class="link" id="su-tracklink" href="track.html">Track this order <span class="arrow">&rarr;</span></a>
-            </div>
-          </div>
         </div>
         <div id="su-preview" class="su-preview"></div>
       </div>
     </div>
   </div>
 </section>
+
+<div id="su-sticky" class="su-sticky" style="display:none">
+  <button onclick="goToUniformCheckout()">
+    <span id="su-sticky-count"></span>
+    <span id="su-sticky-total"></span>
+    <span class="su-sticky-arrow">View order &rarr;</span>
+  </button>
+</div>
 
 <nav class="mobilebar">
   <a href="#" data-brand-href="phoneLink">Call</a>

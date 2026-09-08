@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EE">
+<link rel="icon" href="img/icon-180.png?v=0.7.5">
+<link rel="apple-touch-icon" href="img/icon-180.png?v=0.7.5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=0.7.5">
+<title>Checkout — Peach State</title>
+<meta name="description" content="Review your school uniform order and choose how to pay.">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<div class="health" id="health">We can't reach the shop just now — please give us a ring.</div>
+
+<section class="sec" id="suc">
+  <div class="wrap" style="max-width:640px">
+    <a class="link" href="schools-shop.html" style="margin-bottom:24px;display:inline-block">&larr; Back to uniform list</a>
+    <span class="label">Your order</span>
+    <h1 class="display-lg" style="margin-top:18px">Almost <span class="italic tera">there.</span></h1>
+
+    <div id="suc-empty" style="display:none;margin-top:32px">
+      <p class="body">Your basket's empty — go and pick some uniform first.</p>
+      <a class="link" href="schools-shop.html" style="margin-top:16px;display:inline-block">Back to uniform list &rarr;</a>
+    </div>
+
+    <div id="suc-content" style="display:none">
+      <div class="trackbox" style="margin-top:32px">
+        <ul class="dl" id="suc-basket"></ul>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:20px">
+          <span class="label">Total</span>
+          <span class="track-ref" id="suc-total">£0.00</span>
+        </div>
+      </div>
+
+      <div style="margin-top:32px">
+        <h2 class="display-md">Who's it for?</h2>
+        <div class="fld"><label for="suc-cname">Your name</label><input id="suc-cname" type="text" autocomplete="name"></div>
+        <div class="fld"><label for="suc-cphone">Phone</label><input id="suc-cphone" type="tel" autocomplete="tel"></div>
+        <div class="fld"><label for="suc-cemail">Email (optional)</label><input id="suc-cemail" type="email" autocomplete="email"></div>
+        <div class="consent">
+          <input type="checkbox" id="suc-consent">
+          <label for="suc-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+        </div>
+        <div class="notice" id="suc-notice"></div>
+        <button class="btn-solid" id="suc-pay" onclick="startUniformCheckout()" style="width:100%;margin-top:20px">Pay online now</button>
+        <p class="body dim" style="font-size:13.5px;margin-top:16px">
+          You'll pay securely on Square's own checkout page. We never see or store your card details.</p>
+        <button class="btn-line" id="suc-order" onclick="placeUniformOrder()" style="width:100%;margin-top:16px">Order now, pay in store</button>
+        <p class="body dim" style="font-size:13.5px;margin-top:16px">
+          We'll confirm the price when you collect — good if you'd rather pay cash, or want to talk about a repayment plan.</p>
+        <button class="btn-line" id="suc-spread" onclick="startInstalmentCheckout()" style="width:100%;margin-top:16px">Spread the cost — 3 payments</button>
+        <p class="body dim" style="font-size:13.5px;margin-top:16px">
+          Pay a third today, a third in 30 days and a third in 60 days. Square emails you when each one's due — nothing to remember.</p>
+      </div>
+    </div>
+
+    <div id="suc-done" style="display:none;text-align:center;margin-top:32px">
+      <span class="label">Order placed</span>
+      <h2 class="display-lg" style="margin-top:18px">Thank <span class="italic tera">you.</span></h2>
+      <p class="body-lg" style="margin:24px auto 0">Your reference is <strong id="suc-ref" style="font-family:var(--display)"></strong>. Pop in or ring when you're ready to sort payment — keep hold of the reference so you can check progress any time.</p>
+      <div style="display:flex;justify-content:center;margin-top:32px">
+        <a class="link" id="suc-tracklink" href="track.html">Track this order <span class="arrow">&rarr;</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<nav class="mobilebar">
+  <a href="#" data-brand-href="phoneLink">Call</a>
+  <a href="contact.html" class="accent">Enquire</a>
+</nav>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/config.js?v=0.7.5"></script>
+<script src="js/api.js?v=0.7.5"></script>
+<script src="js/partials.js?v=0.7.5"></script>
+<script src="js/schools-checkout.js?v=0.7.5"></script>
+</body>
+</html>
