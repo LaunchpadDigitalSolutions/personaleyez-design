@@ -45,11 +45,23 @@ async function load() {
   // Add an item), wiping out anything they'd entered. Skip the redraw
   // while focus is on a field inside the panel - data is still fetched
   // above, the screen just waits until they're not actively typing.
+  // Focus alone isn't a reliable signal though: the tick can land in the
+  // gap between fields (just clicked a dropdown, about to hit Add Item,
+  // simply reading the form) with nothing focused, so also check whether
+  // any of the form fields that matter here still hold unsaved text -
+  // if so, treat it the same as active typing and hold off the redraw.
   const active = document.activeElement;
   const panel = $("panel");
   const isTyping = active && panel && panel.contains(active) &&
     ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName);
-  if (isTyping) return;
+  const unsavedFieldIds = ["np-name", "np-price", "np-desc", "np-sizes", "np-cols",
+    "n-name", "n-phone", "n-email", "n-desc", "n-notes",
+    "ng-name", "ng-slug", "ng-code", "ng-intro"];
+  const hasUnsavedInput = unsavedFieldIds.some(id => {
+    const el = $(id);
+    return el && panel && panel.contains(el) && el.value && el.value.trim();
+  });
+  if (isTyping || hasUnsavedInput) return;
   render();
 }
 
@@ -388,7 +400,7 @@ function renderGroupDetail(p){
         <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off" value="${editing?attr(editing.description):""}"></div>
       <div class="fld"><label for="np-price">Price (£)</label>
         <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off" value="${editing&&editing.price!=null?editing.price:""}"></div>
-      <div class="fld"><label for="np-sizes">Sizes, comma separated</label>
+      <div class="fld"><label for="np-sizes">Sizes, comma separated <span class="hint">(optional — add later if you don't have them yet)</span></label>
         <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off" value="${editing?attr(editing.sizes):""}"></div>
       <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
         <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off" value="${editing?attr(editing.colours):""}"></div>
