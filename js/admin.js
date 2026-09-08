@@ -95,7 +95,7 @@ function orderRow(o) {
       <span class="stat-word s-${o.status}">${STATUS_LABEL[o.status]}</span>
       <span class="otime">${ago(o.created_at)}</span>
     </div>
-    <div class="ocust">${o.customer_name} · <a href="tel:${o.customer_phone}" style="color:var(--accent)">${o.customer_phone}</a></div>
+    <div class="ocust">${o.customer_name} · <a href="tel:${o.customer_phone}" style="color:var(--accent)">${o.customer_phone}</a>${o.customer_email ? ` · <a href="mailto:${o.customer_email}" style="color:var(--accent)">${o.customer_email}</a>` : ""}</div>
     <div class="odesc">${o.quantity > 1 ? o.quantity + " × " : ""}${o.description}</div>
     <div class="ometa">
       ${o.category ? o.category + " · " : ""}Quote ${money(o.quoted_total)}

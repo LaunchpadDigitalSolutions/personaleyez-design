@@ -15,10 +15,28 @@ function note(el, cls, msg){
 }
 
 function renderOrder(){
-  $("suc-basket").innerHTML = basket.map(b =>
-    `<li><b>${b.qty} × ${b.name} · ${b.opts.join(" · ")}</b><span>${money(b.unit * b.qty)}</span></li>`).join("");
+  $("suc-basket").innerHTML = basket.map((b, i) =>
+    `<li style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <span><b>${b.qty} × ${b.name} · ${b.opts.join(" · ")}</b></span>
+      <span style="display:flex;align-items:center;gap:14px;white-space:nowrap">
+        ${money(b.unit * b.qty)}
+        <button onclick="removeItem(${i})" style="min-height:auto;padding:0;border:none;background:none;font-size:12px;text-decoration:underline;color:var(--muted);cursor:pointer">Remove</button>
+      </span>
+    </li>`).join("");
   const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
   $("suc-total").textContent = money(total);
+}
+
+function removeItem(i){
+  basket.splice(i, 1);
+  if(!basket.length){
+    sessionStorage.removeItem("su_basket");
+    $("suc-content").style.display = "none";
+    $("suc-empty").style.display = "block";
+    return;
+  }
+  sessionStorage.setItem("su_basket", JSON.stringify(basket));
+  renderOrder();
 }
 
 async function startUniformCheckout(){
