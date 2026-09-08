@@ -28,11 +28,23 @@ async function listOrders(limit = 100) {
   }, "PS-102");
 }
 async function createOrder(o) {
-  const out = await sb("ps_orders", {
-    method: "POST", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ ...o, order_ref: makeRef() })
+  return sb("rpc/ps_create_order", {
+    method: "POST", body: JSON.stringify({
+      p_customer_name: o.customer_name, p_customer_phone: o.customer_phone, p_customer_email: o.customer_email || null,
+      p_category: o.category, p_description: o.description, p_quantity: o.quantity, p_quoted_total: o.quoted_total ?? null,
+      p_notes: o.notes || null, p_group_id: o.group_id || null, p_group_slug: o.group_slug || null
+    })
   }, "PS-103");
-  return out[0];
+}
+async function adminCreateOrder(o) {
+  return sb("rpc/ps_admin_create_order", {
+    method: "POST", body: JSON.stringify({
+      p_pass: ADMIN_PASSPHRASE,
+      p_customer_name: o.customer_name, p_customer_phone: o.customer_phone, p_customer_email: o.customer_email || null,
+      p_category: o.category, p_description: o.description, p_quantity: o.quantity, p_quoted_total: o.quoted_total ?? null,
+      p_deposit_paid: o.deposit_paid ?? 0, p_due_date: o.due_date || null, p_notes: o.notes || null
+    })
+  }, "PS-103");
 }
 async function updateOrder(id, patch) {
   return sb("rpc/ps_admin_update_order_status", {
@@ -40,7 +52,12 @@ async function updateOrder(id, patch) {
   }, "PS-104");
 }
 async function sendEnquiry(e) {
-  return sb("ps_enquiries", { method: "POST", body: JSON.stringify(e) }, "PS-200");
+  return sb("rpc/ps_create_enquiry", {
+    method: "POST", body: JSON.stringify({
+      p_name: e.name, p_category: e.category, p_message: e.message,
+      p_phone: e.phone || null, p_email: e.email || null
+    })
+  }, "PS-200");
 }
 async function listEnquiries(limit = 50) {
   return sb("rpc/ps_admin_list_enquiries", {

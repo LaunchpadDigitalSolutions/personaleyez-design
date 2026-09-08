@@ -233,7 +233,7 @@ async function saveOrder() {
   btn.disabled = true;
   n.className = "notice show busy"; n.textContent = "Saving…";
   try {
-    const o = await createOrder({
+    const o = await adminCreateOrder({
       customer_name: g("n-name"), customer_phone: g("n-phone"),
       customer_email: g("n-email") || null,
       category: g("n-cat"), description: g("n-desc"),
