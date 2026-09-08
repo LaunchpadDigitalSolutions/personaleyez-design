@@ -212,11 +212,7 @@ async function advance(id, status) {
 }
 async function markHandled(id) {
   try {
-    await fetch(SB_URL + "/rest/v1/ps_enquiries?id=eq." + id, {
-      method: "PATCH",
-      headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ handled: true })
-    });
+    await markEnquiryHandled(id);
     toast("Marked handled"); load();
   } catch (e) { toast("Couldn't update"); }
 }

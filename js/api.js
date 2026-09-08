@@ -18,11 +18,14 @@ function makeRef() {
 
 async function findOrder(ref) {
   const clean = ref.trim().toUpperCase();
-  const out = await sb("ps_orders?order_ref=eq." + encodeURIComponent(clean) + "&select=*", {}, "PS-101");
-  return out[0] || null;
+  return sb("rpc/ps_track_order", {
+    method: "POST", body: JSON.stringify({ p_ref: clean })
+  }, "PS-101");
 }
 async function listOrders(limit = 100) {
-  return sb("ps_orders?select=*&order=created_at.desc&limit=" + limit, {}, "PS-102");
+  return sb("rpc/ps_admin_list_orders", {
+    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_limit: limit })
+  }, "PS-102");
 }
 async function createOrder(o) {
   const out = await sb("ps_orders", {
@@ -32,16 +35,22 @@ async function createOrder(o) {
   return out[0];
 }
 async function updateOrder(id, patch) {
-  return sb("ps_orders?id=eq." + id, {
-    method: "PATCH", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() })
+  return sb("rpc/ps_admin_update_order_status", {
+    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_status: patch.status })
   }, "PS-104");
 }
 async function sendEnquiry(e) {
   return sb("ps_enquiries", { method: "POST", body: JSON.stringify(e) }, "PS-200");
 }
 async function listEnquiries(limit = 50) {
-  return sb("ps_enquiries?select=*&order=created_at.desc&limit=" + limit, {}, "PS-201");
+  return sb("rpc/ps_admin_list_enquiries", {
+    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_limit: limit })
+  }, "PS-201");
+}
+async function markEnquiryHandled(id) {
+  return sb("rpc/ps_admin_mark_enquiry_handled", {
+    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
+  }, "PS-202");
 }
 async function healthCheck() {
   try { await sb("ps_orders?select=id&limit=1", {}, "PS-105"); return true; } catch (e) { return false; }
