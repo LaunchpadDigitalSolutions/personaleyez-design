@@ -107,40 +107,6 @@ async function startInstalmentCheckout(){
   }
 }
 
-async function placeUniformOrder(){
-  const name  = $("suc-cname").value.trim();
-  const phone = $("suc-cphone").value.trim();
-  const email = $("suc-cemail").value.trim();
-  const btn   = $("suc-order");
-
-  if(!name){ note("suc-notice", "err", "We need your name."); return; }
-  if(phone.length < 9){ note("suc-notice", "err", "We need a phone number."); return; }
-  if(!$("suc-consent").checked){ note("suc-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
-
-  btn.disabled = true; note("suc-notice", "busy", "Placing your order…");
-  const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
-  const desc  = basket.map(b => `${b.qty} × ${b.name}${b.opts.length ? " (" + b.opts.join(", ") + ")" : ""}`).join("; ");
-
-  try{
-    const o = await createOrder({
-      customer_name: name, customer_phone: phone, customer_email: email || null,
-      category: "school", description: desc,
-      quantity: basket.reduce((s, b) => s + b.qty, 0),
-      quoted_total: total || null,
-      notes: schoolName || null,
-      status: "enquiry"
-    });
-    sessionStorage.removeItem("su_basket");
-    $("suc-ref").textContent = o.order_ref;
-    $("suc-tracklink").href = "track.html?ref=" + o.order_ref;
-    $("suc-content").style.display = "none";
-    $("suc-done").style.display = "block";
-    $("suc-done").scrollIntoView({behavior:"smooth", block:"center"});
-  }catch(e){
-    note("suc-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-  }
-  btn.disabled = false;
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
