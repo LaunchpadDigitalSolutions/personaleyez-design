@@ -60,7 +60,8 @@ body{background:var(--cream-deep)}
 </head>
 <body>
 <!-- ============================================================
-     DEMO PIN GATE — cosmetic only, see js/config.js
+     PIN GATE — checked server-side by functions/api/admin.js
+     against env.STAFF_PIN, not against anything in this page.
      ============================================================ -->
 <div class="pingate" id="pingate">
   <div class="pinbox">
@@ -70,7 +71,7 @@ body{background:var(--cream-deep)}
     <input id="pin" type="password" inputmode="numeric" autocomplete="off"
            maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')tryPin()">
     <div class="pinerr" id="pinerr">That's not right — try again.</div>
-    <button class="btn-solid" onclick="tryPin()">Unlock</button>
+    <button class="btn-solid" id="pinbtn" onclick="tryPin()">Unlock</button>
   </div>
 </div>
 <div class="adminbar"><div class="wrap">

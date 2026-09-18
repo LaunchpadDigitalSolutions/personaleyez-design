@@ -10,6 +10,24 @@ async function sb(path, opts = {}, code = "PS-100") {
   return t ? JSON.parse(t) : null;
 }
 
+/* Every admin action goes through functions/api/admin.js instead of
+   calling Supabase directly - the real passphrase that unlocks these
+   RPCs lives only on the server now, never in this file. The PIN Jo
+   typed at login is stashed in sessionStorage by admin.js and sent
+   with every call so the server can check it fresh each time. */
+async function adminRpc(rpc, params = {}, code = "PS-ADMIN") {
+  let pin = null;
+  try { pin = sessionStorage.getItem("ps_admin_pin"); } catch (e) {}
+  const res = await fetch("/api/admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin, rpc, params })
+  });
+  if (!res.ok) { console.error(code, res.status, await res.text()); throw new Error(code); }
+  const t = await res.text();
+  return t ? JSON.parse(t) : null;
+}
+
 function makeRef() {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = ""; for (let i = 0; i < 5; i++) s += c[Math.floor(Math.random() * c.length)];
@@ -23,9 +41,7 @@ async function findOrder(ref) {
   }, "PS-101");
 }
 async function listOrders(limit = 100) {
-  return sb("rpc/ps_admin_list_orders", {
-    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_limit: limit })
-  }, "PS-102");
+  return adminRpc("ps_admin_list_orders", { p_limit: limit }, "PS-102");
 }
 async function createOrder(o) {
   return sb("rpc/ps_create_order", {
@@ -37,19 +53,14 @@ async function createOrder(o) {
   }, "PS-103");
 }
 async function adminCreateOrder(o) {
-  return sb("rpc/ps_admin_create_order", {
-    method: "POST", body: JSON.stringify({
-      p_pass: ADMIN_PASSPHRASE,
-      p_customer_name: o.customer_name, p_customer_phone: o.customer_phone, p_customer_email: o.customer_email || null,
-      p_category: o.category, p_description: o.description, p_quantity: o.quantity, p_quoted_total: o.quoted_total ?? null,
-      p_deposit_paid: o.deposit_paid ?? 0, p_due_date: o.due_date || null, p_notes: o.notes || null
-    })
+  return adminRpc("ps_admin_create_order", {
+    p_customer_name: o.customer_name, p_customer_phone: o.customer_phone, p_customer_email: o.customer_email || null,
+    p_category: o.category, p_description: o.description, p_quantity: o.quantity, p_quoted_total: o.quoted_total ?? null,
+    p_deposit_paid: o.deposit_paid ?? 0, p_due_date: o.due_date || null, p_notes: o.notes || null
   }, "PS-103");
 }
 async function updateOrder(id, patch) {
-  return sb("rpc/ps_admin_update_order_status", {
-    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_status: patch.status })
-  }, "PS-104");
+  return adminRpc("ps_admin_update_order_status", { p_id: id, p_status: patch.status }, "PS-104");
 }
 async function sendEnquiry(e) {
   return sb("rpc/ps_create_enquiry", {
@@ -60,14 +71,10 @@ async function sendEnquiry(e) {
   }, "PS-200");
 }
 async function listEnquiries(limit = 50) {
-  return sb("rpc/ps_admin_list_enquiries", {
-    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_limit: limit })
-  }, "PS-201");
+  return adminRpc("ps_admin_list_enquiries", { p_limit: limit }, "PS-201");
 }
 async function markEnquiryHandled(id) {
-  return sb("rpc/ps_admin_mark_enquiry_handled", {
-    method: "POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
-  }, "PS-202");
+  return adminRpc("ps_admin_mark_enquiry_handled", { p_id: id }, "PS-202");
 }
 async function healthCheck() {
   try { await sb("ps_orders?select=id&limit=1", {}, "PS-105"); return true; } catch (e) { return false; }
@@ -89,53 +96,37 @@ async function groupLogin(slug, code){
 }
 
 async function listGroups(){
-  return sb("rpc/ps_admin_list_groups", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE })
-  }, "PS-301");
+  return adminRpc("ps_admin_list_groups", {}, "PS-301");
 }
 async function createGroup(g){
-  return sb("rpc/ps_admin_create_group", {
-    method:"POST", body: JSON.stringify({
-      p_pass: ADMIN_PASSPHRASE, p_name: g.name, p_slug: g.slug, p_code: g.access_code,
-      p_kind: g.kind, p_intro: g.intro, p_active: g.active
-    })
+  return adminRpc("ps_admin_create_group", {
+    p_name: g.name, p_slug: g.slug, p_code: g.access_code,
+    p_kind: g.kind, p_intro: g.intro, p_active: g.active
   }, "PS-302");
 }
 async function updateGroup(id, patch){
-  return sb("rpc/ps_admin_update_group", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_active: patch.active })
-  }, "PS-303");
+  return adminRpc("ps_admin_update_group", { p_id: id, p_active: patch.active }, "PS-303");
 }
 async function deleteGroup(id){
-  return sb("rpc/ps_admin_delete_group", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
-  }, "PS-304");
+  return adminRpc("ps_admin_delete_group", { p_id: id }, "PS-304");
 }
 async function listGroupProducts(groupId){
-  return sb("rpc/ps_admin_list_group_products", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_group_id: groupId })
-  }, "PS-305");
+  return adminRpc("ps_admin_list_group_products", { p_group_id: groupId }, "PS-305");
 }
 async function createGroupProduct(p){
-  return sb("rpc/ps_admin_create_group_product", {
-    method:"POST", body: JSON.stringify({
-      p_pass: ADMIN_PASSPHRASE, p_group_id: p.group_id, p_name: p.name, p_description: p.description,
-      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url, p_sort_order: p.sort_order
-    })
+  return adminRpc("ps_admin_create_group_product", {
+    p_group_id: p.group_id, p_name: p.name, p_description: p.description,
+    p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url, p_sort_order: p.sort_order
   }, "PS-306");
 }
 async function updateGroupProduct(id, p){
-  return sb("rpc/ps_admin_update_group_product", {
-    method:"POST", body: JSON.stringify({
-      p_pass: ADMIN_PASSPHRASE, p_id: id, p_name: p.name, p_description: p.description,
-      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url
-    })
+  return adminRpc("ps_admin_update_group_product", {
+    p_id: id, p_name: p.name, p_description: p.description,
+    p_price: p.price, p_sizes: p.sizes, p_colours: p.colours, p_image_url: p.image_url
   }, "PS-308");
 }
 async function deleteGroupProduct(id){
-  return sb("rpc/ps_admin_delete_group_product", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
-  }, "PS-307");
+  return adminRpc("ps_admin_delete_group_product", { p_id: id }, "PS-307");
 }
 
 /* ============================================================
@@ -148,28 +139,20 @@ async function listShopProducts(){
   return sb("ps_products?select=*&active=eq.true&order=sort_order,name", {}, "PS-500");
 }
 async function adminListShopProducts(){
-  return sb("rpc/ps_admin_list_shop_products", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE })
-  }, "PS-501");
+  return adminRpc("ps_admin_list_shop_products", {}, "PS-501");
 }
 async function createShopProduct(p){
-  return sb("rpc/ps_admin_create_shop_product", {
-    method:"POST", body: JSON.stringify({
-      p_pass: ADMIN_PASSPHRASE, p_name: p.name, p_description: p.description,
-      p_price: p.price, p_sizes: p.sizes, p_colours: p.colours,
-      p_image_url: p.image_url, p_category: p.category, p_sort_order: p.sort_order
-    })
+  return adminRpc("ps_admin_create_shop_product", {
+    p_name: p.name, p_description: p.description,
+    p_price: p.price, p_sizes: p.sizes, p_colours: p.colours,
+    p_image_url: p.image_url, p_category: p.category, p_sort_order: p.sort_order
   }, "PS-502");
 }
 async function updateShopProduct(id, patch){
-  return sb("rpc/ps_admin_update_shop_product", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id, p_active: patch.active })
-  }, "PS-503");
+  return adminRpc("ps_admin_update_shop_product", { p_id: id, p_active: patch.active }, "PS-503");
 }
 async function deleteShopProduct(id){
-  return sb("rpc/ps_admin_delete_shop_product", {
-    method:"POST", body: JSON.stringify({ p_pass: ADMIN_PASSPHRASE, p_id: id })
-  }, "PS-504");
+  return adminRpc("ps_admin_delete_shop_product", { p_id: id }, "PS-504");
 }
 
 /* ============================================================

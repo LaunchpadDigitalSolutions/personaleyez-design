@@ -36,12 +36,12 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const CLIENT_REF  = "peachstate";
 const APP_VERSION = "0.6.0";
 
-/* ---------- Admin PIN ----------
-   DEMO ONLY. This is client-side, so anyone who opens dev tools can read it.
-   It stops a casual visitor poking around; it is NOT security.
-   Before go-live: Cloudflare Access on /admin* AND lock ps_groups /
-   ps_group_products down so the anon key cannot read access codes. */
-const ADMIN_PIN = "2468";
+/* The staff PIN used to live here as ADMIN_PIN, compared to whatever
+   was typed on admin.html - readable by anyone who fetched this file,
+   and separate from (weaker than) the real passphrase that used to
+   be hardcoded in js/admin.js. Both are gone now: the PIN is set once
+   as env.STAFF_PIN on the Cloudflare Pages project and checked there,
+   in functions/api/admin.js, never shipped to the browser. */
 
 /* ---------- Imagery ----------
    Placeholder art direction. Replace with the client's own

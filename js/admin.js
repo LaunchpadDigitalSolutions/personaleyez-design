@@ -1,14 +1,6 @@
 /* ============================================================
    admin.js — Jo's order dashboard
    ============================================================ */
-/* Required by every ps_admin_* RPC call (js/api.js) for group/product
-   writes - must match the passphrase check in those Postgres functions.
-   Lives here (admin.js), not config.js, so it only ships to whoever
-   loads admin.html - not to every public page. Still client-side, so
-   this is a step up from the open anon policy it replaces, not a
-   substitute for Cloudflare Access on /admin* (see README). */
-const ADMIN_PASSPHRASE = "CSZjmD0Mohgj7EieDXoCu7Onhg1T";
-
 let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
 let openGroup = null, openGroupProducts = [], editingGroupProduct = null;
 let lastCreatedRef = null;   // survives the auto-refresh re-render
@@ -617,28 +609,41 @@ async function restoreTabFromHash(){
   }
 }
 
-function tryPin(){
+/* The PIN is now checked by functions/api/admin.js against env.STAFF_PIN,
+   not compared to anything sitting in this file - so someone reading
+   this script can no longer see, or forge, a way past this screen. */
+async function tryPin(){
   const v = document.getElementById("pin").value.trim();
   const err = document.getElementById("pinerr");
-  if (v === ADMIN_PIN) {
-    try { sessionStorage.setItem("ps_admin", "1"); } catch(e) {}
-    err.classList.remove("show");
-    unlockAdmin();
-  } else {
-    err.classList.add("show");
-    document.getElementById("pin").value = "";
-    document.getElementById("pin").focus();
-  }
+  const btn = document.getElementById("pinbtn");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin: v, rpc: "ping" })
+    });
+    if (res.ok) {
+      try { sessionStorage.setItem("ps_admin_pin", v); } catch(e) {}
+      err.classList.remove("show");
+      unlockAdmin();
+      return;
+    }
+  } catch (e) { /* fall through to the error state below */ }
+  err.classList.add("show");
+  document.getElementById("pin").value = "";
+  document.getElementById("pin").focus();
+  if (btn) btn.disabled = false;
 }
 
 function lockAdmin(){
-  try { sessionStorage.removeItem("ps_admin"); } catch(e) {}
+  try { sessionStorage.removeItem("ps_admin_pin"); } catch(e) {}
   location.reload();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   let unlocked = false;
-  try { unlocked = sessionStorage.getItem("ps_admin") === "1"; } catch(e) {}
+  try { unlocked = !!sessionStorage.getItem("ps_admin_pin"); } catch(e) {}
   if (unlocked) unlockAdmin();
   else setTimeout(()=>{ const p=document.getElementById("pin"); if(p) p.focus(); }, 300);
 });
