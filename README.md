@@ -43,23 +43,26 @@ Personaleyez Design Ltd for the footer until Companies House is updated.
 
 ## Admin access
 
-`admin.html` sits behind a PIN (set in `js/config.js` as `ADMIN_PIN`, currently
-`2468`). It unlocks for the browser session and there's a padlock button in the
-bar to lock it again.
+`admin.html` sits behind a PIN. Unlike the original version of this page,
+the PIN is no longer compared to anything sitting in the browser: entering
+it calls `functions/api/admin.js`, which checks it against `env.STAFF_PIN`
+(a Cloudflare Pages environment variable) and, if correct, is the only thing
+allowed to pass the real database passphrase (`env.ADMIN_PASSPHRASE`,
+likewise an environment variable, never in source) on to the `ps_admin_*`
+functions. Neither secret is ever shipped to the browser. It unlocks for the
+browser session and there's a padlock button in the bar to lock it again.
 
-**This is a demo convenience, not security.** The PIN ships in the client
-bundle, and the Supabase anon key in `config.js` can query `ps_groups`
-directly — so club access codes are reachable without ever loading the admin
-page. Fine while the data is invented. Not fine once a real club is in there.
+Set both `STAFF_PIN` and `ADMIN_PASSPHRASE` in the Cloudflare Pages project's
+environment variables before this is live for real — the app will 500 on
+every admin action until they're set.
 
 ## Before launch
 - [ ] Replace ALL placeholder photography with the client's own — every image is AI-generated
 - [ ] Confirm email address, opening hours, Facebook URL
 - [ ] Confirm whether the rebrand is also a repositioning (boutique vs workwear emphasis)
-- [ ] Cloudflare Access on `/admin*` (replaces the demo PIN)
-- [ ] Revoke anon SELECT on `ps_groups` / `ps_group_products`; move admin
-      writes behind `security definer` functions that check a server-side
-      passphrase. Until this is done, access codes are publicly queryable.
+- [x] Revoke anon SELECT on `ps_groups` / `ps_group_products` — already done at the database level
+- [x] Move admin writes behind `security definer` functions that check a server-side
+      passphrase — already done; the passphrase itself was the remaining gap (see above), now fixed
 - [ ] Point the GoDaddy domain — CHECK MX RECORDS FIRST, client has email on it
 
 ---
@@ -81,9 +84,9 @@ so they appear in the normal order list alongside everything else.
 the code server-side and returns the club plus its products in one response. A wrong
 code returns `{ok:false}` and nothing else.
 
-Caveat worth knowing: the *admin* side still uses the anon key, so anyone who found
-`admin.html` could read the codes. Put Cloudflare Access on `/admin*` before launch —
-that's the intended protection for the whole dashboard, not just this feature.
+The admin side (viewing/editing club codes and products) now goes through the
+same `functions/api/admin.js` proxy as everything else in the dashboard, so
+finding `admin.html` no longer means finding the codes.
 
 ## Editable wording (Phase 2)
 
