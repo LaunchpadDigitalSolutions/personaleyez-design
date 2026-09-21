@@ -18,9 +18,12 @@ const BASE = args.base || "https://peachstate.launchpadclient.app";
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" };
-// Matches ADMIN_PASSPHRASE in js/admin.js - needed to call the passphrase-gated
-// ps_admin_* RPCs directly the same way the real admin page does.
-const ADMIN_PASS = "CSZjmD0Mohgj7EieDXoCu7Onhg1T";
+// Matches env.ADMIN_PASSPHRASE (Cloudflare Pages) / the literal ps_admin_check()
+// checks in Postgres - needed to call the passphrase-gated ps_admin_* RPCs
+// directly, the same way functions/api/admin.js does on the real admin page.
+// It's never shipped to the browser, so this constant has to be updated by hand
+// whenever the passphrase is rotated - nothing keeps it in sync automatically.
+const ADMIN_PASS = "6j3OsYnkzwcIXKqYbwZnEC9w3aw20Mty";
 
 const RUN = Math.random().toString(36).slice(2, 7).toUpperCase();
 const TAG = "ZZTEST" + RUN;   // unique per run — orders/enquiries can't be deleted (by design)
@@ -65,8 +68,12 @@ async function cleanup() {
 }
 
 async function leftovers() {
-  const o = await sb(`ps_orders?customer_name=like.ZZTEST*&select=order_ref`);
-  const e = await sb(`ps_enquiries?name=like.ZZTEST*&select=id`);
+  // Same RLS lockdown as the Orders/Enquiries groups - no anon SELECT any
+  // more, so this has to go through the admin list RPCs and filter client-side.
+  const orders = await rpc("ps_admin_list_orders", { p_pass: ADMIN_PASS, p_limit: 500 });
+  const enquiries = await rpc("ps_admin_list_enquiries", { p_pass: ADMIN_PASS, p_limit: 500 });
+  const o = (orders || []).filter(x => x.customer_name && x.customer_name.startsWith("ZZTEST"));
+  const e = (enquiries || []).filter(x => x.name && x.name.startsWith("ZZTEST"));
   return { orders: o.length, enquiries: e.length };
 }
 
@@ -104,28 +111,30 @@ async function run() {
   ok("CSS is version-stamped", /style\.css\?v=[\d.]+/.test(idx));
   ok("JS is version-stamped", /config\.js\?v=[\d.]+/.test(idx));
 
-  /* ---------- 4. Orders: create → advance → read ---------- */
+  /* ---------- 4. Orders: create → advance → read ----------
+     ps_orders has RLS enabled with NO anon policies at all now (a later,
+     separate security fix) - anon can't even SELECT it directly any more,
+     let alone INSERT/UPDATE. Every step below goes through the same RPCs
+     the real app uses: ps_create_order (public), ps_track_order (public),
+     ps_admin_update_order_status (PIN-gated). */
   group("Orders");
-  const ref = "PD-" + TAG.slice(0, 2) + Math.random().toString(36).slice(2, 5).toUpperCase();
-  const [order] = await sb("ps_orders", {
-    method: "POST", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({
-      order_ref: ref, status: "enquiry", customer_name: TAG + " Customer",
-      customer_phone: "07700900000", description: "E2E order", quantity: 2, quoted_total: 40
-    })
+  const order = await rpc("ps_create_order", {
+    p_customer_name: TAG + " Customer", p_customer_phone: "07700900000", p_customer_email: null,
+    p_category: "workwear", p_description: "E2E order", p_quantity: 2, p_quoted_total: 40
   });
-  ok("order created", !!order && order.order_ref === ref);
+  const ref = order && order.order_ref;
+  ok("order created", !!order && /^PD-/.test(ref || ""), "got " + JSON.stringify(order));
+  ok("  starts as enquiry", order && order.status === "enquiry");
 
   for (const s of ["in_production", "ready", "collected"]) {
-    await sb(`ps_orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ status: s }) });
-    const [chk] = await sb(`ps_orders?id=eq.${order.id}&select=status`);
-    ok(`status → ${s}`, chk.status === s, "got " + chk.status);
+    const updated = await rpc("ps_admin_update_order_status", { p_pass: ADMIN_PASS, p_id: order.id, p_status: s });
+    ok(`status → ${s}`, updated && updated.status === s, "got " + JSON.stringify(updated));
   }
 
-  const [found] = await sb(`ps_orders?order_ref=eq.${ref}&select=*`);
-  ok("order retrievable by reference", !!found);
-  const none = await sb("ps_orders?order_ref=eq.PD-NOPE1&select=*");
-  ok("unknown reference returns nothing", none.length === 0);
+  const found = await rpc("ps_track_order", { p_ref: ref });
+  ok("order retrievable by reference", !!found && found.order_ref === ref);
+  const none = await rpc("ps_track_order", { p_ref: "PD-NOPE1" });
+  ok("unknown reference returns nothing", none === null, "got " + JSON.stringify(none));
 
   /* ---------- 5. Club shops + access control ---------- */
   group("Club shops");
@@ -187,25 +196,23 @@ async function run() {
 
   /* ---------- 6. Enquiries ---------- */
   group("Enquiries");
-  await sb("ps_enquiries", {
-    method: "POST",
-    body: JSON.stringify({ name: TAG + " Enquirer", phone: "07700900000", category: "workwear", message: "E2E" })
+  await rpc("ps_create_enquiry", {
+    p_name: TAG + " Enquirer", p_category: "workwear", p_message: "E2E", p_phone: "07700900000", p_email: null
   });
-  const enq = await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer&select=*`);
+  const enqAfterCreate = await rpc("ps_admin_list_enquiries", { p_pass: ADMIN_PASS, p_limit: 500 });
+  const enq = (enqAfterCreate || []).filter(e => e.name === TAG + " Enquirer");
   ok("enquiry saved", enq.length === 1, "found " + enq.length);
   ok("  defaults to unhandled", enq.length > 0 && enq[0].handled === false);
 
-  /* ---------- 7. Editable content ---------- */
+  /* ---------- 7. Editable content ----------
+     ps_content writes are PIN-gated too now (see PS-403 in README) - the old
+     direct anon upsert this test used to exercise no longer works, by design. */
   group("Content editor");
   const key = "zztest_" + RUN.toLowerCase();
-  const put = v => fetch(`${SB_URL}/rest/v1/ps_content?on_conflict=page,ckey`, {
-    method: "POST",
-    headers: { ...H, Prefer: "resolution=merge-duplicates,return=representation" },
-    body: JSON.stringify({ page: "index", ckey: key, value: v })
-  }).then(r => r.json());
+  const put = v => rpc("ps_admin_save_content", { p_pass: ADMIN_PASS, p_page: "index", p_ckey: key, p_value: v });
   await put("first");
   const second = await put("second");
-  ok("content upserts rather than duplicating", Array.isArray(second) && second[0].value === "second");
+  ok("content upserts rather than duplicating", second && second.value === "second", "got " + JSON.stringify(second));
   const rows = await sb(`ps_content?ckey=eq.${key}&select=*`);
   ok("  only one row per page+key", rows.length === 1);
 
@@ -214,13 +221,14 @@ async function run() {
   let orderDeleteBlocked = false;
   try { await sb(`ps_orders?order_ref=eq.${ref}`, { method: "DELETE" }); }
   catch { orderDeleteBlocked = true; }
-  const stillThere = await sb(`ps_orders?order_ref=eq.${ref}&select=order_ref`);
+  const stillThere = await rpc("ps_track_order", { p_ref: ref });
   ok("orders cannot be deleted with the public key",
-     orderDeleteBlocked || stillThere.length === 1);
+     orderDeleteBlocked || !!stillThere);
   let enqDeleteBlocked = false;
   try { await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer`, { method: "DELETE" }); }
   catch { enqDeleteBlocked = true; }
-  const enqLeft = await sb(`ps_enquiries?name=eq.${TAG}%20Enquirer&select=id`);
+  const enqAfterDelete = await rpc("ps_admin_list_enquiries", { p_pass: ADMIN_PASS, p_limit: 500 });
+  const enqLeft = (enqAfterDelete || []).filter(e => e.name === TAG + " Enquirer");
   ok("enquiries cannot be deleted with the public key",
      enqDeleteBlocked || enqLeft.length === 1);
   // The club login RPC must never echo the code back to the browser.
@@ -228,13 +236,15 @@ async function run() {
   ok("login response never contains the access code",
      !JSON.stringify(probe).toUpperCase().includes("ZZCODE"));
 
-  /* ---------- 8. Schema guarantees ---------- */
+  /* ---------- 8. Schema guarantees ----------
+     ps_create_order always sets status='enquiry' itself (not caller-supplied),
+     so the real place a bad status could get in is the admin status-update
+     RPC - that's what ps_orders_status_check actually guards. */
   group("Schema");
   let badStatus = false;
   try {
-    await sb("ps_orders", { method: "POST", body: JSON.stringify({
-      order_ref: "PD-BAD01", status: "nonsense", customer_name: TAG + " Bad",
-      customer_phone: "0", description: "x" }) });
+    await sb("rpc/ps_admin_update_order_status", { method: "POST",
+      body: JSON.stringify({ p_pass: ADMIN_PASS, p_id: order.id, p_status: "nonsense" }) });
   } catch { badStatus = true; }
   ok("invalid order status rejected", badStatus);
 
@@ -287,20 +297,31 @@ async function run() {
   const upRes = await fetch(`${BASE}/api/product-photo`, { method: "POST", body: form });
   const upBody = await upRes.json();
   ok("photo upload succeeds", upRes.status === 200 && upBody.photo_url, "got " + JSON.stringify(upBody));
-  ok("  skip_square is honoured", upBody.pushed_to_square === false);
 
-  const getRes = await fetch(`${BASE}${upBody.photo_url}`);
-  ok("uploaded photo is servable back", getRes.status === 200 && getRes.headers.get("content-type") === "image/jpeg",
-     "got " + getRes.status + " " + getRes.headers.get("content-type"));
+  // Everything below needs a real photo_url from the upload above (e.g. R2
+  // isn't bound on this environment) - skip cleanly instead of building a
+  // fetch URL out of `undefined` and crashing the whole suite.
+  if (upBody.photo_url) {
+    ok("  skip_square is honoured", upBody.pushed_to_square === false);
 
-  const delRes = await fetch(`${BASE}/api/product-photo`, {
-    method: "DELETE", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ item_id: testPhotoId })
-  });
-  const delBody = await delRes.json();
-  ok("photo delete cleans up R2", delRes.status === 200 && delBody.removed === true);
-  const afterDel = await fetch(`${BASE}${upBody.photo_url}`);
-  ok("  photo genuinely gone after delete", afterDel.status === 404, "got " + afterDel.status);
+    const getRes = await fetch(`${BASE}${upBody.photo_url}`);
+    ok("uploaded photo is servable back", getRes.status === 200 && getRes.headers.get("content-type") === "image/jpeg",
+       "got " + getRes.status + " " + getRes.headers.get("content-type"));
+
+    const delRes = await fetch(`${BASE}/api/product-photo`, {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: testPhotoId })
+    });
+    const delBody = await delRes.json();
+    ok("photo delete cleans up R2", delRes.status === 200 && delBody.removed === true);
+    const afterDel = await fetch(`${BASE}${upBody.photo_url}`);
+    ok("  photo genuinely gone after delete", afterDel.status === 404, "got " + afterDel.status);
+  } else {
+    ok("  skip_square is honoured", false, "skipped - no photo_url from a failed upload");
+    ok("uploaded photo is servable back", false, "skipped - no photo_url from a failed upload");
+    ok("photo delete cleans up R2", false, "skipped - no photo_url from a failed upload");
+    ok("  photo genuinely gone after delete", false, "skipped - no photo_url from a failed upload");
+  }
 
   /* ---------- 11b. Inline content editor ---------- */
   group("Content editing (inline editor)");
