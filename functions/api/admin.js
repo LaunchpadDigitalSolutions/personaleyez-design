@@ -32,7 +32,8 @@ const ADMIN_RPCS = new Set([
   "ps_admin_list_group_products", "ps_admin_create_group_product",
   "ps_admin_update_group_product", "ps_admin_delete_group_product",
   "ps_admin_list_shop_products", "ps_admin_create_shop_product",
-  "ps_admin_update_shop_product", "ps_admin_delete_shop_product"
+  "ps_admin_update_shop_product", "ps_admin_delete_shop_product",
+  "ps_admin_save_content"
 ]);
 
 export async function onRequestPost({ request, env }) {

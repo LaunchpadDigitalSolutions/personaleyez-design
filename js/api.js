@@ -161,30 +161,37 @@ async function deleteShopProduct(id){
 
 let CONTENT = {};
 
+/* Site-wide photos live in the same table as page text, under the
+   sentinel page "global" (one photo, e.g. the hero shot, is reused
+   across several pages - it isn't "owned" by any one of them), keyed
+   "img_<slot>" so they never collide with a text ckey. Every page
+   loads its own rows plus "global" in one request. */
 async function loadContent(page){
   try{
-    const rows = await sb("ps_content?page=eq."+encodeURIComponent(page)+"&select=ckey,value", {}, "PS-400");
+    const rows = await sb("ps_content?page=in.(" + encodeURIComponent(page) + ",global)&select=ckey,value", {}, "PS-400");
     rows.forEach(r => CONTENT[r.ckey] = r.value);
   }catch(e){ /* fall back to whatever is hardcoded in the page */ }
 }
 
-/* Swap any [data-edit="key"] element for its stored value, if one exists. */
+/* Swap any [data-edit="key"] element's text, or [data-img="slot"]
+   element's photo, for its stored value, if one exists. */
 function applyContent(){
   document.querySelectorAll("[data-edit]").forEach(el => {
     const v = CONTENT[el.dataset.edit];
     if (v != null && v !== "") el.textContent = v;
   });
+  document.querySelectorAll("[data-img]").forEach(el => {
+    const v = CONTENT["img_" + el.dataset.img];
+    if (v) el.src = v;
+  });
 }
 
-async function listContent(){
-  return sb("ps_content?select=*&order=page,ckey", {}, "PS-401");
-}
+/* Content writes used to go straight to Supabase with the public anon
+   key - anyone who read that key out of config.js could rewrite the
+   site's wording with a raw curl. Now it's the same PIN-gated RPC
+   pattern as every other admin write (see functions/api/admin.js). */
 async function saveContent(page, ckey, value){
-  return sb("ps_content?on_conflict=page,ckey", {
-    method:"POST",
-    headers:{ Prefer:"resolution=merge-duplicates,return=representation" },
-    body: JSON.stringify({ page, ckey, value, updated_at:new Date().toISOString() })
-  }, "PS-402");
+  return adminRpc("ps_admin_save_content", { p_page: page, p_ckey: ckey, p_value: value }, "PS-403");
 }
 
 /* ============================================================
