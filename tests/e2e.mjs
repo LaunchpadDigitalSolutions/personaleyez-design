@@ -91,8 +91,8 @@ async function run() {
 
   /* ---------- 2. Static assets ---------- */
   group("Assets");
-  for (const a of ["css/style.css", "js/config.js", "js/api.js", "js/partials.js",
-                   "js/admin.js", "js/track.js", "js/clubs.js",
+  for (const a of ["css/style.css", "css/inline-edit.css", "js/config.js", "js/api.js", "js/partials.js",
+                   "js/admin.js", "js/inline-edit.js", "js/track.js", "js/clubs.js",
                    "img/logo.png", "img/mark-only.png", "img/wordmark.png", "img/icon-180.png"]) {
     const r = await fetch(`${BASE}/${a}`);
     ok(`GET /${a}`, r.status === 200, "got " + r.status);
@@ -301,6 +301,42 @@ async function run() {
   ok("photo delete cleans up R2", delRes.status === 200 && delBody.removed === true);
   const afterDel = await fetch(`${BASE}${upBody.photo_url}`);
   ok("  photo genuinely gone after delete", afterDel.status === 404, "got " + afterDel.status);
+
+  /* ---------- 11b. Inline content editor ---------- */
+  group("Content editing (inline editor)");
+  const contentKey = "zztest_field_" + RUN.toLowerCase();
+  const saved = await rpc("ps_admin_save_content",
+    { p_pass: ADMIN_PASS, p_page: "zztest", p_ckey: contentKey, p_value: "hello from e2e" });
+  ok("ps_admin_save_content saves a row", saved && saved.value === "hello from e2e",
+     "got " + JSON.stringify(saved));
+
+  const [readBack] = await sb(`ps_content?page=eq.zztest&ckey=eq.${contentKey}&select=value`);
+  ok("saved value reads back over the public API", readBack && readBack.value === "hello from e2e");
+
+  const wrongPass = await rpc("ps_admin_save_content",
+    { p_pass: "not-the-real-passphrase", p_page: "zztest", p_ckey: contentKey, p_value: "nope" });
+  ok("wrong passphrase is rejected", wrongPass && wrongPass.code === "28000",
+     "got " + JSON.stringify(wrongPass));
+
+  // The whole point of PS-403: a bare anon POST (the old way) must now be
+  // refused by RLS - only the PIN-gated RPC above may write this table.
+  let contentWriteBlocked = false;
+  try {
+    await sb("ps_content?on_conflict=page,ckey", {
+      method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify({ page: "zztest", ckey: contentKey, value: "direct write should fail" })
+    });
+  } catch (e) { contentWriteBlocked = true; }
+  ok("direct anon write to ps_content is blocked", contentWriteBlocked,
+     "a raw POST succeeded - RLS lockdown isn't applied");
+
+  const noPinRes = await fetch(`${BASE}/api/site-photo`, { method: "POST", body: new FormData() });
+  ok("/api/site-photo refuses an unauthenticated upload", noPinRes.status === 401 || noPinRes.status === 400,
+     "got " + noPinRes.status);
+
+  const missingPhotoRes = await fetch(`${BASE}/api/site-photo/zztest-no-such-slot`);
+  ok("/api/site-photo/<slot> 404s for an unknown slot", missingPhotoRes.status === 404,
+     "got " + missingPhotoRes.status);
 
   /* ---------- 12. Group product edit (the attr() bug regression) ---------- */
   group("Club shop item edit (regression: missing attr() helper)");
