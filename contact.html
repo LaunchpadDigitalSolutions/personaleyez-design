@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=0.6.0">
+<link rel="stylesheet" href="css/inline-edit.css?v=0.7.0">
 <title>Contact — Peach State, Hartlepool</title>
 <meta name="description" content="Get a quote for embroidery, print, school uniform or workwear. 184 York Road, Hartlepool. 01429 866266.">
 <link rel="canonical" href="https://peachstate.co.uk/contact.html">
@@ -33,7 +34,7 @@
       <div class="col-type">
         <span class="label">Get in touch</span>
         <h1 class="display-lg" style="margin-top:20px">Tell us what<br>you're <span class="italic tera">after.</span></h1>
-        <p class="body" style="margin-top:26px">A rough idea is plenty. We'll come back with a price and any questions. If it's urgent, ringing is quickest.</p>
+        <p class="body" style="margin-top:26px" data-edit="intro_body">A rough idea is plenty. We'll come back with a price and any questions. If it's urgent, ringing is quickest.</p>
         <ul class="dl">
           <li><b>Phone</b><span><a href="#" data-brand-href="phoneLink" data-brand="phone"></a></span></li>
           <li><b>Find us</b><span><span data-brand="address1"></span>, <span data-brand="postcode"></span></span></li>
@@ -72,13 +73,15 @@
 </nav>
 
 <footer class="site-footer" id="site-footer"></footer>
-<script src="js/config.js?v=0.6.0"></script>
-<script src="js/api.js?v=0.6.0"></script>
-<script src="js/partials.js?v=0.6.0"></script>
+<script src="js/config.js?v=0.7.0"></script>
+<script src="js/api.js?v=0.7.0"></script>
+<script src="js/partials.js?v=0.7.0"></script>
+<script src="js/inline-edit.js?v=0.7.0"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
   document.getElementById("hours").innerHTML =
     BRAND.hours.map(([d,t])=>`<li><span>${d}</span><span>${t}</span></li>`).join("");
+  await loadContent("contact");applyContent();psInitInlineEditor("contact");
 });
 function cSay(c,m){const n=document.getElementById("c-notice");n.className="notice show "+c;n.textContent=m;}
 async function submitEnquiry(){

@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=0.6.0">
+<link rel="stylesheet" href="css/inline-edit.css?v=0.7.0">
 <title>Shop — Peach State</title>
 <meta name="description" content="Personalised gifts and everyday pieces, made on York Road — buy online, pay by card.">
 <link rel="canonical" href="https://peachstate.co.uk/shop.html">
@@ -31,8 +32,8 @@
 <section class="sec" id="shop">
   <div class="wrap">
     <span class="label">Shop</span>
-    <h1 class="display-lg" style="margin-top:18px">Made just <span class="italic tera">for you.</span></h1>
-    <p class="body" style="margin-top:22px">Pick something below and pay by card — we'll have it ready and let you know.</p>
+    <h1 class="display-lg" style="margin-top:18px"><span data-edit="hero_line1">Made just </span><span class="italic tera" data-edit="hero_line2">for you.</span></h1>
+    <p class="body" style="margin-top:22px" data-edit="intro_body">Pick something below and pay by card — we'll have it ready and let you know.</p>
   </div>
 
   <div class="collection" id="p-products" style="margin-top:56px"></div>
@@ -72,9 +73,11 @@
 </nav>
 
 <footer class="site-footer" id="site-footer"></footer>
-<script src="js/config.js?v=0.6.0"></script>
-<script src="js/api.js?v=0.6.0"></script>
-<script src="js/partials.js?v=0.6.0"></script>
+<script src="js/config.js?v=0.7.0"></script>
+<script src="js/api.js?v=0.7.0"></script>
+<script src="js/partials.js?v=0.7.0"></script>
+<script src="js/inline-edit.js?v=0.7.0"></script>
+<script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("shop");applyContent();psInitInlineEditor("shop");});</script>
 <script src="js/shop.js?v=0.6.0"></script>
 </body>
 </html>
