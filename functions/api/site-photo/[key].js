@@ -1,25 +1,11 @@
 /* ============================================================
-   GET /api/site-photo/{slot}
-   Streams a site-wide photo straight from R2 (same bucket as
-   product photos, "site/" key prefix). Public - these are the
-   photos on the public pages, same as the img/ folder.
-   Error codes: PS-406
+   Superseded by functions/api/site-photo/[page]/[key].js — slots are
+   now page-scoped (GET /api/site-photo/{page}/{slot}) so the same
+   slot name on two pages can't collide. This single-segment route
+   is kept only so old /api/site-photo/{slot} links 404 cleanly
+   instead of falling through to some other route.
    ============================================================ */
 
-export async function onRequestGet({ env, params }) {
-  if (!env.PRODUCT_IMAGES) {
-    return new Response("PS-406-1: image storage not configured", { status: 503 });
-  }
-
-  const object = await env.PRODUCT_IMAGES.get("site/" + params.key);
-  if (!object) {
-    return new Response("PS-406-2: no photo for this slot", { status: 404 });
-  }
-
-  return new Response(object.body, {
-    headers: {
-      "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
-      "Cache-Control": "public, max-age=3600"
-    }
-  });
+export async function onRequestGet() {
+  return new Response("PS-406-3: moved - site photos are now page-scoped", { status: 404 });
 }

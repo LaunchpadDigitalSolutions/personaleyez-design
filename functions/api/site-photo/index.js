@@ -1,11 +1,13 @@
 /* ============================================================
    POST /api/site-photo
-   Body: multipart/form-data with fields "pin", "slot" and "file".
+   Body: multipart/form-data with fields "pin", "page", "slot" and "file".
    Site-wide brand/editorial photos (the config.js IMG map) - same R2
-   bucket as product photos, under a "site/" key prefix so the two
-   never collide. PIN-gated (env.STAFF_PIN): unlike product photos,
-   these are global and visible on every page, so a stray upload is
-   more visible - worth the extra check.
+   bucket as product photos, under a "site/<page>/" key prefix so the
+   same slot name on two different pages (e.g. "folded" on both
+   schools.html and services.html) doesn't overwrite each other.
+   PIN-gated (env.STAFF_PIN): unlike product photos, these are global
+   and visible on every page, so a stray upload is more visible -
+   worth the extra check.
    Error codes: PS-405
    ============================================================ */
 
@@ -33,8 +35,12 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "PS-405-4: wrong PIN" }, 401);
   }
 
+  const page = form.get("page");
   const slot = form.get("slot");
   const file = form.get("file");
+  if (!page || typeof page !== "string" || !SLOT_RE.test(page)) {
+    return json({ error: "PS-405-10: missing or invalid page" }, 400);
+  }
   if (!slot || typeof slot !== "string" || !SLOT_RE.test(slot)) {
     return json({ error: "PS-405-5: missing or invalid slot" }, 400);
   }
@@ -48,7 +54,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "PS-405-8: image too large (5MB max)" }, 400);
   }
 
-  const key = "site/" + slot;
+  const key = "site/" + page + "/" + slot;
   try {
     await env.PRODUCT_IMAGES.put(key, await file.arrayBuffer(), {
       httpMetadata: { contentType: file.type }
@@ -58,7 +64,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "PS-405-9: upload failed" }, 502);
   }
 
-  return json({ photo_url: "/api/site-photo/" + slot });
+  return json({ photo_url: "/api/site-photo/" + page + "/" + slot });
 }
 
 function json(body, status = 200) {

@@ -6,7 +6,10 @@
    on the page she's actually looking at becomes click-to-change,
    gated by the same PIN as admin.html. Text still lives in
    ps_content (js/api.js: loadContent/applyContent/saveContent);
-   photos are the same table under page="global", ckey="img_<slot>".
+   photos are the same table under page=<page>, ckey="img_<slot>" -
+   and the R2 object is stored under "site/<page>/<slot>" too, so the
+   same slot name reused on two pages (e.g. "folded" on both
+   schools.html and services.html) doesn't overwrite each other.
 
    Call psInitInlineEditor(page) once, after loadContent()+applyContent()
    have run, from the bottom of each public page.
@@ -25,7 +28,7 @@ function psInitInlineEditor(page){
     const editEl = e.target.closest("[data-edit]");
     const imgEl = e.target.closest("[data-img]");
     if (editEl) { e.preventDefault(); psEditText(editEl, page); }
-    else if (imgEl) { e.preventDefault(); psEditImage(imgEl); }
+    else if (imgEl) { e.preventDefault(); psEditImage(imgEl, page); }
   });
 }
 
@@ -136,7 +139,7 @@ function psEditText(el, page){
 
 /* ---------- photos ---------- */
 
-function psEditImage(el){
+function psEditImage(el, page){
   const slot = el.dataset.img;
   const input = document.createElement("input");
   input.type = "file";
@@ -154,6 +157,7 @@ function psEditImage(el){
       try { pin = sessionStorage.getItem("ps_admin_pin"); } catch (e) {}
       const form = new FormData();
       form.append("pin", pin || "");
+      form.append("page", page);
       form.append("slot", slot);
       form.append("file", file);
       const res = await fetch("/api/site-photo", { method: "POST", body: form });
@@ -161,7 +165,7 @@ function psEditImage(el){
       if (!res.ok) throw new Error(data.error || "PS-407: upload failed");
 
       const url = data.photo_url + "?v=" + Date.now();
-      await saveContent("global", "img_" + slot, data.photo_url);
+      await saveContent(page, "img_" + slot, data.photo_url);
       CONTENT["img_" + slot] = data.photo_url;
       el.src = url;
       psToast("Saved · live now");
