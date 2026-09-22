@@ -1,9 +1,10 @@
 /* ============================================================
    schools-shop.js — school uniform ordering.
    Same ps_products table and /api/checkout as the main shop
-   (js/shop.js) - schools are just grouped by their `category`
-   value, so Jo manages them from the same admin Shop tab she
-   already has, nothing new for her to learn.
+   (js/shop.js) - only the rows with is_school_item=true come
+   here, grouped by their `category` value (the school name), so
+   Jo manages them from the same admin Shop tab she already has,
+   nothing new for her to learn.
    ============================================================ */
 
 let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, activeItem = null, basket = [];
@@ -236,7 +237,7 @@ function goToUniformCheckout(){
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
-  try{ ALL_PRODUCTS = (await listShopProducts()).filter(p => p.category); }
+  try{ ALL_PRODUCTS = (await listShopProducts()).filter(p => p.is_school_item); }
   catch(e){ ALL_PRODUCTS = []; }
   SCHOOLS = Object.keys(groupBySchool(ALL_PRODUCTS)).filter(s => s !== "All Schools");
   if(SCHOOLS.length){

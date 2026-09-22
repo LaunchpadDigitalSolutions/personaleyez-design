@@ -126,12 +126,11 @@ async function startShopCheckout(){
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
   try{
-    // ps_products is shared with the school-uniform flow (schools-shop.js)
-    // - a `category` there means "which school", not a shop section. Every
-    // product currently in the table is uniform stock, so this page shows
-    // only products with NO category: today that's none (the "Nothing's in
-    // the shop yet" state below), until real general-shop items are added.
-    PRODUCTS = (await listShopProducts()).filter(p => !p.category);
+    // ps_products is shared with the school-uniform flow (schools-shop.js).
+    // is_school_item is the actual flag that separates the two - category
+    // means "which school" on a uniform row, but "shop section" (Tops/
+    // Gifts/etc) on a general one, so it can't be used to tell them apart.
+    PRODUCTS = (await listShopProducts()).filter(p => !p.is_school_item);
   }catch(e){ PRODUCTS = []; }
   renderProducts();
   renderBasket();
