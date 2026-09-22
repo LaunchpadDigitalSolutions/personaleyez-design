@@ -450,6 +450,8 @@ async function onGroupProductPhotoChosen(event){
 
   try{
     const form = new FormData();
+    let pin = null; try { pin = sessionStorage.getItem("ps_admin_pin"); } catch(e) {}
+    form.append("pin", pin || "");
     form.append("item_id", editingGroupProduct.id);
     form.append("file", file);
     form.append("skip_square", "true");
