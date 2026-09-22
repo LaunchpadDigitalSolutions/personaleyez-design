@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBF5EE">
-<link rel="icon" href="img/icon-180.png?v=0.6.2">
-<link rel="apple-touch-icon" href="img/icon-180.png?v=0.6.2">
+<link rel="icon" href="img/icon-180.png?v=0.9.0">
+<link rel="apple-touch-icon" href="img/icon-180.png?v=0.9.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=0.6.2">
+<link rel="stylesheet" href="css/style.css?v=0.9.0">
+<link rel="stylesheet" href="css/inline-edit.css?v=0.9.0">
 <title>Peach State — Personalised Design, Hartlepool</title>
 <meta name="description" content="Personalised embroidery and print, made by hand in Hartlepool. School uniform, workwear and things worth keeping.">
 <link rel="canonical" href="https://peachstate.co.uk/">
@@ -54,7 +55,7 @@
 <section class="sec">
   <div class="wrap" style="margin-bottom:56px">
     <span class="label">What we make</span>
-    <h2 class="display-lg" style="margin-top:20px;max-width:14ch">Three things,<br>done <span class="italic">properly.</span></h2>
+    <h2 class="display-lg" style="margin-top:20px;max-width:14ch" data-edit="collection_head">Three things, done properly.</h2>
   </div>
   <div class="railhint">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -163,9 +164,10 @@
 </nav>
 
 <footer class="site-footer" id="site-footer"></footer>
-<script src="js/config.js?v=0.6.2"></script>
-<script src="js/api.js?v=0.6.2"></script>
-<script src="js/partials.js?v=0.6.2"></script>
-<script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("index");applyContent();});</script>
+<script src="js/config.js?v=0.9.0"></script>
+<script src="js/api.js?v=0.9.0"></script>
+<script src="js/partials.js?v=0.9.0"></script>
+<script src="js/inline-edit.js?v=0.9.0"></script>
+<script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("index");applyContent();psInitInlineEditor("index");});</script>
 </body>
 </html>

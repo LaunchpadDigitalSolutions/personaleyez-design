@@ -1,7 +1,7 @@
 /* ============================================================
    admin.js — Jo's order dashboard
    ============================================================ */
-let orders = [], enquiries = [], groups = [], contentRows = [], tab = "live";
+let orders = [], enquiries = [], groups = [], tab = "live";
 let openGroup = null, openGroupProducts = [], editingGroupProduct = null;
 let lastCreatedRef = null;   // survives the auto-refresh re-render
 const $ = id => document.getElementById(id);
@@ -178,7 +178,6 @@ function render() {
   if (tab === "groups")  { renderGroups(p);  return; }
   if (tab === "shop")    { renderShop(p);    return; }
   if (tab === "products"){ renderSquareProducts(p); return; }
-  if (tab === "content") { renderContent(p); return; }
   if (tab === "new") { p.innerHTML = newOrderForm(); return; }
   if (tab === "enq") {
     p.innerHTML = enquiries.length ? enquiries.map(enqRow).join("")
@@ -309,11 +308,11 @@ function renderGroups(p){
     ${groups.length ? groups.map(g => `
       <div class="orow">
         <div class="orow-top">
-          <span class="oref">${g.name}</span>
+          <span class="oref">${esc(g.name)}</span>
           <span class="stat-word ${g.active?"s-ready":"s-collected"}">${g.active?"Live":"Paused"}</span>
           <span class="otime">${ago(g.created_at)}</span>
         </div>
-        <div class="ometa">Web name <strong>${g.slug}</strong> &nbsp;·&nbsp; Code <strong>${g.access_code}</strong></div>
+        <div class="ometa">Web name <strong>${esc(g.slug)}</strong> &nbsp;·&nbsp; Code <strong>${esc(g.access_code)}</strong></div>
         <div class="oact">
           <button onclick="openGroupPanel('${g.id}')">Manage products</button>
           <button class="ghost" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
@@ -385,8 +384,8 @@ function renderGroupDetail(p){
       &larr; All club shops</button>
 
     <div class="orow">
-      <div class="orow-top"><span class="oref">${g.name}</span></div>
-      <div class="ometa">Web name <strong>${g.slug}</strong> · Code <strong>${g.access_code}</strong></div>
+      <div class="orow-top"><span class="oref">${esc(g.name)}</span></div>
+      <div class="ometa">Web name <strong>${esc(g.slug)}</strong> · Code <strong>${esc(g.access_code)}</strong></div>
     </div>
 
     <div class="newcard" style="margin:18px 0" id="np-card">
@@ -421,10 +420,10 @@ function renderGroupDetail(p){
 
     ${openGroupProducts.length ? openGroupProducts.map(pr => `
       <div class="orow">
-        <div class="orow-top"><span class="oref" style="font-size:15px">${pr.name}</span>
+        <div class="orow-top"><span class="oref" style="font-size:15px">${esc(pr.name)}</span>
           <span class="otime">${pr.price!=null?money(pr.price):"—"}</span></div>
-        ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
-        <div class="ometa">${pr.sizes?"Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
+        ${pr.description?`<div class="odesc">${esc(pr.description)}</div>`:""}
+        <div class="ometa">${pr.sizes?"Sizes: "+esc(pr.sizes):""}${pr.colours?" · Colours: "+esc(pr.colours):""}</div>
         <div class="oact">
           <button class="ghost" onclick="editGroupProduct('${pr.id}')">Edit</button>
           <button class="ghost" onclick="removeGroupProduct('${pr.id}')">Remove</button>
@@ -515,54 +514,6 @@ async function removeGroupProduct(id){
 }
 
 /* ============================================================
-   EDITABLE COPY
-   ============================================================ */
-const EDITABLE = [
-  ["index","hero_line1","Hero line 1","MADE"],
-  ["index","hero_line2","Hero line 2","JUST"],
-  ["index","hero_line3","Hero line 3 (italic)","for you."],
-  ["index","hero_note","Hero paragraph","Embroidery and print, stitched by hand in our own studio."],
-  ["index","statement","Big statement","Nothing here leaves the shop unloved."],
-  ["index","collection_head","Collection heading","Three things, done properly."],
-  ["index","quote","Pull quote","Sweet style, Southern vibes, stitched in the North East."],
-  ["schools","repay_head","Repayment heading","Spread the cost of September."],
-  ["schools","repay_body","Repayment paragraph","It's an expensive month, especially with more than one at school."]
-];
-
-function renderContent(p){
-  p.innerHTML = `
-    <div class="newcard">
-      <h2 style="font-size:20px;font-family:var(--display)">Wording</h2>
-      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
-        Change the words on the site. Leave a box empty to keep what's there now.</p>
-      ${EDITABLE.map(([page,key,label,def]) => {
-        const row = contentRows.find(r => r.page===page && r.ckey===key);
-        const val = row ? row.value : "";
-        return `<div class="fld">
-          <label for="ct-${page}-${key}">${label} <span style="text-transform:none;letter-spacing:0;color:var(--muted)">· ${page}</span></label>
-          <textarea id="ct-${page}-${key}" style="min-height:64px" placeholder="${def.replace(/"/g,"&quot;")}">${val}</textarea>
-        </div>`;
-      }).join("")}
-      <div class="notice" id="ct-notice"></div>
-      <button class="btn-solid" id="ct-save" onclick="saveAllContent()" style="margin-top:22px">Save wording</button>
-    </div>`;
-}
-
-async function saveAllContent(){
-  const n = $("ct-notice"), btn = $("ct-save");
-  btn.disabled = true; n.className="notice show busy"; n.textContent="Saving…";
-  try{
-    for(const [page,key] of EDITABLE.map(e=>[e[0],e[1]])){
-      const el = $(`ct-${page}-${key}`);
-      if(el && el.value.trim()) await saveContent(page, key, el.value.trim());
-    }
-    contentRows = await listContent();
-    n.className="notice show ok"; n.textContent="Saved. Refresh the site to see it.";
-  }catch(e){ n.className="notice show err"; n.textContent="Couldn't save ("+e.message+")."; }
-  btn.disabled = false;
-}
-
-/* ============================================================
    BUG REPORTS
    ============================================================ */
 function openBugReport(){
@@ -596,7 +547,6 @@ function unlockAdmin(){
   document.getElementById("pingate").classList.add("hidden");
   if (!window.__adminBooted) {
     window.__adminBooted = true;
-    listContent().then(r => contentRows = r).catch(()=>{});
     load().then(restoreTabFromHash);
     setInterval(load, 30000);
   }
@@ -608,7 +558,7 @@ async function restoreTabFromHash(){
   const hash = location.hash.replace(/^#/, "");
   if (!hash) return;
   const [wantedTab, groupId] = hash.split(":");
-  const validTabs = ["live","all","enq","new","groups","shop","products","content"];
+  const validTabs = ["live","all","enq","new","groups","shop","products"];
   if (!validTabs.includes(wantedTab)) return;
 
   if (wantedTab === "groups" && groupId) {
