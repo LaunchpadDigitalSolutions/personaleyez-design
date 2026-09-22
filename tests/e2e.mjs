@@ -4,7 +4,12 @@
    Runs against the LIVE deployment and the LIVE Supabase project.
 
      node tests/e2e.mjs
-     node tests/e2e.mjs --base=https://peach-state.pages.dev
+     node tests/e2e.mjs --base=https://peach-state.pages.dev --pin=1234
+
+   --pin (or STAFF_PIN env var) is Jo's real admin PIN — needed to
+   exercise the actual /api/admin and /api/product-photo gates the
+   way the browser does. Without it, those specific checks fail
+   loudly (401/PS-ADMIN-AUTH) instead of being silently skipped.
 
    Creates its own data, prefixed ZZTEST, and deletes it again on
    the way out — including after a failure.
@@ -24,6 +29,10 @@ const H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "
 // It's never shipped to the browser, so this constant has to be updated by hand
 // whenever the passphrase is rotated - nothing keeps it in sync automatically.
 const ADMIN_PASS = "6j3OsYnkzwcIXKqYbwZnEC9w3aw20Mty";
+// Jo's real staff PIN — only used by the two test groups below that go
+// through the actual PIN-gated endpoints (/api/admin, /api/product-photo)
+// instead of calling Supabase directly, so those checks test the real gate.
+const PIN = args.pin || process.env.STAFF_PIN;
 
 const RUN = Math.random().toString(36).slice(2, 7).toUpperCase();
 const TAG = "ZZTEST" + RUN;   // unique per run — orders/enquiries can't be deleted (by design)
@@ -46,6 +55,13 @@ const sb = async (path, opts = {}) => {
 const rpc = (fn, body) =>
   fetch(SB_URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: H, body: JSON.stringify(body) })
     .then(r => r.json());
+// Goes through the real staff-facing gate (functions/api/admin.js) instead of
+// calling Supabase directly — same PIN + RPC allowlist the admin page uses.
+const adminCall = (rpcName, params) =>
+  fetch(`${BASE}/api/admin`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: PIN, rpc: rpcName, params })
+  }).then(r => r.json());
 
 /* ---------- cleanup ----------
    ps_orders and ps_enquiries deliberately have NO delete policy — the public
@@ -278,7 +294,7 @@ async function run() {
   ok("/api/report-bug-email responds ok", emailRes.status === 200, "got " + emailRes.status);
   ok("  reports sent:true", emailBody.sent === true, "got " + JSON.stringify(emailBody));
 
-  /* ---------- 11. Square catalog + product photo (skip_square path) ---------- */
+  /* ---------- 11. Square catalog + product photo (real PIN gate) ---------- */
   group("Square catalog & product photo");
   const catRes = await fetch(`${BASE}/api/square-catalog`);
   const catBody = await catRes.json();
@@ -291,16 +307,18 @@ async function run() {
   const pixelB64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD8ooAKKACigAooAKKACigD/9k=";
   const pixelBuf = Buffer.from(pixelB64, "base64");
   const form = new FormData();
+  form.append("pin", PIN || "");
   form.append("item_id", testPhotoId);
   form.append("skip_square", "true");
   form.append("file", new Blob([pixelBuf], { type: "image/jpeg" }), "test.jpg");
   const upRes = await fetch(`${BASE}/api/product-photo`, { method: "POST", body: form });
   const upBody = await upRes.json();
-  ok("photo upload succeeds", upRes.status === 200 && upBody.photo_url, "got " + JSON.stringify(upBody));
+  ok("photo upload succeeds", upRes.status === 200 && upBody.photo_url,
+     (PIN ? "got " : "no --pin/STAFF_PIN set — ") + JSON.stringify(upBody));
 
-  // Everything below needs a real photo_url from the upload above (e.g. R2
-  // isn't bound on this environment) - skip cleanly instead of building a
-  // fetch URL out of `undefined` and crashing the whole suite.
+  // Everything below needs a real photo_url from the upload above (e.g. no
+  // PIN was supplied, or R2 isn't bound on this environment) - skip cleanly
+  // instead of building a fetch URL out of `undefined` and crashing the suite.
   if (upBody.photo_url) {
     ok("  skip_square is honoured", upBody.pushed_to_square === false);
 
@@ -310,7 +328,7 @@ async function run() {
 
     const delRes = await fetch(`${BASE}/api/product-photo`, {
       method: "DELETE", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id: testPhotoId })
+      body: JSON.stringify({ pin: PIN, item_id: testPhotoId })
     });
     const delBody = await delRes.json();
     ok("photo delete cleans up R2", delRes.status === 200 && delBody.removed === true);
@@ -323,21 +341,28 @@ async function run() {
     ok("  photo genuinely gone after delete", false, "skipped - no photo_url from a failed upload");
   }
 
-  /* ---------- 11b. Inline content editor ---------- */
+  /* ---------- 11b. Inline content editor (real PIN gate) ----------
+     This used to call ps_admin_save_content straight against Supabase with
+     ADMIN_PASS, which meant it verified the database function but never
+     exercised functions/api/admin.js itself — the actual gate the browser's
+     admin page and Jo's PIN go through. Now it goes through /api/admin. */
   group("Content editing (inline editor)");
   const contentKey = "zztest_field_" + RUN.toLowerCase();
-  const saved = await rpc("ps_admin_save_content",
-    { p_pass: ADMIN_PASS, p_page: "zztest", p_ckey: contentKey, p_value: "hello from e2e" });
-  ok("ps_admin_save_content saves a row", saved && saved.value === "hello from e2e",
-     "got " + JSON.stringify(saved));
+  const saved = await adminCall("ps_admin_save_content",
+    { p_page: "zztest", p_ckey: contentKey, p_value: "hello from e2e" });
+  ok("ps_admin_save_content saves a row via the real /api/admin gate",
+     saved && saved.value === "hello from e2e",
+     (PIN ? "got " : "no --pin/STAFF_PIN set — ") + JSON.stringify(saved));
 
   const [readBack] = await sb(`ps_content?page=eq.zztest&ckey=eq.${contentKey}&select=value`);
   ok("saved value reads back over the public API", readBack && readBack.value === "hello from e2e");
 
-  const wrongPass = await rpc("ps_admin_save_content",
-    { p_pass: "not-the-real-passphrase", p_page: "zztest", p_ckey: contentKey, p_value: "nope" });
-  ok("wrong passphrase is rejected", wrongPass && wrongPass.code === "28000",
-     "got " + JSON.stringify(wrongPass));
+  const wrongPinRes = await fetch(`${BASE}/api/admin`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: PIN + "-wrong", rpc: "ps_admin_save_content",
+      params: { p_page: "zztest", p_ckey: contentKey, p_value: "nope" } })
+  });
+  ok("wrong PIN is rejected", wrongPinRes.status === 401, "got " + wrongPinRes.status);
 
   // The whole point of PS-403: a bare anon POST (the old way) must now be
   // refused by RLS - only the PIN-gated RPC above may write this table.
@@ -402,6 +427,8 @@ async function run() {
   const left = await leftovers();
   console.log("\n" + "=".repeat(52));
   console.log(`\x1b[1m${pass} passed, ${fail} failed\x1b[0m`);
+  if (!PIN)
+    console.log("Note: no --pin/STAFF_PIN set — the product-photo and content-editor PIN checks above were expected to fail.");
   if (left.orders || left.enquiries)
     console.log(`Test rows left behind (delete-blocked by design): ` +
                 `${left.orders} order(s), ${left.enquiries} enquiry(ies). See README.`);
