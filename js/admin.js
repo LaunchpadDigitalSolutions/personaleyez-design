@@ -23,6 +23,15 @@ function ago(ts) {
 }
 const money = n => n == null ? "—" : "£" + Number(n).toFixed(2);
 const attr = v => v == null ? "" : String(v).replace(/"/g, "&quot;");
+// Full HTML-escape for customer-submitted text going into innerHTML as
+// content (not just inside an attribute, which is what attr() is for).
+// Order/enquiry fields come straight from the public forms — without
+// this, a customer name or message could inject markup/script that runs
+// inside Jo's or Josh's admin session, which now also holds the raw
+// STAFF_PIN in sessionStorage.
+const esc = v => v == null ? "" : String(v).replace(/[&<>"']/g, c => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+}[c]));
 
 async function load() {
   try {
@@ -95,18 +104,18 @@ function orderRow(o) {
   const n = NEXT[o.status];
   return `<div class="orow">
     <div class="orow-top">
-      <span class="oref">${o.order_ref}</span>
+      <span class="oref">${esc(o.order_ref)}</span>
       <span class="stat-word s-${o.status}">${STATUS_LABEL[o.status]}</span>
       <span class="otime">${ago(o.created_at)}</span>
     </div>
-    <div class="ocust">${o.customer_name} · <a href="tel:${o.customer_phone}" style="color:var(--accent)">${o.customer_phone}</a>${o.customer_email ? ` · <a href="mailto:${o.customer_email}" style="color:var(--accent)">${o.customer_email}</a>` : ""}</div>
-    <div class="odesc">${o.quantity > 1 ? o.quantity + " × " : ""}${o.description}</div>
+    <div class="ocust">${esc(o.customer_name)} · <a href="tel:${esc(o.customer_phone)}" style="color:var(--accent)">${esc(o.customer_phone)}</a>${o.customer_email ? ` · <a href="mailto:${esc(o.customer_email)}" style="color:var(--accent)">${esc(o.customer_email)}</a>` : ""}</div>
+    <div class="odesc">${o.quantity > 1 ? o.quantity + " × " : ""}${esc(o.description)}</div>
     <div class="ometa">
-      ${o.category ? o.category + " · " : ""}Quote ${money(o.quoted_total)}
+      ${o.category ? esc(o.category) + " · " : ""}Quote ${money(o.quoted_total)}
       ${Number(o.deposit_paid) ? " · Deposit " + money(o.deposit_paid) : ""}
       ${o.due_date ? " · Due " + new Date(o.due_date).toLocaleDateString("en-GB") : ""}
     </div>
-    ${o.notes ? `<div class="ometa" style="color:var(--warning)">Note: ${o.notes}</div>` : ""}
+    ${o.notes ? `<div class="ometa" style="color:var(--warning)">Note: ${esc(o.notes)}</div>` : ""}
     <div class="oact">
       ${n ? `<button onclick="advance('${o.id}','${n.to}')">${n.label}</button>` : ""}
       <button class="ghost" onclick="copyLink('${o.order_ref}')">Copy tracking link</button>
@@ -119,15 +128,15 @@ function orderRow(o) {
 function enqRow(e) {
   return `<div class="orow">
     <div class="orow-top">
-      <span class="oref">${e.name}</span>
+      <span class="oref">${esc(e.name)}</span>
       ${e.handled ? '<span class="stat-word s-collected">Handled</span>'
                   : '<span class="stat-word s-enquiry">New</span>'}
       <span class="otime">${ago(e.created_at)}</span>
     </div>
-    <div class="ometa">${e.category || ""}
-      ${e.phone ? ` · <a href="tel:${e.phone}" style="color:var(--accent)">${e.phone}</a>` : ""}
-      ${e.email ? ` · <a href="mailto:${e.email}" style="color:var(--accent)">${e.email}</a>` : ""}</div>
-    <div class="odesc" style="margin-top:10px">${e.message}</div>
+    <div class="ometa">${esc(e.category)}
+      ${e.phone ? ` · <a href="tel:${esc(e.phone)}" style="color:var(--accent)">${esc(e.phone)}</a>` : ""}
+      ${e.email ? ` · <a href="mailto:${esc(e.email)}" style="color:var(--accent)">${esc(e.email)}</a>` : ""}</div>
+    <div class="odesc" style="margin-top:10px">${esc(e.message)}</div>
     ${!e.handled ? `<div class="oact"><button onclick="markHandled('${e.id}')">Mark handled</button></div>` : ""}
   </div>`;
 }
@@ -299,11 +308,11 @@ function renderGroups(p){
     ${groups.length ? groups.map(g => `
       <div class="orow">
         <div class="orow-top">
-          <span class="oref">${g.name}</span>
+          <span class="oref">${esc(g.name)}</span>
           <span class="stat-word ${g.active?"s-ready":"s-collected"}">${g.active?"Live":"Paused"}</span>
           <span class="otime">${ago(g.created_at)}</span>
         </div>
-        <div class="ometa">Web name <strong>${g.slug}</strong> &nbsp;·&nbsp; Code <strong>${g.access_code}</strong></div>
+        <div class="ometa">Web name <strong>${esc(g.slug)}</strong> &nbsp;·&nbsp; Code <strong>${esc(g.access_code)}</strong></div>
         <div class="oact">
           <button onclick="openGroupPanel('${g.id}')">Manage products</button>
           <button class="ghost" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
@@ -375,8 +384,8 @@ function renderGroupDetail(p){
       &larr; All club shops</button>
 
     <div class="orow">
-      <div class="orow-top"><span class="oref">${g.name}</span></div>
-      <div class="ometa">Web name <strong>${g.slug}</strong> · Code <strong>${g.access_code}</strong></div>
+      <div class="orow-top"><span class="oref">${esc(g.name)}</span></div>
+      <div class="ometa">Web name <strong>${esc(g.slug)}</strong> · Code <strong>${esc(g.access_code)}</strong></div>
     </div>
 
     <div class="newcard" style="margin:18px 0" id="np-card">
@@ -411,10 +420,10 @@ function renderGroupDetail(p){
 
     ${openGroupProducts.length ? openGroupProducts.map(pr => `
       <div class="orow">
-        <div class="orow-top"><span class="oref" style="font-size:15px">${pr.name}</span>
+        <div class="orow-top"><span class="oref" style="font-size:15px">${esc(pr.name)}</span>
           <span class="otime">${pr.price!=null?money(pr.price):"—"}</span></div>
-        ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
-        <div class="ometa">${pr.sizes?"Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
+        ${pr.description?`<div class="odesc">${esc(pr.description)}</div>`:""}
+        <div class="ometa">${pr.sizes?"Sizes: "+esc(pr.sizes):""}${pr.colours?" · Colours: "+esc(pr.colours):""}</div>
         <div class="oact">
           <button class="ghost" onclick="editGroupProduct('${pr.id}')">Edit</button>
           <button class="ghost" onclick="removeGroupProduct('${pr.id}')">Remove</button>

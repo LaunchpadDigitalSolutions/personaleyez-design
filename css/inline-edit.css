@@ -73,7 +73,15 @@ body.ps-edit-on [data-img]:hover::after{ opacity:1; }
 }
 .ps-toast.show{ opacity:1; }
 
+/* .mobilebar (css/style.css) is a sticky Call/Enquire nav fixed to the
+   bottom of the screen on every public page under 699px wide, at least
+   56px tall. These elements sit at a higher z-index and were landing
+   on top of it. Clear it the same way .su-sticky already does. */
+@media (max-width:699px){
+  .ps-edit-toggle{ bottom:calc(56px + env(safe-area-inset-bottom) + 14px); }
+  .ps-pin-pop, .ps-toast{ bottom:calc(56px + env(safe-area-inset-bottom) + 70px); }
+}
 @media (max-width:480px){
-  .ps-edit-toggle{ right:14px; bottom:14px; }
-  .ps-pin-pop, .ps-toast{ right:14px; left:14px; width:auto; bottom:70px; }
+  .ps-edit-toggle{ right:14px; }
+  .ps-pin-pop, .ps-toast{ right:14px; left:14px; width:auto; }
 }
