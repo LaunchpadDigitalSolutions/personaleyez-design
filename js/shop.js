@@ -20,23 +20,38 @@ function renderProducts(){
       `<p class="body dim" style="padding:0 20px">Nothing's in the shop just yet — check back soon, or give us a ring.</p>`;
     return;
   }
-  $("p-products").innerHTML = PRODUCTS.map((p,i) => {
-    const sizes = (p.sizes||"").split(",").map(s=>s.trim()).filter(Boolean);
-    const cols  = (p.colours||"").split(",").map(s=>s.trim()).filter(Boolean);
-    return `<div class="piece">
-      ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
-                    : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${p.name}</span></div>`}
-      <h3>${p.name}</h3>
-      <p style="color:var(--charcoal);font-family:var(--display);font-size:19px">${money(p.price)}</p>
-      ${p.description ? `<p>${p.description}</p>` : ""}
-      ${sizes.length ? `<div class="fld"><label for="sz-${i}">Size</label>
-        <select id="sz-${i}">${sizes.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
-      ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
-        <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
-      <div class="fld"><label for="qt-${i}">Quantity</label>
-        <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
-    </div>`;
-  }).join("");
+  // Group by category (already collected in the admin "Products" tab,
+  // just never used here before) so the shop reads as sections - Tops,
+  // Bottoms, etc - instead of one flat list. Keeps each product's index
+  // into PRODUCTS as its field id, since collectPicks() matches on that.
+  const groups = new Map();
+  PRODUCTS.forEach((p,i) => {
+    const cat = p.category || "Shop";
+    if(!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(i);
+  });
+  const showHeadings = groups.size > 1;
+  $("p-products").innerHTML = [...groups.entries()].map(([cat, idxs]) => `
+    ${showHeadings ? `<div class="shop-cat-head"><span class="label">${cat}</span></div>` : ""}
+    ${idxs.map(i => {
+      const p = PRODUCTS[i];
+      const sizes = (p.sizes||"").split(",").map(s=>s.trim()).filter(Boolean);
+      const cols  = (p.colours||"").split(",").map(s=>s.trim()).filter(Boolean);
+      return `<div class="piece">
+        ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
+                      : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${p.name}</span></div>`}
+        <h3>${p.name}</h3>
+        <p style="color:var(--charcoal);font-family:var(--display);font-size:19px">${money(p.price)}</p>
+        ${p.description ? `<p>${p.description}</p>` : ""}
+        ${sizes.length ? `<div class="fld"><label for="sz-${i}">Size</label>
+          <select id="sz-${i}">${sizes.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+        ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
+          <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+        <div class="fld"><label for="qt-${i}">Quantity</label>
+          <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
+      </div>`;
+    }).join("")}
+  `).join("");
 }
 
 function collectPicks(){
