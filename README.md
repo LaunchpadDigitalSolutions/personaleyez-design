@@ -34,7 +34,7 @@ type. Deliberately **not** a card-based ecommerce template.
 `ps_orders` · `ps_enquiries`
 
 ## Error codes
-`PS-1xx` orders · `PS-2xx` enquiries
+`PS-1xx` orders · `PS-2xx` enquiries · `PS-4xx` editable content · `PS-405`/`PS-406` site photos
 
 ## Brand switching
 `js/config.js` holds name, legal name, contact details, hours and the image map.
@@ -88,15 +88,62 @@ The admin side (viewing/editing club codes and products) now goes through the
 same `functions/api/admin.js` proxy as everything else in the dashboard, so
 finding `admin.html` no longer means finding the codes.
 
-## Editable wording (Phase 2)
+## Inline editing (Phase 3)
 
-`admin.html` → **Wording**. Any element marked `data-edit="key"` in the HTML can be
-overridden from the database (`ps_content`, keyed by page + key). Empty value = the
-hardcoded default stays. Currently wired on `index.html` and `schools.html`;
-extend by adding `data-edit` attributes and a row to `EDITABLE` in `js/admin.js`.
+Jo edits the real pages, not a form. Every public page carries a small "Edit
+this page" pill (bottom-right) behind the same PIN as `admin.html`. Toggle it
+on and any element marked `data-edit="key"` becomes click-to-edit in place;
+any `data-img="slot"` photo becomes click-to-replace in place. Both save
+immediately, live, no redeploy.
 
-This is deliberately *not* a full page builder — it's safe text swaps. Layout,
-images and structure stay in code, so Jo can't accidentally break the design.
+- **Text** — `js/inline-edit.js` + `ps_content` (keyed by page + key), same
+  table the old Wording tab used. Writes go through the PIN-gated
+  `ps_admin_save_content` RPC (see `functions/api/admin.js`), not a direct
+  anon write.
+- **Photos** — the same `ps_content` table, under the sentinel page
+  `"global"`, key `img_<slot>` (a photo used across several pages isn't
+  "owned" by any one of them). Uploads go to `POST /api/site-photo`
+  (PIN-checked, same R2 bucket as product photos, `site/` key prefix), which
+  hands back the URL that gets saved as the content value.
+- Extend either by adding a `data-edit`/`data-img` attribute to the HTML —
+  no JS or admin.js changes needed, the editor discovers them from the DOM.
+
+Still deliberately *not* a full page builder: layout and structure stay in
+code, so Jo can't accidentally break the design — only text and photos move.
+
+Legal pages (`privacy.html`, `terms.html`, `refund.html`, `cookies.html`) and
+the logo/wordmark are intentionally left out of this — Josh's call to change.
+
+**One-time setup still needed** (blocked from an automated migration —
+run by hand in the Supabase SQL editor for `coiwwbroycaznkmhevde`):
+
+```sql
+drop policy if exists ps_content_all on ps_content;
+
+create policy ps_content_select on ps_content
+  for select using (true);
+
+create or replace function public.ps_admin_save_content(p_pass text, p_page text, p_ckey text, p_value text)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+declare c ps_content%rowtype;
+begin
+  perform ps_admin_check(p_pass);
+  insert into ps_content (page, ckey, value, updated_at)
+  values (p_page, p_ckey, p_value, now())
+  on conflict (page, ckey) do update
+    set value = excluded.value, updated_at = now()
+  returning * into c;
+  return to_jsonb(c);
+end;
+$$;
+```
+
+Until this runs, saving from the inline editor will fail (the RPC doesn't
+exist yet) — reads still work fine off whatever's already in `ps_content`.
 
 ## Tests
 

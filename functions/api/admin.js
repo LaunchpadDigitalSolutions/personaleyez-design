@@ -18,6 +18,13 @@
    Set both in the Cloudflare Pages project's environment variables
    (Settings → Environment variables) — this file only reads them,
    it doesn't define them.
+
+   - env.RATE_LIMIT_KV (optional) — a KV namespace, bound in the
+     Pages project's Functions settings, used to lock out a PIN after
+     MAX_PIN_ATTEMPTS wrong tries per IP. Without it, this file works
+     exactly as before (no lockout) — a 4-digit PIN with no lockout at
+     all is brute-forceable well under an hour, so create and bind a
+     KV namespace here when you get the chance.
    ============================================================ */
 
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
@@ -32,8 +39,32 @@ const ADMIN_RPCS = new Set([
   "ps_admin_list_group_products", "ps_admin_create_group_product",
   "ps_admin_update_group_product", "ps_admin_delete_group_product",
   "ps_admin_list_shop_products", "ps_admin_create_shop_product",
-  "ps_admin_update_shop_product", "ps_admin_delete_shop_product"
+  "ps_admin_update_shop_product", "ps_admin_delete_shop_product",
+  "ps_admin_save_content"
 ]);
+
+const MAX_PIN_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 900; // 15 min
+
+async function checkRateLimit(env, request) {
+  if (!env.RATE_LIMIT_KV) return { limited: false }; // no KV bound yet - no-op
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const key = `pin_attempts:${ip}`;
+  const raw = await env.RATE_LIMIT_KV.get(key);
+  const count = raw ? parseInt(raw, 10) : 0;
+  if (count >= MAX_PIN_ATTEMPTS) return { limited: true };
+  return { limited: false, count, key };
+}
+
+async function recordFailedAttempt(env, key, count) {
+  if (!env.RATE_LIMIT_KV) return;
+  await env.RATE_LIMIT_KV.put(key, String(count + 1), { expirationTtl: LOCKOUT_SECONDS });
+}
+
+async function clearAttempts(env, key) {
+  if (!env.RATE_LIMIT_KV) return;
+  await env.RATE_LIMIT_KV.delete(key);
+}
 
 export async function onRequestPost({ request, env }) {
   if (!env.STAFF_PIN || !env.ADMIN_PASSPHRASE) {
@@ -46,9 +77,17 @@ export async function onRequestPost({ request, env }) {
   }
 
   const { pin, rpc, params } = body || {};
+
+  const rate = await checkRateLimit(env, request);
+  if (rate.limited) {
+    return new Response(JSON.stringify({ error: "PS-ADMIN-LOCKED" }), { status: 429 });
+  }
+
   if (!pin || pin !== env.STAFF_PIN) {
+    if (rate.key) await recordFailedAttempt(env, rate.key, rate.count);
     return new Response(JSON.stringify({ error: "PS-ADMIN-AUTH" }), { status: 401 });
   }
+  if (rate.key) await clearAttempts(env, rate.key);
 
   // "ping" is used only by the login screen, to check the PIN without
   // running any real query.
@@ -67,7 +106,9 @@ export async function onRequestPost({ request, env }) {
       Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ p_pass: env.ADMIN_PASSPHRASE, ...(params || {}) })
+    // Client params spread FIRST so a forged p_pass in the request body
+    // can never shadow the real passphrase set immediately after it.
+    body: JSON.stringify({ ...(params || {}), p_pass: env.ADMIN_PASSPHRASE })
   });
 
   const text = await res.text();
