@@ -145,7 +145,8 @@ async function createShopProduct(p){
   return adminRpc("ps_admin_create_shop_product", {
     p_name: p.name, p_description: p.description,
     p_price: p.price, p_sizes: p.sizes, p_colours: p.colours,
-    p_image_url: p.image_url, p_category: p.category, p_sort_order: p.sort_order
+    p_image_url: p.image_url, p_category: p.category, p_sort_order: p.sort_order,
+    p_is_school_item: p.is_school_item !== false
   }, "PS-502");
 }
 async function updateShopProduct(id, patch){
