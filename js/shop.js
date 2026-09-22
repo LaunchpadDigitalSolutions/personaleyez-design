@@ -126,7 +126,12 @@ async function startShopCheckout(){
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
   try{
-    PRODUCTS = await listShopProducts();
+    // ps_products is shared with the school-uniform flow (schools-shop.js)
+    // - a `category` there means "which school", not a shop section. Every
+    // product currently in the table is uniform stock, so this page shows
+    // only products with NO category: today that's none (the "Nothing's in
+    // the shop yet" state below), until real general-shop items are added.
+    PRODUCTS = (await listShopProducts()).filter(p => !p.category);
   }catch(e){ PRODUCTS = []; }
   renderProducts();
   renderBasket();

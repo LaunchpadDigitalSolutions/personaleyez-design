@@ -3,13 +3,17 @@
    ============================================================ */
 const NAV = [
   ["index.html",    "Home"],
-  ["shop.html",     "Shop"],
   ["services.html", "What We Make"],
   ["schools.html",  "Schools"],
   ["clubs.html",    "Club Shops"],
   ["track.html",    "Track Order"],
   ["contact.html",  "Contact"]
 ];
+// "Shop" is deliberately left out of NAV - shop.html still works, it's
+// just empty right now. Every product currently in ps_products carries a
+// `category`, and category means "which school" there (see shop.js),
+// not a general-shop section. Re-add it here once real, non-uniform
+// stock exists to list.
 
 const currentPage = () => (location.pathname.split("/").pop() || "index.html");
 
