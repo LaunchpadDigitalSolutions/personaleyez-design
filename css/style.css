@@ -197,6 +197,17 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .piece .more{margin-top:var(--s3);display:inline-block;font-size:11px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--terracotta)}
 
+/* Shop page's own product grid - .collection above is a homepage-only
+   component (3-item mobile swipe rail, oversized first-child) that
+   doesn't fit an arbitrary, sectioned product list. Plain responsive
+   grid instead; .piece styling itself (img/h3/p) is still reused as-is. */
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s6) 14px;padding:0 22px}
+.shop-cat-head{grid-column:1/-1;margin-top:var(--s7)}
+.shop-cat-head:first-child{margin-top:0}
+@media (min-width:700px){
+  .shop-grid{grid-template-columns:repeat(3,1fr);gap:var(--s7) var(--s6);padding:0 44px}
+}
+
 /* ---------- numbered process ---------- */
 .process{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5) 16px;padding:0 22px;counter-reset:p}
 .pstep{border-top:1px solid var(--line);padding-top:var(--s4)}
