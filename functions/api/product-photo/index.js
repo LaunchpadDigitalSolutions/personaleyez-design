@@ -1,10 +1,14 @@
 /* ============================================================
    POST /api/product-photo
-   Body: multipart/form-data with fields "item_id" and "file".
+   Body: multipart/form-data with fields "pin", "item_id" and "file".
    Stores the image in R2 (keyed by Square item id, so our admin page
    and shop.html can show it instantly), then pushes the same photo
    into Square's own catalog attached to that item - so it shows up
    in Jo's Square app, POS and online store too, not just our site.
+   PIN-gated against env.STAFF_PIN (same as /api/site-photo and
+   functions/api/admin.js) - this endpoint used to accept an upload
+   from anyone who found it, unauthenticated, which meant anyone
+   could overwrite a live product photo.
    Error codes: PSQ-1xx
    ============================================================ */
 
@@ -14,6 +18,9 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export async function onRequestPost(context) {
   const { request, env } = context;
 
+  if (!env.STAFF_PIN) {
+    return json({ error: "PSQ-100: admin not configured" }, 500);
+  }
   if (!env.PRODUCT_IMAGES) {
     return json({ error: "PSQ-101: image storage not configured" }, 503);
   }
@@ -23,6 +30,11 @@ export async function onRequestPost(context) {
     form = await request.formData();
   } catch {
     return json({ error: "PSQ-102: expected multipart form data" }, 400);
+  }
+
+  const pin = form.get("pin");
+  if (!pin || pin !== env.STAFF_PIN) {
+    return json({ error: "PSQ-109: wrong PIN" }, 401);
   }
 
   const itemId = form.get("item_id");
@@ -102,7 +114,7 @@ async function pushImageToSquare(token, itemId, bytes, contentType) {
 
 /* ============================================================
    DELETE /api/product-photo
-   Body: JSON { item_id }
+   Body: JSON { pin, item_id }
    Removes our own R2 copy AND any image objects Square has
    attached to that item, so a test/wrong photo doesn't linger in
    Jo's Square media library after the fact.
@@ -112,12 +124,21 @@ async function pushImageToSquare(token, itemId, bytes, contentType) {
 export async function onRequestDelete(context) {
   const { request, env } = context;
 
+  if (!env.STAFF_PIN) {
+    return json({ error: "PSQ-300: admin not configured" }, 500);
+  }
+
   let body;
   try {
     body = await request.json();
   } catch {
     return json({ error: "PSQ-301: expected JSON body" }, 400);
   }
+
+  if (!body.pin || body.pin !== env.STAFF_PIN) {
+    return json({ error: "PSQ-305: wrong PIN" }, 401);
+  }
+
   const itemId = body.item_id;
   if (!itemId) return json({ error: "PSQ-302: missing item_id" }, 400);
 

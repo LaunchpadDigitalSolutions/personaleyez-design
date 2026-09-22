@@ -89,6 +89,8 @@ async function onSquarePhotoChosen(event){
 
   try{
     const form = new FormData();
+    let pin = null; try { pin = sessionStorage.getItem("ps_admin_pin"); } catch(e) {}
+    form.append("pin", pin || "");
     form.append("item_id", itemId);
     form.append("file", file);
     const res = await fetch("/api/product-photo", { method:"POST", body: form });
