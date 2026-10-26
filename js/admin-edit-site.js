@@ -44,3 +44,25 @@ function editSitePanel() {
     return _render.apply(this, arguments);
   };
 })();
+
+/* Back to admin from the editor lands here (#editsite). The dashboard's own hash restore only knows its original
+   tabs, so it would drop us on Live: turn that restore into Edit site, until the user taps a tab themselves. */
+(function () {
+  if (typeof setTab !== "function" || location.hash !== "#editsite") return;
+  let touched = false;
+  document.addEventListener("pointerdown", e => { if (e.target.closest(".tab")) touched = true; }, true);
+  const _setTab = setTab;
+  setTab = function (t) {
+    if (!touched && t === "live") t = "editsite";
+    return _setTab.call(this, t);
+  };
+  /* If the dashboard never calls setTab on load, do it once it is unlocked. */
+  let tries = 0;
+  const go = () => {
+    if (touched || (typeof tab !== "undefined" && tab === "editsite")) return;
+    const gate = document.getElementById("pingate");
+    if (gate && getComputedStyle(gate).display !== "none") { if (++tries < 120) setTimeout(go, 250); return; }
+    setTab("editsite");
+  };
+  document.addEventListener("DOMContentLoaded", () => setTimeout(go, 600));
+})();
