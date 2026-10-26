@@ -25,6 +25,9 @@
    ============================================================ */
 
 function psInitInlineEditor(page){
+  // The editor is for a signed-in admin session only (Josh and Jo). Everyone else never sees the pill.
+  // The real lock is still the staff PIN, which the server checks on every save.
+  if (!psHasPin()) return;
   const toggle = document.createElement("div");
   toggle.className = "ps-edit-toggle";
   toggle.innerHTML = `<span>Edit this page</span><button class="ps-switch" aria-label="Toggle edit mode"></button>`;
@@ -38,6 +41,8 @@ function psInitInlineEditor(page){
     if (editEl) { e.preventDefault(); psEditText(editEl, page); }
     else if (imgEl) { e.preventDefault(); psEditImage(imgEl, page); }
   });
+  // Opened from the admin dashboard (Edit site tab): go straight into edit mode.
+  if (/[?&]edit=1(&|$)/.test(location.search)) psEnterEdit(page);
 }
 
 function psHasPin(){
@@ -94,7 +99,7 @@ function psEnterEdit(page){
   const bar = document.createElement("div");
   bar.className = "ps-editbar";
   bar.id = "ps-editbar";
-  bar.innerHTML = `<span>Editing peachstate.co.uk — only you and Josh see this. Changes go live as you save them.</span>
+  bar.innerHTML = `<span>Editing peachstate.co.uk — changes go live as you save them. <a href="admin.html#editsite" style="color:inherit;text-decoration:underline;white-space:nowrap">Back to admin</a></span>
     <button id="ps-editbar-done">Done editing</button>`;
   document.body.prepend(bar);
   bar.querySelector("#ps-editbar-done").addEventListener("click", () => {
