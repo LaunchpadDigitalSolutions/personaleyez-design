@@ -57,10 +57,20 @@ const PSB = (() => {
   };
 
   /* ---------- toolbar ---------- */
-  const ic = n => '<i class="ti ti-' + n + '" aria-hidden="true"></i>';
+  const PATHS = {   // inline icons (the site doesn't load an icon font)
+    "arrow-back-up": '<path d="M9 14l-4 -4l4 -4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/>',
+    "arrow-forward-up": '<path d="M15 14l4 -4l-4 -4"/><path d="M19 10h-11a4 4 0 1 0 0 8h1"/>',
+    "arrow-up": '<path d="M12 5l0 14"/><path d="M18 11l-6 -6"/><path d="M6 11l6 -6"/>',
+    "arrow-down": '<path d="M12 5l0 14"/><path d="M18 13l-6 6"/><path d="M6 13l6 6"/>',
+    "trash": '<path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>',
+    "plus": '<path d="M12 5l0 14"/><path d="M5 12l14 0"/>',
+    "grip-vertical": '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>'
+  };
+  const ic = n => '<svg class="ps-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PATHS[n] + '</svg>';
   function btn(a, icon, label, on) { return '<button data-a="' + a + '" aria-label="' + label + '" class="ps-b' + (on === false ? " dim" : "") + (a === "rm" && rmMode ? " on" : "") + '">' + ic(icon) + '</button>'; }
   function refresh() {
     if (!bar) return;
+    if (sel && !PSL.el(sel)) sel = null;           // the selected section is gone (e.g. its add was undone)
     const vis = PSL.visible(), p = sel ? vis.indexOf(sel) : -1;
     const info = rmMode ? "Tap anything to remove it" : sel ? PSL.label("s:" + sel) + " · " + (p + 1) + " of " + vis.length
       : (msg || "Tap Move on a section to reorder it");
@@ -74,8 +84,7 @@ const PSB = (() => {
       + '<span class="ps-sep"></span>' + btn("up", "arrow-up", "Move section up", !!sel && p > 0) + btn("down", "arrow-down", "Move section down", !!sel && p < vis.length - 1)
       + btn("rm", "trash", "Remove", true)
       + '<button data-a="add" class="ps-pill">' + ic("plus") + ' Add</button>'
-      + (n ? '<button data-a="tray" class="ps-pill alt">Removed (' + n + ')</button>' : "")
-      + '<button data-a="done" class="ps-done">Done</button>';
+      + (n ? '<button data-a="tray" class="ps-pill alt">Removed (' + n + ')</button>' : "");
     document.querySelectorAll("[data-sec]").forEach(s => s.classList.toggle("ps-sel", s.dataset.sec === sel));
     document.querySelectorAll(".ps-movetab").forEach(t => { const on = t.dataset.for === sel; t.innerHTML = ic("grip-vertical") + (on ? " Selected" : " Move"); t.classList.toggle("on", on); });
     typeof PSS !== "undefined" && PSS.refresh();
