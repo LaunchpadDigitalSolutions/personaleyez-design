@@ -2,17 +2,22 @@
    inline-edit.js — Jo edits the real page, in place.
 
    Replaces the old admin.html "Wording" form: instead of a list of
-   textareas somewhere else, every [data-edit] and [data-img] element
-   on the page she's actually looking at becomes click-to-change,
-   gated by the same PIN as admin.html. Text still lives in
-   ps_content (js/api.js: loadContent/applyContent/saveContent);
-   photos are the same table under page=<page>, ckey="img_<slot>" -
-   and the R2 object is stored under "site/<page>/<slot>" too, so the
-   same slot name reused on two pages (e.g. "folded" on both
-   schools.html and services.html) doesn't overwrite each other.
+   textareas somewhere else, every [data-edit] and [data-img]
+   element on the page she's actually looking at becomes
+   click-to-change, gated by the same PIN as admin.html. Text still
+   lives in ps_content (js/api.js: loadContent/applyContent/
+   saveContent); photos are the same table under page=<page>,
+   ckey="img_<slot>" - and the R2 object is stored under
+   "site/<page>/<slot>" too, so the same slot name reused on two
+   pages (e.g. "folded" on both schools.html and services.html)
+   doesn't overwrite each other.
 
    Call psInitInlineEditor(page) once, after loadContent()+applyContent()
    have run, from the bottom of each public page.
+
+   Auto-tagging: every visible piece of body text that isn't already
+   a [data-edit] gets one automatically (see psAutoTag at the bottom),
+   so new copy is editable without anyone remembering to tag it.
    Error codes: PS-407
    ============================================================ */
 
@@ -176,4 +181,87 @@ function psEditImage(el, page){
     el.style.opacity = "";
   });
   input.click();
+}
+
+/* ---------- auto-tagging: make every piece of body text editable ----------
+
+   Walks every text node in <body> and gives it a data-edit key, so Jo
+   can click any wording on the page without anyone hand-tagging it.
+
+   - Element with only text inside (h2, p, b, a...) -> that element is tagged.
+   - Element with text mixed in with child elements (e.g. "A name
+     changes<br><span class=italic>everything.</span>") -> each loose
+     piece of text is wrapped in its own <span data-edit>, so editing it
+     never flattens the italic/linebreak next to it. Leading/trailing
+     spaces stay OUTSIDE the span so words don't run together after a save.
+   - Key = hash of the ORIGINAL text (+ "_2", "_3"... for repeats on the
+     same page), so it stays stable between loads. Anything already
+     hand-tagged ([data-edit]/[data-img]) is left alone.
+   - Skipped: header/footer/nav (they come from partials.js + config),
+     form labels/buttons/inputs, opening hours, anything fed from
+     BRAND config ([data-brand]), arrows, and status notices.
+
+   Runs automatically just before applyContent() (see the wrapper below),
+   so saved edits are applied to auto-tagged text too.
+   ------------------------------------------------------------------ */
+
+function psAutoTag(){
+  if (document.body.dataset.psTagged) return;
+  document.body.dataset.psTagged = "1";
+
+  const SKIP = [
+    ".site-header", ".site-footer", ".mobilebar", "nav", "script", "style", "noscript",
+    "svg", "button", "select", "option", "textarea", "input", "label", "form",
+    ".hours", ".notice", ".consent", ".arrow", "[data-no-edit]",
+    "[data-brand]", "[data-brand-href]",
+    ".ps-edit-toggle", ".ps-editbar", ".ps-pin-pop", ".ps-toast"
+  ].join(",");
+  const DYNAMIC = "[data-brand],[data-brand-href]";
+
+  const seen = {};
+  function keyFor(text){
+    const t = text.trim().replace(/\s+/g, " ");
+    let h = 5381;
+    for (const c of t) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+    const base = "t" + (h >>> 0).toString(36);
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] > 1 ? base + "_" + seen[base] : base;
+  }
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(n => {
+    const raw = n.nodeValue;
+    if (!raw || !raw.trim()) return;
+    const p = n.parentElement;
+    if (!p) return;
+    if (p.closest(SKIP)) return;
+    if (p.closest("[data-edit],[data-img]")) return;   // already tagged by hand (or by us)
+    if (p.querySelector(DYNAMIC)) return;               // mixes in config-driven bits - leave it
+
+    if (p.children.length === 0) {                      // pure-text element: tag it directly
+      p.dataset.edit = keyFor(p.textContent);
+      return;
+    }
+
+    const m = raw.match(/^(\s*)([\s\S]*?)(\s*)$/);       // text mixed with child elements: wrap it
+    const span = document.createElement("span");
+    span.dataset.edit = keyFor(m[2]);
+    span.textContent = m[2];
+    const frag = document.createDocumentFragment();
+    if (m[1]) frag.append(document.createTextNode(m[1]));
+    frag.append(span);
+    if (m[3]) frag.append(document.createTextNode(m[3]));
+    n.replaceWith(frag);
+  });
+}
+
+/* Pages call applyContent() from their DOMContentLoaded handler; make
+   sure auto-tagging happens first so saved edits land on every piece
+   of text, not just the hand-tagged ones. */
+if (typeof applyContent === "function") {
+  const _psApplyContent = applyContent;
+  applyContent = function(){ psAutoTag(); return _psApplyContent.apply(this, arguments); };
 }
