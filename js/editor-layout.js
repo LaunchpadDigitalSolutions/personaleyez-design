@@ -85,7 +85,7 @@ const PSL = (() => {
   }
   function label(ref) {
     const n = resolve(ref); if (!n) return ref;
-    if (ref[0] === "s") return (n.querySelector("h1,h2,h3,blockquote,.label,img") || n).textContent.trim().slice(0, 40) || "Photo banner";
+    if (ref[0] === "s") { const t = n.querySelector("h1,h2,h3,blockquote,.label"); return (t && t.textContent.trim().slice(0, 40)) || "Photo banner"; }
     return ref[0] === "i" ? "Photo" : (n.textContent.trim().slice(0, 40) || "Item");
   }
 
@@ -130,7 +130,7 @@ const PSL = (() => {
     const a = arr.indexOf(vis[p]), b = arr.indexOf(vis[q]);
     [arr[a], arr[b]] = [arr[b], arr[a]]; layout.order = arr; return true;
   }
-  const remove = ref => { if (!ref || layout.removed.includes(ref)) return false; layout.removed.push(ref); return true; };
+  const remove = ref => { if (!ref || layout.removed.includes(ref) || !resolve(ref)) return false; layout.removed.push(ref); return true; };
   const restore = ref => { const n = layout.removed.indexOf(ref); if (n < 0) return false; layout.removed.splice(n, 1); return true; };
   function addBlock(t, c, afterId) {
     const b = { id: uid(), t, c }; layout.added.push(b);
