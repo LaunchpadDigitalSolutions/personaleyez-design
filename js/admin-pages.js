@@ -79,34 +79,36 @@ function newPageHtml() {
   return '<div style="padding:4px 2px 24px">'
     + '<button class="ghost" onclick="cancelNewPage()" style="min-height:44px;padding:0 18px;border-radius:2px;background:var(--cream-deep);margin-bottom:16px">&larr; Pages</button>'
     + '<div class="newcard"><h2 style="font-size:20px;font-family:var(--display)">New page</h2>'
-    + '<div class="fld"><label for="np-title">Page name</label>'
-    + '<input id="np-title" type="text" placeholder="Spring offers" oninput="newPageAuto()" autocomplete="off"></div>'
-    + '<div class="fld"><label for="np-slug">Web address</label>'
-    + '<input id="np-slug" type="text" placeholder="spring-offers" oninput="newPageSlugTyped()" autocomplete="off" autocapitalize="none"></div>'
-    + '<p id="np-url" style="font-size:12px;color:var(--muted);margin:-4px 0 14px">peachstate.co.uk/p/… Letters, numbers and dashes only.</p>'
+    + '<div class="fld"><label for="pgn-title">Page name</label>'
+    + '<input id="pgn-title" type="text" placeholder="Spring offers" oninput="newPageAuto()" autocomplete="off"></div>'
+    + '<div class="fld"><label for="pgn-slug">Web address</label>'
+    + '<input id="pgn-slug" type="text" placeholder="spring-offers" oninput="newPageSlugTyped()" autocomplete="off" autocapitalize="none"></div>'
+    + '<p id="pgn-url" style="font-size:12px;color:var(--muted);margin:-4px 0 14px">peachstate.co.uk/p/… Letters, numbers and dashes only.</p>'
     + '<div class="fld" style="display:flex;justify-content:space-between;align-items:center;gap:12px">'
-    + '<label for="np-nav" style="margin:0">Show in the site menu</label>'
-    + '<input id="np-nav" type="checkbox" checked style="width:auto;min-height:auto"></div>'
-    + '<div class="notice" id="np-notice"></div>'
-    + '<button class="btn-solid" id="np-save" onclick="createNewPage()" style="margin-top:18px">Create page and start building</button>'
+    + '<label for="pgn-nav" style="margin:0">Show in the site menu</label>'
+    + '<input id="pgn-nav" type="checkbox" checked style="width:auto;min-height:auto"></div>'
+    + '<div class="notice" id="pgn-notice"></div>'
+    + '<button class="btn-solid" id="pgn-save" onclick="createNewPage()" style="margin-top:18px">Create page and start building</button>'
     + '</div></div>';
 }
 
-function openNewPage() { pagesView = "new"; npSlugTouched = false; pageToRemove = null; render(); $("np-title")?.focus(); }
+function openNewPage() { pagesView = "new"; npSlugTouched = false; pageToRemove = null; render(); $("pgn-title")?.focus(); }
 function cancelNewPage() { pagesView = "list"; render(); }
 function npShowUrl() {
-  const el = $("np-url"), s = pageSlug($("np-slug").value);
+  const el = $("pgn-url"), s = pageSlug($("pgn-slug").value);
   if (el) el.textContent = "peachstate.co.uk/p/" + (s || "…") + "  ·  letters, numbers and dashes only.";
 }
 function newPageAuto() {
-  if (!npSlugTouched) $("np-slug").value = pageSlug($("np-title").value);
+  if (!npSlugTouched) $("pgn-slug").value = pageSlug($("pgn-title").value);
   npShowUrl();
 }
 function newPageSlugTyped() { npSlugTouched = true; npShowUrl(); }
 
+function pageGoTo(url) { location.href = url; }
+
 async function createNewPage() {
-  const title = $("np-title").value.trim(), slug = pageSlug($("np-slug").value || title), nav = $("np-nav").checked;
-  const n = $("np-notice"), btn = $("np-save"), err = m => { n.className = "notice show err"; n.textContent = m; };
+  const title = $("pgn-title").value.trim(), slug = pageSlug($("pgn-slug").value || title), nav = $("pgn-nav").checked;
+  const n = $("pgn-notice"), btn = $("pgn-save"), err = m => { n.className = "notice show err"; n.textContent = m; };
   if (!title) return err("Give the page a name.");
   if (!slug) return err("The web address needs some letters or numbers.");
   if (PAGE_RESERVED.includes(slug)) return err("'" + slug + "' is used by the site itself. Choose a different web address.");
@@ -115,7 +117,7 @@ async function createNewPage() {
   btn.disabled = true; n.className = "notice show busy"; n.textContent = "Creating…";
   try {
     const p = await pageApi.create(title, slug, nav);
-    location.href = "p/" + p.slug + "?edit=1";        // straight into the editor
+    pageGoTo("p/" + p.slug + "?edit=1");               // straight into the editor
   } catch (e) {
     err("Couldn't create that page (" + e.message + "). The web address may already be used.");
     btn.disabled = false;
@@ -147,7 +149,7 @@ function toggleNavPage(id) {
   // The 30s auto-refresh must not redraw underneath someone part-way through the form.
   const _load = load;
   load = function () {
-    const t = $("np-title"), s = $("np-slug");
+    const t = $("pgn-title"), s = $("pgn-slug");
     return (t && t.value.trim()) || (s && s.value.trim()) ? Promise.resolve() : _load.apply(this, arguments);
   };
 
