@@ -40,7 +40,12 @@ const ADMIN_RPCS = new Set([
   "ps_admin_update_group_product", "ps_admin_delete_group_product",
   "ps_admin_list_shop_products", "ps_admin_create_shop_product",
   "ps_admin_update_shop_product", "ps_admin_delete_shop_product",
-  "ps_admin_save_content"
+  "ps_admin_save_content",
+  // Ranges (reusable product lists) and duplicating a club shop
+  "ps_admin_list_ranges", "ps_admin_create_range", "ps_admin_delete_range",
+  "ps_admin_list_range_products", "ps_admin_create_range_product",
+  "ps_admin_update_range_product", "ps_admin_delete_range_product",
+  "ps_admin_add_range_to_group", "ps_admin_duplicate_group"
 ]);
 
 const MAX_PIN_ATTEMPTS = 5;
