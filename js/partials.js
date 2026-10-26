@@ -15,12 +15,42 @@ const NAV = [
 // not a general-shop section. Re-add it here once real, non-uniform
 // stock exists to list.
 
-const currentPage = () => (location.pathname.split("/").pop() || "index.html");
+/* Pages made in the admin (Edit site > New page, shown at /p/<name>) are
+   added after the built-in ones when "show in menu" is ticked. The list is
+   cached in the browser so the menu doesn't flicker, and refreshed in the
+   background on every page view. If anything goes wrong the menu simply
+   keeps what it already has. */
+const NAV_PAGES_KEY = "ps_nav_pages";
+const navEsc = s => String(s).replace(/[&<>"']/g, c => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+}[c]));
+function extraNav(){
+  try {
+    const rows = JSON.parse(localStorage.getItem(NAV_PAGES_KEY) || "[]");
+    return rows.filter(p => p && /^[a-z0-9-]+$/.test(p.slug) && p.title).map(p => ["p/" + p.slug, p.title]);
+  } catch (e) { return []; }
+}
+const allNav = () => NAV.concat(extraNav());
+async function refreshNavPages(){
+  if (typeof sb !== "function") return;
+  try {
+    const rows = await sb("ps_pages?select=slug,title&published=eq.true&show_in_nav=eq.true&order=sort_order,created_at", {}, "PS-510");
+    const next = JSON.stringify(rows || []);
+    if (next === (localStorage.getItem(NAV_PAGES_KEY) || "[]")) return;
+    localStorage.setItem(NAV_PAGES_KEY, next);
+    if (document.getElementById("site-header")) renderHeader();
+    if (document.getElementById("site-footer")) renderFooter();
+  } catch (e) { /* keep the current menu */ }
+}
+
+const currentPage = () => location.pathname.indexOf("/p/") === 0
+  ? "p/" + location.pathname.slice(3).replace(/\/$/, "")
+  : (location.pathname.split("/").pop() || "index.html");
 
 function renderHeader(){
   const here = currentPage();
-  const links = NAV.map(([h,t]) =>
-    `<a href="${h}" class="${h===here?"on":""}">${t}</a>`).join("");
+  const links = allNav().map(([h,t]) =>
+    `<a href="${h}" class="${h===here?"on":""}">${navEsc(t)}</a>`).join("");
   document.getElementById("site-header").innerHTML = `
     <div class="header-inner">
       <a href="index.html" class="brandlink">
@@ -41,18 +71,19 @@ function renderHeader(){
   // The header uses backdrop-filter, which creates a containing block for
   // fixed-position children. The nav panel must live on <body> or it will
   // position against the header instead of the viewport.
-  if (!document.getElementById("nav-mobile")) {
-    const nav = document.createElement("nav");
+  let nav = document.getElementById("nav-mobile");
+  if (!nav) {
+    nav = document.createElement("nav");
     nav.className = "nav-mobile";
     nav.id = "nav-mobile";
-    nav.innerHTML = `
-      ${NAV.map(([h,t]) => `<a class="navlink" href="${h}">${t}</a>`).join("")}
+    document.body.appendChild(nav);
+  }
+  nav.innerHTML = `
+      ${allNav().map(([h,t]) => `<a class="navlink" href="${h}">${navEsc(t)}</a>`).join("")}
       <div class="navfoot">
         <span class="label">Call the studio</span>
         <a href="${BRAND.phoneLink}">${BRAND.phone}</a>
       </div>`;
-    document.body.appendChild(nav);
-  }
 }
 
 function toggleNav(){
@@ -74,7 +105,7 @@ function renderFooter(){
         </div>
         <div>
           <span class="label">Explore</span>
-          <nav>${NAV.map(([h,t]) => `<a href="${h}">${t}</a>`).join("")}</nav>
+          <nav>${allNav().map(([h,t]) => `<a href="${h}">${navEsc(t)}</a>`).join("")}</nav>
         </div>
         <div>
           <span class="label">We Make</span>
@@ -109,6 +140,7 @@ function renderFooter(){
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("site-header")) renderHeader();
   if (document.getElementById("site-footer")) renderFooter();
+  refreshNavPages();
 });
 
 let _tt;
