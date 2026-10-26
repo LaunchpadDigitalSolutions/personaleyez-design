@@ -10,6 +10,10 @@
 
    Hooks into admin.js by wrapping render / load / setTab /
    renderGroupDetail, so admin.js itself stays untouched.
+
+   Note: names used in onclick="..." attributes must not clash with
+   built-ins on document/window (createRange() is one - hence
+   createNewRange below).
    Error codes: PS-31x
    ============================================================ */
 
@@ -52,7 +56,7 @@ function renderRanges(p) {
       <div class="fld"><label for="rg-name">Range name</label>
         <input id="rg-name" type="text" placeholder="Dance range" autocomplete="off"></div>
       <div class="notice" id="rg-notice"></div>
-      <button class="btn-solid" id="rg-save" onclick="createRange()" style="margin-top:18px">Create range</button>
+      <button class="btn-solid" id="rg-save" onclick="createNewRange()" style="margin-top:18px">Create range</button>
     </div>
     ${ranges.length ? ranges.map(r => `
       <div class="orow">
@@ -64,7 +68,7 @@ function renderRanges(p) {
     : `<p style="text-align:center;color:var(--muted);padding:50px 0">No ranges yet.</p>`}`;
 }
 
-async function createRange() {
+async function createNewRange() {
   const name = $("rg-name").value.trim(), n = $("rg-notice"), btn = $("rg-save");
   if (!name) { n.className = "notice show err"; n.textContent = "Give the range a name."; return; }
   btn.disabled = true; n.className = "notice show busy"; n.textContent = "Creating…";
