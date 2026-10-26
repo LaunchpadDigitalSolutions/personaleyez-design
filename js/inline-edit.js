@@ -16,8 +16,11 @@
    have run, from the bottom of each public page.
 
    Auto-tagging: every visible piece of body text that isn't already
-   a [data-edit] gets one automatically (see psAutoTag at the bottom),
-   so new copy is editable without anyone remembering to tag it.
+   a [data-edit] gets one automatically (see psAutoTag below), so new
+   copy is editable without anyone remembering to tag it.
+
+   The editor bar (move / remove / add / undo) is loaded from the last
+   lines of this file: js/editor-layout.js, editor-bar.js, editor-sheets.js.
    Error codes: PS-407
    ============================================================ */
 
@@ -133,6 +136,7 @@ function psEditText(el, page){
     try {
       await saveContent(page, key, after);
       CONTENT[key] = after;
+      delete el.dataset.ph;
       psToast("Saved · live now");
     } catch (e) {
       el.textContent = before;
@@ -214,7 +218,7 @@ function psAutoTag(){
     "svg", "button", "select", "option", "textarea", "input", "label", "form",
     ".hours", ".notice", ".consent", ".arrow", "[data-no-edit]",
     "[data-brand]", "[data-brand-href]",
-    ".ps-edit-toggle", ".ps-editbar", ".ps-pin-pop", ".ps-toast"
+    ".ps-edit-toggle", ".ps-editbar", ".ps-pin-pop", ".ps-toast", ".ps-bar"
   ].join(",");
   const DYNAMIC = "[data-brand],[data-brand-href]";
 
@@ -265,3 +269,13 @@ if (typeof applyContent === "function") {
   const _psApplyContent = applyContent;
   applyContent = function(){ psAutoTag(); return _psApplyContent.apply(this, arguments); };
 }
+
+/* Editor bar modules: loaded right after this file, in order, so their
+   wrappers around loadContent/applyContent/saveContent are in place
+   before the page's DOMContentLoaded handler runs. */
+(function(){
+  const v = "?v=0.9.0";
+  document.write('<link rel="stylesheet" href="css/editor-bar.css' + v + '">');
+  ["editor-layout", "editor-bar", "editor-sheets"].forEach(n =>
+    document.write('<script src="js/' + n + '.js' + v + '"><\/script>'));
+})();
