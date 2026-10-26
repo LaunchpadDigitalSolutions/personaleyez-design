@@ -45,7 +45,9 @@ const ADMIN_RPCS = new Set([
   "ps_admin_list_ranges", "ps_admin_create_range", "ps_admin_delete_range",
   "ps_admin_list_range_products", "ps_admin_create_range_product",
   "ps_admin_update_range_product", "ps_admin_delete_range_product",
-  "ps_admin_add_range_to_group", "ps_admin_duplicate_group"
+  "ps_admin_add_range_to_group", "ps_admin_duplicate_group",
+  // Pages made from the admin (shown at /p/<name>)
+  "ps_admin_list_pages", "ps_admin_create_page", "ps_admin_update_page"
 ]);
 
 const MAX_PIN_ATTEMPTS = 5;
