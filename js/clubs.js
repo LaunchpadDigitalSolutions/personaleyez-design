@@ -7,6 +7,9 @@
 let GROUP = null, PRODUCTS = [], picks = [];
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
+const escHtml = v => v == null ? "" : String(v).replace(/[&<>"']/g, c => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+}[c]));
 
 function note(el, cls, msg){
   const n = $(el); n.className = "notice show " + cls; n.textContent = msg;
@@ -64,16 +67,32 @@ function showShop(){
   window.scrollTo(0,0);
 }
 
+/* Items that came from a range (e.g. "Dance range") sit together under the
+   range's name. Anything that didn't come from a range comes first. The
+   order within each group is unchanged. */
+function orderByRange(list){
+  const names = [];
+  list.forEach(p => { const r = p.range_name || ""; if(!names.includes(r)) names.push(r); });
+  names.sort((a,b) => (a === "" ? -1 : 0) - (b === "" ? -1 : 0));
+  return names.flatMap(r => list.filter(p => (p.range_name || "") === r));
+}
+
 function renderProducts(){
   if(!PRODUCTS.length){
     $("s-products").innerHTML =
       `<p class="body dim" style="padding:0 20px">Nothing's been added to this shop yet. Give us a ring and we'll sort it.</p>`;
     return;
   }
+  PRODUCTS = orderByRange(PRODUCTS);   // before the numbered ids below, so picks still match their item
+  let lastRange = "";
   $("s-products").innerHTML = PRODUCTS.map((p,i) => {
     const sizes = (p.sizes||"").split(",").map(s=>s.trim()).filter(Boolean);
     const cols  = (p.colours||"").split(",").map(s=>s.trim()).filter(Boolean);
-    return `<div class="piece">
+    const range = p.range_name || "";
+    const heading = range && range !== lastRange
+      ? `<h2 class="display-md" style="grid-column:1/-1;margin:40px 0 4px;padding:0 20px">${escHtml(range)}</h2>` : "";
+    lastRange = range;
+    return heading + `<div class="piece">
       ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
                     : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${p.name}</span></div>`}
       <h3>${p.name}</h3>
