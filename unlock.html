@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2B2622">
+<title>Unlock — Peach State</title>
+<style>
+body{margin:0;background:#FAF6EF;color:#2B2622;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;box-sizing:border-box}
+main{width:100%;max-width:340px;text-align:center}
+h1{font-family:Georgia,serif;font-weight:400;font-size:24px;margin:0 0 6px}
+p{color:#6B6159;font-size:15px;margin:0 0 22px}
+input{width:100%;box-sizing:border-box;font-size:16px;padding:12px;border:1px solid #D9CFC2;border-radius:2px;background:#fff}
+button{width:100%;min-height:44px;margin-top:16px;border:0;border-radius:2px;background:#B8573A;color:#fff;font-size:16px;font-weight:500}
+button:disabled{background:#E3D9CC;color:#9A8F84}
+#msg{margin-top:16px;font-size:14px;min-height:20px}
+.err{color:#9B3B1E}.ok{color:#3B6D11}
+</style>
+</head>
+<body>
+<main>
+  <h1>Unlock PIN screens</h1>
+  <p>Clears every PIN lockout straight away.</p>
+  <input id="key" type="password" autocomplete="off" placeholder="Unlock key" onkeydown="if(event.key==='Enter')go()">
+  <button id="go" onclick="go()">Unlock</button>
+  <div id="msg" role="status"></div>
+</main>
+<script>
+/* Posts the key to /api/admin-unlock. Error codes: PS-UNLOCK-CONFIG, PS-UNLOCK-AUTH */
+async function go(){
+  const key = document.getElementById("key").value.trim();
+  const msg = document.getElementById("msg"), btn = document.getElementById("go");
+  if (!key) { msg.className = "err"; msg.textContent = "Enter the unlock key."; return; }
+  btn.disabled = true; msg.className = ""; msg.textContent = "Unlocking…";
+  try {
+    const res = await fetch("/api/admin-unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) { msg.className = "ok"; msg.textContent = d.cleared ? "Unlocked (" + d.cleared + " cleared)." : "Nothing was locked."; document.getElementById("key").value = ""; }
+    else if (d.error === "PS-UNLOCK-CONFIG") { msg.className = "err"; msg.textContent = "Not set up yet (PS-UNLOCK-CONFIG)."; }
+    else { msg.className = "err"; msg.textContent = "That key isn't right (PS-UNLOCK-AUTH)."; }
+  } catch (e) { msg.className = "err"; msg.textContent = "Couldn't reach the site. Try again."; }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
