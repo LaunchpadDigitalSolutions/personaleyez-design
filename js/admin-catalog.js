@@ -71,10 +71,10 @@ function catBadge(c) {
 function renderCatalog(p) {
   if (editingCatalog !== undefined) { renderCatalogEdit(p); return; }
   p.innerHTML = `
-    <div class="orow" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <div><div class="oref">Catalog</div>
-        <div class="ometa">Edit a product here and every shop using it updates.</div></div>
-      <button class="btn-solid" onclick="newCatalogProduct()" style="flex:none;padding:0 16px;min-height:44px">+ Add product</button>
+    <div class="orow">
+      <div class="oref">Catalog</div>
+      <div class="ometa">Edit a product here and every shop using it updates.</div>
+      <button class="btn-solid" onclick="newCatalogProduct()" style="margin-top:14px;width:100%">+ Add product</button>
     </div>
     ${!catalogLoaded ? `<p style="text-align:center;color:var(--muted);padding:30px 0">Loading…</p>`
       : catalog.length ? catalog.map(c => `
