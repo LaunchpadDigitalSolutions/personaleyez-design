@@ -8,6 +8,11 @@
    Items already in the shop are skipped, so adding twice is harmless.
    Duplicating a shop copies all its items to a new, paused shop.
 
+   The only thing that differs between clubs is the logo, so every item
+   in a club shop has its own photo (the product with that club's logo),
+   added with one tap from the item row. Duplicating a shop does NOT
+   copy photos, because they would show the old club's logo.
+
    Hooks into admin.js by wrapping render / load / setTab /
    renderGroupDetail, so admin.js itself stays untouched.
 
@@ -113,7 +118,7 @@ function renderRangeDetail(p) {
         <input id="rp-sizes" type="text" placeholder="3-4, 5-6, S, M, L" autocomplete="off" value="${e ? attr(e.sizes) : ""}"></div>
       <div class="fld"><label for="rp-cols">Colours, comma separated (optional)</label>
         <input id="rp-cols" type="text" placeholder="Black, Grey" autocomplete="off" value="${e ? attr(e.colours) : ""}"></div>
-      <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Photos are added in each club shop, because every club's branding is different.</p>
+      <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Photos are added in each club shop, because every club's logo is different.</p>
       <div class="notice" id="rp-notice"></div>
       <div style="display:flex;gap:10px;margin-top:18px">
         <button class="btn-solid" id="rp-save" onclick="saveRangeProduct()" style="flex:1">${e ? "Save changes" : "Add product"}</button>
@@ -194,7 +199,7 @@ function shopToolsHtml() {
     </div>
     <div class="newcard" style="margin:18px 0" id="dup-card">
       <h2 style="font-size:19px;font-family:var(--display)">Duplicate this shop</h2>
-      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">Copies all ${plural(openGroupProducts.length, "item")} into a new shop for another club. The new shop starts paused until you reactivate it.</p>
+      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">Copies all ${plural(openGroupProducts.length, "item")} into a new shop for another club, without their photos (those show the old club logo), so add each item photo afterwards. The new shop starts paused until you reactivate it.</p>
       <div class="fld"><label for="dup-name">New club or team name</label>
         <input id="dup-name" type="text" placeholder="Starlight Cheer" oninput="dupAutoSlug()" autocomplete="off"></div>
       <div class="fld"><label for="dup-slug">Web name</label>
@@ -214,9 +219,52 @@ function decorateGroupDetail(p) {
   if (rows[0]) rows[0].insertAdjacentHTML("afterend", shopToolsHtml());
   rows.slice(1).forEach((row, i) => {                    // tag each item with the range it came from
     const pr = openGroupProducts[i], meta = row.querySelector(".ometa");
-    if (pr && pr.range_name && meta) meta.insertAdjacentText("beforeend", " · " + pr.range_name);
+    if (!pr) return;
+    if (pr.range_name && meta) meta.insertAdjacentText("beforeend", " · " + pr.range_name);
+    // Thumbnail + one-tap photo button: each club's items need their own photo (their logo on the product).
+    row.insertAdjacentHTML("afterbegin", '<div style="margin-bottom:10px">' + (pr.image_url
+      ? '<img src="' + attr(pr.image_url) + '" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;display:block">'
+      : '<div style="width:56px;height:56px;border-radius:8px;background:var(--cream-deep);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-align:center">No photo</div>') + '</div>');
+    const act = row.querySelector(".oact");
+    if (act) act.insertAdjacentHTML("afterbegin", '<button class="qp-btn' + (pr.image_url ? " ghost" : "") + '" onclick="quickPhoto(\'' + pr.id + '\')">'
+      + (pr.image_url ? "Replace photo" : "Add photo") + '</button>');
   });
+  const missing = openGroupProducts.filter(x => !x.image_url).length, head = rows[0] && rows[0].querySelector(".ometa");
+  if (head && openGroupProducts.length && missing)
+    head.insertAdjacentHTML("beforeend", '<br><strong style="color:var(--terracotta)">' + missing + " of " + plural(openGroupProducts.length, "item") + " still need" + (missing === 1 ? "s" : "") + " a photo.</strong>");
+  p.insertAdjacentHTML("beforeend", '<input type="file" id="qp-file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onQuickPhoto(event)">');
   if (!rangesLoaded) loadRanges().then(() => { if (tab === "groups" && openGroup) render(); });
+}
+
+let quickPhotoId = null;
+function quickPhoto(id) { quickPhotoId = id; const f = $("qp-file"); if (f) f.click(); }
+
+/* Uploads the photo and saves it on the item in one go (no Edit > Upload > Save). Stored under this item's own id,
+   so one club's photo can never overwrite another club's, even for items copied from the same range. */
+async function onQuickPhoto(event) {
+  const file = event.target.files[0], id = quickPhotoId, pr = openGroupProducts.find(x => x.id === id);
+  event.target.value = "";
+  if (!file || !pr) return;
+  const btn = [...document.querySelectorAll(".qp-btn")].find(b => (b.getAttribute("onclick") || "").includes(id));
+  if (btn) { btn.disabled = true; btn.textContent = "Uploading…"; }
+  try {
+    const form = new FormData();
+    let pin = null; try { pin = sessionStorage.getItem("ps_admin_pin"); } catch (e) {}
+    form.append("pin", pin || ""); form.append("item_id", id); form.append("file", file); form.append("skip_square", "true");
+    const res = await fetch("/api/product-photo", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "upload failed");
+    await updateGroupProduct(id, {
+      name: pr.name, description: pr.description, price: pr.price, sizes: pr.sizes, colours: pr.colours,
+      image_url: data.photo_url + "?v=" + Date.now()
+    });
+    openGroupProducts = await listGroupProducts(openGroup.id);
+    toast("Photo saved");
+    render();
+  } catch (e) {
+    toast("Couldn't upload that photo");
+    if (btn) { btn.disabled = false; btn.textContent = pr.image_url ? "Replace photo" : "Add photo"; }
+  }
 }
 
 async function addRangesToShop() {
@@ -232,7 +280,11 @@ async function addRangesToShop() {
     toast(added ? "Added " + plural(added, "item") : "Nothing new to add");
     render();
     const n2 = $("rt-notice");
-    if (n2 && skipped) { n2.className = "notice show ok"; n2.textContent = plural(skipped, "item") + " already in this shop, skipped."; }
+    if (n2 && (added || skipped)) {
+      n2.className = "notice show ok";
+      n2.textContent = (added ? plural(added, "item") + " added. Now tap Add photo on each one to give it this club's logo." : "")
+        + (added && skipped ? " " : "") + (skipped ? plural(skipped, "item") + " already in this shop, skipped." : "");
+    }
   } catch (e) { n.className = "notice show err"; n.textContent = "Couldn't add that (" + e.message + ")."; btn.disabled = false; }
 }
 
@@ -244,7 +296,7 @@ async function duplicateShop() {
   btn.disabled = true; n.className = "notice show busy"; n.textContent = "Copying…";
   try {
     const r = await rangeApi.duplicate(openGroup.id, name, slug, code);
-    toast("Copied " + plural(r.products_copied, "item") + " - the new shop is paused");
+    toast("Copied " + plural(r.products_copied, "item") + " (no photos) - the new shop is paused");
     $("dup-name").value = ""; $("dup-slug").value = "";   // clear first so the auto-refresh guard lets go
     closeGroupPanel(); await load(); setTab("groups");
   } catch (e) {
