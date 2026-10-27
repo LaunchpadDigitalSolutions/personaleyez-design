@@ -62,13 +62,27 @@ async function adminCreateOrder(o) {
 async function updateOrder(id, patch) {
   return adminRpc("ps_admin_update_order_status", { p_id: id, p_status: patch.status }, "PS-104");
 }
+/* Saves the enquiry, then separately pings a Pages Function that emails
+   Jo. The save is what counts: if the email ping fails the enquiry is
+   still in the admin dashboard, and the customer still sees success. */
 async function sendEnquiry(e) {
-  return sb("rpc/ps_create_enquiry", {
+  const saved = await sb("rpc/ps_create_enquiry", {
     method: "POST", body: JSON.stringify({
       p_name: e.name, p_category: e.category, p_message: e.message,
       p_phone: e.phone || null, p_email: e.email || null
     })
   }, "PS-200");
+
+  fetch("/api/enquiry-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: e.name, phone: e.phone || "", email: e.email || "",
+      category: e.category, message: e.message
+    })
+  }).catch(() => {});
+
+  return saved;
 }
 async function listEnquiries(limit = 50) {
   return adminRpc("ps_admin_list_enquiries", { p_limit: limit }, "PS-201");
