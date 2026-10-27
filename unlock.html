@@ -14,33 +14,104 @@ p{color:#6B6159;font-size:15px;margin:0 0 22px}
 input{width:100%;box-sizing:border-box;font-size:16px;padding:12px;border:1px solid #D9CFC2;border-radius:2px;background:#fff}
 button{width:100%;min-height:44px;margin-top:16px;border:0;border-radius:2px;background:#B8573A;color:#fff;font-size:16px;font-weight:500}
 button:disabled{background:#E3D9CC;color:#9A8F84}
+button.ghost{background:#F1E9DD;color:#2B2622}
 #msg{margin-top:16px;font-size:14px;min-height:20px}
 .err{color:#9B3B1E}.ok{color:#3B6D11}
+.row{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid #E6DCCF;border-radius:2px;padding:10px 12px;margin-top:8px}
+.row .ip{font-family:ui-monospace,monospace;font-size:14px}
+.row .t{font-size:12px;color:#7A6F66}
+.row button{width:auto;margin:0 0 0 auto;min-height:44px;padding:0 14px;background:#fff;color:#B8573A;border:1px solid #B8573A;font-size:14px}
+#list{display:none}
 </style>
 </head>
 <body>
 <main>
-  <h1>Unlock PIN screens</h1>
-  <p>Clears every PIN lockout straight away.</p>
-  <input id="key" type="password" autocomplete="off" placeholder="Unlock key" onkeydown="if(event.key==='Enter')go()">
-  <button id="go" onclick="go()">Unlock</button>
+  <h1 id="title">Unlock PIN screens</h1>
+  <p id="sub">Enter the unlock key to see who's locked.</p>
+  <div id="keystep">
+    <input id="key" type="password" autocomplete="off" placeholder="Unlock key" onkeydown="if(event.key==='Enter')show()">
+    <button id="show" onclick="show()">Show locked connections</button>
+  </div>
+  <div id="list">
+    <div id="rows"></div>
+    <button id="all" class="ghost" onclick="unlockAll()">Unlock all</button>
+  </div>
   <div id="msg" role="status"></div>
 </main>
 <script>
-/* Posts the key to /api/admin-unlock. Error codes: PS-UNLOCK-CONFIG, PS-UNLOCK-AUTH */
-async function go(){
-  const key = document.getElementById("key").value.trim();
-  const msg = document.getElementById("msg"), btn = document.getElementById("go");
-  if (!key) { msg.className = "err"; msg.textContent = "Enter the unlock key."; return; }
-  btn.disabled = true; msg.className = ""; msg.textContent = "Unlocking…";
+/* Talks to /api/admin-unlock. The key stays in this page's memory only.
+   Error codes: PS-UNLOCK-CONFIG, PS-UNLOCK-AUTH, PS-UNLOCK-IP */
+let theKey = "";
+const $ = id => document.getElementById(id);
+function say(text, cls) { $("msg").className = cls || ""; $("msg").textContent = text; }
+
+// Shows only the first two parts of an address, e.g. 86.12.xxx.xxx
+function maskIp(ip) {
+  if (ip.includes(".")) return ip.split(".").slice(0, 2).join(".") + ".xxx.xxx";
+  if (ip.includes(":")) return ip.split(":").slice(0, 2).join(":") + ":xxxx:…";
+  return ip;
+}
+function minsLeft(s) { return s < 60 ? "under 1 min left" : Math.ceil(s / 60) + " min left"; }
+
+async function call(payload) {
+  const res = await fetch("/api/admin-unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: theKey, ...payload }) });
+  const d = await res.json().catch(() => ({}));
+  return { ok: res.ok, d };
+}
+function failMsg(d) {
+  if (d.error === "PS-UNLOCK-CONFIG") return "Not set up yet (PS-UNLOCK-CONFIG).";
+  if (d.error === "PS-UNLOCK-AUTH") return "That key isn't right (PS-UNLOCK-AUTH).";
+  return "Something went wrong (" + (d.error || "no reply") + ").";
+}
+
+// Draws the locked list from the server.
+async function refresh(note) {
+  const r = await call({ action: "list" });
+  if (!r.ok) { say(failMsg(r.d), "err"); return false; }
+  const rows = $("rows"); rows.textContent = "";
+  const locked = r.d.locked || [];
+  $("title").textContent = "Locked connections";
+  $("sub").textContent = locked.length ? locked.length + " locked right now." : "Nothing is locked.";
+  for (const l of locked) {
+    const row = document.createElement("div"); row.className = "row";
+    const info = document.createElement("div");
+    const ip = document.createElement("div"); ip.className = "ip"; ip.textContent = maskIp(l.ip);
+    const t = document.createElement("div"); t.className = "t"; t.textContent = minsLeft(l.seconds_left);
+    info.append(ip, t);
+    const b = document.createElement("button"); b.textContent = "Unlock";
+    b.onclick = () => unlockOne(l.ip, b);
+    row.append(info, b); rows.append(row);
+  }
+  $("all").style.display = locked.length ? "block" : "none";
+  $("keystep").style.display = "none"; $("list").style.display = "block";
+  say(note || "", "ok");
+  return true;
+}
+
+async function show() {
+  theKey = $("key").value.trim();
+  if (!theKey) { say("Enter the unlock key.", "err"); return; }
+  $("show").disabled = true; say("Checking…");
+  try { if (await refresh()) $("key").value = ""; else theKey = ""; }
+  catch (e) { theKey = ""; say("Couldn't reach the site. Try again.", "err"); }
+  $("show").disabled = false;
+}
+async function unlockOne(ip, btn) {
+  btn.disabled = true;
   try {
-    const res = await fetch("/api/admin-unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
-    const d = await res.json().catch(() => ({}));
-    if (res.ok) { msg.className = "ok"; msg.textContent = d.cleared ? "Unlocked (" + d.cleared + " cleared)." : "Nothing was locked."; document.getElementById("key").value = ""; }
-    else if (d.error === "PS-UNLOCK-CONFIG") { msg.className = "err"; msg.textContent = "Not set up yet (PS-UNLOCK-CONFIG)."; }
-    else { msg.className = "err"; msg.textContent = "That key isn't right (PS-UNLOCK-AUTH)."; }
-  } catch (e) { msg.className = "err"; msg.textContent = "Couldn't reach the site. Try again."; }
-  btn.disabled = false;
+    const r = await call({ action: "unlock", ip });
+    if (r.ok) await refresh("Unlocked " + maskIp(ip));
+    else { say(failMsg(r.d), "err"); btn.disabled = false; }
+  } catch (e) { say("Couldn't reach the site. Try again.", "err"); btn.disabled = false; }
+}
+async function unlockAll() {
+  $("all").disabled = true;
+  try {
+    const r = await call({ action: "all" });
+    if (r.ok) await refresh("Unlocked everything (" + r.d.cleared + " cleared).");
+    else say(failMsg(r.d), "err");
+  } catch (e) { say("Couldn't reach the site. Try again.", "err"); }
+  $("all").disabled = false;
 }
 </script>
 </body>
