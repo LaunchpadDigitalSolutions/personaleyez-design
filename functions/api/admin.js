@@ -41,11 +41,10 @@ const ADMIN_RPCS = new Set([
   "ps_admin_list_shop_products", "ps_admin_create_shop_product",
   "ps_admin_update_shop_product", "ps_admin_delete_shop_product",
   "ps_admin_save_content",
-  // Ranges (reusable product lists) and duplicating a club shop
-  "ps_admin_list_ranges", "ps_admin_create_range", "ps_admin_delete_range",
-  "ps_admin_list_range_products", "ps_admin_create_range_product",
-  "ps_admin_update_range_product", "ps_admin_delete_range_product",
-  "ps_admin_add_range_to_group", "ps_admin_duplicate_group",
+  // Catalog (shared products linked into club shops), shop item photos, duplicating a club shop
+  "ps_admin_list_catalog", "ps_admin_create_catalog_product", "ps_admin_update_catalog_product",
+  "ps_admin_delete_catalog_product", "ps_admin_add_catalog_to_group",
+  "ps_admin_set_group_item_photo", "ps_admin_duplicate_group",
   // Pages made from the admin (shown at /p/<name>)
   "ps_admin_list_pages", "ps_admin_create_page", "ps_admin_update_page"
 ]);
