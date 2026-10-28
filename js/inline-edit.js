@@ -15,12 +15,19 @@
    Call psInitInlineEditor(page) once, after loadContent()+applyContent()
    have run, from the bottom of each public page.
 
-   Auto-tagging: every visible piece of body text that isn't already
-   a [data-edit] gets one automatically (see psAutoTag below), so new
-   copy is editable without anyone remembering to tag it.
+   EVERYTHING is editable. Auto-tagging (psAutoTag below) tags every
+   visible piece of text and every photo that isn't already tagged,
+   including header, footer, nav, form labels, buttons, notices,
+   opening hours and contact details. The only things left alone are
+   the editor's own controls, scripts/styles/icons, and punctuation-only
+   glyphs (arrows, separators). Form hint text and dropdown choices,
+   link targets and the page title are edited through the small dialogs
+   in site-edit.js. Nothing is excluded in code without being listed in
+   docs/EDITABLE-EXCLUSIONS.md.
 
    The editor bar (move / remove / add / undo) is loaded from the last
-   lines of this file: js/editor-layout.js, editor-bar.js, editor-sheets.js.
+   lines of this file: js/editor-layout.js, editor-bar.js, editor-sheets.js,
+   site-edit.js.
    Error codes: PS-407
    ============================================================ */
 
@@ -34,13 +41,23 @@ function psInitInlineEditor(page){
   document.body.appendChild(toggle);
   toggle.querySelector("button").addEventListener("click", () => psToggleEdit(page));
 
+  // Capture phase, so a button's own onclick (e.g. "Send enquiry") or a
+  // link never fires while editing - the click is turned into an edit.
   document.addEventListener("click", (e) => {
     if (!document.body.classList.contains("ps-edit-on")) return;
-    const editEl = e.target.closest("[data-edit]");
-    const imgEl = e.target.closest("[data-img]");
-    if (editEl) { e.preventDefault(); psEditText(editEl, page); }
-    else if (imgEl) { e.preventDefault(); psEditImage(imgEl, page); }
-  });
+    const t = e.target;
+    if (t.closest(".ps-bar,.ps-movetab,.ps-edit-toggle,.ps-editbar,.ps-pin-pop,.ps-pop,.ps-chip,.ps-toast")) return;
+    // remove-mode (tap anything to remove it) is handled by the editor bar
+    if (document.querySelector('.ps-bar .ps-b[data-a="rm"].on')) return;
+    const stop = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+    const editEl = t.closest("[data-edit]");
+    const imgEl = t.closest("[data-img]");
+    if (editEl) { stop(); psEditText(editEl, page); return; }
+    if (imgEl) { stop(); psEditImage(imgEl, page); return; }
+    const ctl = t.closest("input,textarea,select");
+    if (ctl) { stop(); if (typeof PSE !== "undefined") PSE.editControl(ctl); return; }
+    if (t.closest("a,button,label,summary,[onclick]")) stop();
+  }, true);
   // Opened from the admin dashboard (Edit site tab): go straight into edit mode.
   if (/[?&]edit=1(&|$)/.test(location.search)) psEnterEdit(page);
 }
@@ -51,8 +68,7 @@ function psHasPin(){
 
 async function psToggleEdit(page){
   if (document.body.classList.contains("ps-edit-on")) {
-    document.body.classList.remove("ps-edit-on");
-    psRemoveBar();
+    psLeaveEdit();
     return;
   }
   if (psHasPin()) { psEnterEdit(page); return; }
@@ -99,13 +115,21 @@ function psEnterEdit(page){
   const bar = document.createElement("div");
   bar.className = "ps-editbar";
   bar.id = "ps-editbar";
+  bar.style.flexWrap = "wrap";
   bar.innerHTML = `<span>Editing peachstate.co.uk — changes go live as you save them. <a href="admin.html#editsite" style="color:inherit;text-decoration:underline;white-space:nowrap">Back to admin</a></span>
+    <button class="ps-ebtn" id="ps-ebtn-meta">Page title</button>
+    <button class="ps-ebtn" id="ps-ebtn-reveal">Show hidden messages</button>
     <button id="ps-editbar-done">Done editing</button>`;
   document.body.prepend(bar);
-  bar.querySelector("#ps-editbar-done").addEventListener("click", () => {
-    document.body.classList.remove("ps-edit-on");
-    psRemoveBar();
-  });
+  bar.querySelector("#ps-editbar-done").addEventListener("click", psLeaveEdit);
+  bar.querySelector("#ps-ebtn-meta").addEventListener("click", () => PSE.openMeta());
+  bar.querySelector("#ps-ebtn-reveal").addEventListener("click", (e) => PSE.toggleReveal(e.currentTarget));
+}
+function psLeaveEdit(){
+  document.body.classList.remove("ps-edit-on", "ps-reveal");
+  document.querySelector(".ps-pop")?.remove();
+  if (typeof PSE !== "undefined") PSE.chipOff();
+  psRemoveBar();
 }
 function psRemoveBar(){ document.getElementById("ps-editbar")?.remove(); }
 
@@ -131,6 +155,7 @@ function psEditText(el, page){
   // context implements execCommand, so click-to-edit must still work
   // without it.
   try { document.execCommand("selectAll", false, null); } catch (e) {}
+  if (typeof PSE !== "undefined") PSE.chip(el);   // "Change where this link goes" when the text is a link
 
   const finish = async () => {
     el.removeEventListener("blur", finish);
@@ -169,9 +194,11 @@ function psEditImage(el, page){
     try {
       let pin = null;
       try { pin = sessionStorage.getItem("ps_admin_pin"); } catch (e) {}
+      // sitewide photos (logos) live under page "global" so they show on every page
+      const upPage = (typeof PSE !== "undefined" && PSE.isSite("img_" + slot)) ? "global" : page;
       const form = new FormData();
       form.append("pin", pin || "");
-      form.append("page", page);
+      form.append("page", upPage);
       form.append("slot", slot);
       form.append("file", file);
       const res = await fetch("/api/site-photo", { method: "POST", body: form });
@@ -192,7 +219,7 @@ function psEditImage(el, page){
   input.click();
 }
 
-/* ---------- auto-tagging: make every piece of body text editable ----------
+/* ---------- auto-tagging: make everything on the page editable ----------
 
    Walks every text node in <body> and gives it a data-edit key, so Jo
    can click any wording on the page without anyone hand-tagging it.
@@ -203,12 +230,18 @@ function psEditImage(el, page){
      piece of text is wrapped in its own <span data-edit>, so editing it
      never flattens the italic/linebreak next to it. Leading/trailing
      spaces stay OUTSIDE the span so words don't run together after a save.
+   - Buttons always get their text wrapped in a span (typing inside a
+     <button> itself is unreliable in browsers).
    - Key = hash of the ORIGINAL text (+ "_2", "_3"... for repeats on the
      same page), so it stays stable between loads. Anything already
-     hand-tagged ([data-edit]/[data-img]) is left alone.
-   - Skipped: header/footer/nav (they come from partials.js + config),
-     form labels/buttons/inputs, opening hours, anything fed from
-     BRAND config ([data-brand]), arrows, and status notices.
+     hand-tagged ([data-edit]/[data-img]) is left alone - that includes
+     header, footer, nav, hours and brand details, which are tagged by
+     partials.js / site-edit.js with sitewide keys.
+   - Every <img> that isn't already a [data-img] slot becomes one.
+   - Left alone (the ONLY exclusions): the editor's own controls,
+     script/style/svg, form-control internals (hints and dropdown choices
+     are edited via site-edit.js), arrows, and text with no letters or
+     digits in it (separators, brackets).
 
    Runs automatically just before applyContent() (see the wrapper below),
    so saved edits are applied to auto-tagged text too.
@@ -219,13 +252,10 @@ function psAutoTag(){
   document.body.dataset.psTagged = "1";
 
   const SKIP = [
-    ".site-header", ".site-footer", ".mobilebar", "nav", "script", "style", "noscript",
-    "svg", "button", "select", "option", "textarea", "input", "label", "form",
-    ".hours", ".notice", ".consent", ".arrow", "[data-no-edit]",
-    "[data-brand]", "[data-brand-href]",
-    ".ps-edit-toggle", ".ps-editbar", ".ps-pin-pop", ".ps-toast", ".ps-bar"
+    "script", "style", "noscript", "svg", "select", "option", "textarea", "input",
+    ".arrow", "[data-no-edit]",
+    ".ps-edit-toggle", ".ps-editbar", ".ps-pin-pop", ".ps-toast", ".ps-bar", ".ps-pop", ".ps-chip"
   ].join(",");
-  const DYNAMIC = "[data-brand],[data-brand-href]";
 
   const seen = {};
   function keyFor(text){
@@ -244,13 +274,13 @@ function psAutoTag(){
   nodes.forEach(n => {
     const raw = n.nodeValue;
     if (!raw || !raw.trim()) return;
+    if (!/[A-Za-z0-9£]/.test(raw)) return;           // separators / glyphs only
     const p = n.parentElement;
     if (!p) return;
     if (p.closest(SKIP)) return;
     if (p.closest("[data-edit],[data-img]")) return;   // already tagged by hand (or by us)
-    if (p.querySelector(DYNAMIC)) return;               // mixes in config-driven bits - leave it
 
-    if (p.children.length === 0) {                      // pure-text element: tag it directly
+    if (p.children.length === 0 && !p.matches("button,summary")) {   // pure-text element: tag it directly
       p.dataset.edit = keyFor(p.textContent);
       return;
     }
@@ -265,6 +295,20 @@ function psAutoTag(){
     if (m[3]) frag.append(document.createTextNode(m[3]));
     n.replaceWith(frag);
   });
+
+  // photos that were never given a slot
+  const imgSeen = {};
+  document.querySelectorAll("img").forEach(i => {
+    if (i.hasAttribute("data-img") || i.closest("[data-img]")) return;
+    if (i.closest(".ps-bar,.ps-edit-toggle,.ps-editbar,.ps-pop,.ps-pin-pop,.ps-toast,[data-no-edit]")) return;
+    const src = (i.getAttribute("src") || "").split("?")[0];
+    if (!src || src.startsWith("data:")) return;
+    let h = 5381;
+    for (const c of src) h = ((h << 5) + h + c.charCodeAt(0)) | 0;
+    const base = "x" + (h >>> 0).toString(36);
+    imgSeen[base] = (imgSeen[base] || 0) + 1;
+    i.dataset.img = imgSeen[base] > 1 ? base + "-" + imgSeen[base] : base;
+  });
 }
 
 /* Pages call applyContent() from their DOMContentLoaded handler; make
@@ -275,12 +319,13 @@ if (typeof applyContent === "function") {
   applyContent = function(){ psAutoTag(); return _psApplyContent.apply(this, arguments); };
 }
 
-/* Editor bar modules: loaded right after this file, in order, so their
+/* Editor modules: loaded right after this file, in order, so their
    wrappers around loadContent/applyContent/saveContent are in place
-   before the page's DOMContentLoaded handler runs. */
+   before the page's DOMContentLoaded handler runs. site-edit.js goes
+   last so its applyContent wrapper is the outermost. */
 (function(){
-  const v = "?v=0.9.0";
+  const v = "?v=0.9.1";
   document.write('<link rel="stylesheet" href="css/editor-bar.css' + v + '">');
-  ["editor-layout", "editor-bar", "editor-sheets"].forEach(n =>
+  ["editor-layout", "editor-bar", "editor-sheets", "site-edit"].forEach(n =>
     document.write('<script src="js/' + n + '.js' + v + '"><\/script>'));
 })();
