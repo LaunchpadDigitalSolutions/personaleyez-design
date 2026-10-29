@@ -315,7 +315,7 @@ function renderGroups(p){
         <div class="ometa">Web name <strong>${esc(g.slug)}</strong> &nbsp;·&nbsp; Code <strong>${esc(g.access_code)}</strong></div>
         <div class="oact">
           <button onclick="openGroupPanel('${g.id}')">Manage products</button>
-          <button class="ghost" onclick="copyClubLink('${g.slug}','${g.access_code}')">Copy link &amp; code</button>
+          <button class="ghost" data-slug="${esc(g.slug)}" data-code="${esc(g.access_code)}" onclick="copyClubLink(this.dataset.slug,this.dataset.code)">Copy link &amp; code</button>
           <button class="ghost" onclick="toggleGroup('${g.id}',${!g.active})">${g.active?"Pause":"Reactivate"}</button>
         </div>
       </div>`).join("")
@@ -404,7 +404,7 @@ function renderGroupDetail(p){
         <div style="display:flex;align-items:center;gap:10px">
           <div id="np-img-preview" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;
                background:var(--cream-deep);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)">
-            ${editing && editing.image_url ? `<img src="${editing.image_url}" style="width:100%;height:100%;object-fit:cover">` : "No photo"}
+            ${editing && editing.image_url ? `<img src="${esc(editing.image_url)}" style="width:100%;height:100%;object-fit:cover">` : "No photo"}
           </div>
           <button type="button" class="ghost" onclick="chooseGroupProductPhoto()">${editing && editing.image_url ? "Replace photo" : "Upload photo"}</button>
         </div>
@@ -462,7 +462,7 @@ async function onGroupProductPhotoChosen(event){
     const url = data.photo_url + "?v=" + Date.now();
     $("np-img").value = url;
     editingGroupProduct.image_url = url;
-    preview.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+    preview.innerHTML = `<img src="${esc(url)}" style="width:100%;height:100%;object-fit:cover">`;
     toast("Photo uploaded");
   }catch(e){
     preview.innerHTML = originalHtml;
