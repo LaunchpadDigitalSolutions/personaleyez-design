@@ -9,6 +9,8 @@
 .cp-band figcaption{margin-top:10px;font-family:var(--display);font-size:22px;color:var(--charcoal);line-height:1.15}
 .cp-bandsec{padding:0}
 .cp-band figure{position:relative}
+.cp-band figure:has(img[src=""]){background:var(--cream-deep)}
+.cp-band img[src=""]{opacity:0}
 /* No photo yet: the tile is a quiet block with its caption set inside it, not a broken picture. */
 .cp-band img[src=""]+figcaption{position:absolute;left:0;right:0;top:calc(50% - 40px);margin:0;padding:0 16px;text-align:center;
   font-style:italic;color:var(--muted)}
