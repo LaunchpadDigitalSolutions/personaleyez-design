@@ -1,0 +1,15 @@
+/* Maps the Category page feature's tokens onto Peach State's own, and lays out
+   the page furniture (picture band, contact block). Feature CSS: category-page.css. */
+.cp-root{--brand:var(--terracotta-deep);--bg:var(--cream);--bg-2:var(--cream-deep);--surface:var(--cream);
+  --border:var(--line);--text:var(--charcoal);--text-2:var(--muted);--ok:var(--sage-deep);--err:#9B3B1E;
+  --font-head:var(--display);--font-body:var(--sans);--tap:44px;--tap-nav:52px;--input-size:16px}
+.cp-band{display:flex;gap:12px;overflow-x:auto;padding:0 20px 4px;margin:0;list-style:none;scroll-snap-type:x mandatory}
+.cp-band figure{flex:0 0 72%;margin:0;scroll-snap-align:start}
+.cp-band img{width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--cream-deep)}
+.cp-band figcaption{margin-top:10px;font-family:var(--display);font-size:22px;color:var(--charcoal);line-height:1.15}
+.cp-contact .pair{margin-top:0}
+.cp-contact .btn-solid{max-width:340px;margin-top:26px}
+@media(min-width:700px){
+  .cp-band{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:0 44px;overflow:visible}
+}
+@media(min-width:1000px){.cp-contact .cp-cols{display:grid;grid-template-columns:1fr 1fr;gap:64px}}
