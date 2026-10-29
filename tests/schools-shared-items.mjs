@@ -25,6 +25,8 @@ function makeCtx(file, extra = {}){
     sessionStorage: { _d: {}, getItem(k){ return this._d[k] ?? null; }, setItem(k, v){ this._d[k] = String(v); }, removeItem(k){ delete this._d[k]; } },
     toast(){}, healthCheck: async () => true, location: {}, console, ...extra
   });
+  // escape.js (shared HTML-escape helper) loads before every page script
+  vm.runInContext(fs.readFileSync("js/escape.js", "utf8"), ctx, { filename: "js/escape.js" });
   // schools-shop.js asks the registry module for phase/crest, so load it first
   if(file.endsWith("schools-shop.js") && fs.existsSync("js/schools-registry.js")){
     vm.runInContext(fs.readFileSync("js/schools-registry.js", "utf8"), ctx, { filename: "js/schools-registry.js" });
@@ -44,7 +46,7 @@ const PRODUCTS = [
 ];
 
 const file = process.env.SHOP_JS || "js/schools-shop.js";
-const rowIds = html => [...html.matchAll(/selectItem\('([^']+)'\)/g)].map(m => m[1]);
+const rowIds = html => [...html.matchAll(/data-item="([^"]+)"/g)].map(m => m[1]);
 const optionCount = (html, sel) => { const m = html.match(new RegExp(`id="${sel}">([\\s\\S]*?)</select>`)); return m ? (m[1].match(/<option>/g) || []).length : 0; };
 
 for(const school of ["Alpha School", "Beta School"]){

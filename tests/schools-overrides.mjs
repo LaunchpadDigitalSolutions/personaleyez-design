@@ -46,6 +46,7 @@ function shopCtx() {
     sessionStorage: { _d: {}, getItem(k) { return this._d[k] ?? null; }, setItem(k, v) { this._d[k] = String(v); }, removeItem(k) { delete this._d[k]; } },
     toast() {}, healthCheck: async () => true, location: {}, console
   });
+  vm.runInContext(read("js/escape.js"), ctx);
   vm.runInContext(read("js/schools-registry.js"), ctx);
   vm.runInContext(read("js/schools-shop.js"), ctx);
   return { ctx, els, run: code => vm.runInContext(code, ctx) };
@@ -85,6 +86,7 @@ function shopCtx() {
     document: { getElementById: id => coEls[id] || (coEls[id] = { id, innerHTML: "", textContent: "", className: "", value: "", style: {} }), addEventListener() {} },
     sessionStorage: co.ctx.sessionStorage, toast() {}, location: {}, console
   });
+  vm.runInContext(read("js/escape.js"), coCtx);
   vm.runInContext(read("js/schools-checkout.js"), coCtx);
   vm.runInContext("basket = JSON.parse(sessionStorage.getItem('su_basket')); renderOrder()", coCtx);
   check("checkout summary: Black Hoody", coEls["suc-basket"].innerHTML.includes("Black Hoody"));
