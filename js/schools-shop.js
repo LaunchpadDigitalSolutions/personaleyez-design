@@ -5,6 +5,9 @@
    here, grouped by their `category` value (the school name), so
    Jo manages them from the same admin Shop tab she already has,
    nothing new for her to learn.
+   Which schools exist, their order, phase and crest come from the
+   ps_schools registry (js/schools-registry.js), so a school shows
+   up even before it has any products.
    ============================================================ */
 
 let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, activeItem = null, basket = [];
@@ -35,34 +38,8 @@ function getSchoolItems(school){
   return (grouped[school] || []).concat(grouped["All Schools"] || []);
 }
 
-/* ------------------------------------------------------------
-   Primary / Secondary phase lookup — sourced from Hartlepool
-   Borough Council's own school directory (hartlepool.gov.uk),
-   since most school names don't literally say "Primary" or
-   "Secondary" (e.g. "High Tunstall College of Science"). Only
-   the 5 secondaries need listing explicitly; anything with
-   "Primary" in the name is primary; anything else unmatched
-   falls into "Other" rather than being silently guessed at, so
-   a typo or new school in Jo's Square categories is visible
-   instead of hidden.
-   ------------------------------------------------------------ */
-const SECONDARY_SCHOOLS = [
-  "dyke house sports and technology college", "dyke house academy", "dyke house",
-  "english martyrs catholic school and sixth form college", "english martyrs school and sixth form college", "english martyrs",
-  "high tunstall college of science", "high tunstall",
-  "manor community academy", "manor college of technology", "manor",
-  "st hild's church of england school", "st hilds church of england school", "st hild's", "st hilds"
-];
-const SPECIAL_SCHOOLS = [
-  "catcote academy", "the horizon school", "horizon school", "springwell school"
-];
-
-function classifyPhase(name){
-  const n = (name || "").toLowerCase().trim();
-  if (SECONDARY_SCHOOLS.some(s => n.includes(s))) return "secondary";
-  if (SPECIAL_SCHOOLS.some(s => n.includes(s))) return "special";
-  if (n.includes("primary") || n.includes("academy")) return "primary"; // covers e.g. Eldon Grove/Eskdale/Rossmere Academy
-  return "other";
+function hasOwnItems(school){
+  return ALL_PRODUCTS.some(p => p.category === school);
 }
 
 const PHASE_LABEL = { primary:"Primary Schools", secondary:"Secondary Schools", special:"Special Schools", other:"Other" };
@@ -72,27 +49,12 @@ function schoolInitials(name){
   return name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 }
 
-/* Real crest/logo, pulled directly from each school's own official website
-   (not a generic image search result) so they're accurate rather than a
-   guess. Falls back to initials for anything not in this list (e.g. items
-   still under "Needs Sorting"). */
-const SCHOOL_CRESTS = {
-  // Fens Primary School deliberately omitted — their published logo is a wide
-  // banner (heron + white text) meant for a dark background. CSS-cropping it
-  // guessed wrong and CORS blocks pixel-analysing it properly, so it falls
-  // back to initials rather than show something half-right.
-  "Eldon Grove Academy": { url: "https://www.eldongroveacademy.co.uk/_site/data/files/images/logo/68BFCA9128521A3C14649D26B97457CF.png" },
-  "West View Primary School": { url: "https://westview.adastraschools.org/wp-content/themes/AdAstra/img/westview-logo.png" },
-  "Hart Primary School": { url: "https://www.hartelwickfederation.org.uk/hart/wp-content/themes/hart/img/logo.png" },
-  "St John Vianney RC Primary School": { url: "https://files.schudio.com/st-john-vianney-rc-primary-school-2/images/logo/St_John_Vianney(4).png" },
-  "Rossmere Primary School": { url: "https://www.rossmereschool.org.uk/_site/data/files/images/logo/560AFEDDDF16A5724FE2046342843A2B.png" },
-  "Clavering Primary School": { url: "https://www.claveringschool.org.uk/_site/data/files/images/logo/F38CD4D60EEDFE667E91A612D869C90A.png" }
-};
-
+/* Crest comes from the registry (ps_schools.crest_url). No crest, or one
+   that fails to load, falls back to the school's initials. */
 function schoolCircle(name){
-  const crest = SCHOOL_CRESTS[name];
+  const crest = crestFor(name);
   return crest
-    ? `<span class="su-school-circle has-crest"><img src="${crest.url}" alt="${name} crest" loading="lazy" class="${crest.crop ? "crop-icon" : ""}" onerror="this.parentElement.classList.remove('has-crest');this.remove();this.parentElement.textContent='${schoolInitials(name)}'"></span>`
+    ? `<span class="su-school-circle has-crest"><img src="${crest}" alt="${name} crest" loading="lazy" onerror="this.parentElement.classList.remove('has-crest');this.remove();this.parentElement.textContent='${schoolInitials(name)}'"></span>`
     : `<span class="su-school-circle">${schoolInitials(name)}</span>`;
 }
 
@@ -151,17 +113,21 @@ function renderPreview(){
     : `<div class="su-preview-empty">${shown ? shown.name : "Pick an item to see it"}</div>`;
 }
 
+const EMPTY_SCHOOL_LINE = `<p class="body dim">No uniform listed for this school yet — give us a ring and we'll sort it.</p>`;
+
+/* A school with none of its own items says so, then still lists the
+   shared pieces (plain bottoms) underneath so they can be ordered. */
 function renderList(){
   const items = getSchoolItems(activeSchool);
-  $("su-list").innerHTML = items.length ? items.map(p => `
+  const rows = items.map(p => `
     <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" onclick="selectItem('${p.id}')">
       <div>
         <div class="su-row-name">${p.name}</div>
         ${p.sizes ? `<div class="su-row-meta">Sizes: ${p.sizes}</div>` : ""}
         <div class="su-row-price">${money(p.price)}</div>
       </div>
-    </div>`).join("")
-    : `<p class="body dim">No uniform listed for this school yet — give us a ring and we'll sort it.</p>`;
+    </div>`).join("");
+  $("su-list").innerHTML = (hasOwnItems(activeSchool) ? "" : EMPTY_SCHOOL_LINE) + rows;
 }
 
 function selectItem(id){
@@ -250,7 +216,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
   try{ ALL_PRODUCTS = (await listShopProducts()).filter(p => p.is_school_item); }
   catch(e){ ALL_PRODUCTS = []; }
-  SCHOOLS = Object.keys(groupBySchool(ALL_PRODUCTS)).filter(s => s !== "All Schools");
+  await loadSchoolRegistry();
+  SCHOOLS = buildSchoolList(Object.keys(groupBySchool(ALL_PRODUCTS)));
   if(SCHOOLS.length){
     renderPhases();
   }else{
