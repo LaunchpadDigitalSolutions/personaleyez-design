@@ -168,6 +168,7 @@ function renderPicker(){
    (trousers, pinafores, skirts, playsuits, skorts) are never embroidered,
    so they shouldn't offer or claim it. */
 function isCrestedItem(p){
+  if(typeof p.crest === "boolean") return p.crest;   // merged value from the pool + school override
   return p.category !== "All Schools" && p.category !== "Needs Sorting";
 }
 
@@ -216,7 +217,8 @@ function goToUniformCheckout(){
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
-  try{ ALL_PRODUCTS = (await listShopProducts()).filter(p => p.is_school_item); }
+  // js/schools-items.js: pool + this school's overrides, already merged
+  try{ ALL_PRODUCTS = await listSchoolItems(); }
   catch(e){ ALL_PRODUCTS = []; }
   await loadSchoolRegistry();
   SCHOOLS = buildSchoolList(Object.keys(groupBySchool(ALL_PRODUCTS)));
