@@ -25,6 +25,10 @@ function makeCtx(file, extra = {}){
     sessionStorage: { _d: {}, getItem(k){ return this._d[k] ?? null; }, setItem(k, v){ this._d[k] = String(v); }, removeItem(k){ delete this._d[k]; } },
     toast(){}, healthCheck: async () => true, location: {}, console, ...extra
   });
+  // schools-shop.js asks the registry module for phase/crest, so load it first
+  if(file.endsWith("schools-shop.js") && fs.existsSync("js/schools-registry.js")){
+    vm.runInContext(fs.readFileSync("js/schools-registry.js", "utf8"), ctx, { filename: "js/schools-registry.js" });
+  }
   vm.runInContext(fs.readFileSync(file, "utf8"), ctx, { filename: file });
   return { ctx, els, run: code => vm.runInContext(code, ctx) };
 }
