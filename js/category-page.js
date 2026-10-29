@@ -64,10 +64,11 @@ export class Basket {
   get count() { return this.lines.reduce((s, l) => s + l.qty, 0); }
   get total() { return Math.round(this.lines.reduce((s, l) => s + Math.round(l.price * 100) * l.qty, 0)) / 100; }
 
-  /* What /api/checkout takes: which product, how many, which options. No price:
-     the server prices every line (display prices on this page are for show). */
+  /* What /api/checkout takes: which product, how many, which options. The server
+     prices every line itself (display prices here are for show). */
   items() {
-    return this.lines.map(l => ({ product_id: l.id, qty: l.qty, size: l.size || undefined, colour: l.colour || undefined }));
+    // name/price are legacy fields the server ignores; they keep the old server working during rollout
+    return this.lines.map(l => ({ product_id: l.id, qty: l.qty, size: l.size || undefined, colour: l.colour || undefined, name: l.name, price: l.price }));
   }
 }
 
