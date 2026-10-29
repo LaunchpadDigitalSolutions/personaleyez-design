@@ -2,16 +2,19 @@
    POST /api/checkout
    Turns a cart into a Square-hosted payment page.
 
-   Body: { items: [{name, price, qty}], customer: {name, phone, email},
-           note }
+   Body: { items: [{product_id, qty, size?, colour?, initials?}],
+           customer: {name, phone, email}, note }
 
-   - The total is computed here from the submitted items - never taken
-     from the browser as a single trusted number.
+   - PRICES NEVER COME FROM THE BROWSER. The browser sends which
+     product, how many and which options; every price, name and
+     add-on amount is looked up here (lib/price-basket.js).
    - A pending order (PD-XXXXX) is created in ps_orders before we ever
      talk to Square, so nothing is lost if the customer abandons payment
      partway through.
    - Returns { checkout_url, order_ref } for the caller to redirect to.
    ============================================================ */
+
+import { priceBasket, cleanCustomer, priceErrorResponse, PriceError } from "../../lib/price-basket.js";
 
 function errorResponse(code, message, status) {
   return new Response(JSON.stringify({ error: code, message }), {
@@ -32,30 +35,13 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
+    const raw = await request.text();
+    if (raw.length > 20000) return errorResponse("PSC-018", "That order is too large", 413);
+    body = JSON.parse(raw);
   } catch {
     return errorResponse("PSC-001", "Invalid JSON body");
   }
-
-  const items = Array.isArray(body.items) ? body.items : [];
-  const customer = body.customer || {};
-
-  if (items.length === 0) return errorResponse("PSC-002", "Cart is empty");
-  if (!customer.name || !customer.phone) return errorResponse("PSC-003", "Customer name and phone are required");
-
-  // Compute the total ourselves - price/qty from the client is a starting
-  // point, never a trusted final figure.
-  let totalPence = 0;
-  const lines = [];
-  for (const item of items) {
-    const price = Number(item.price);
-    const qty = Number(item.qty) || 1;
-    if (!item.name || !Number.isFinite(price) || price <= 0 || qty <= 0) {
-      return errorResponse("PSC-004", "Every item needs a name, a positive price, and a quantity");
-    }
-    totalPence += Math.round(price * 100) * qty;
-    lines.push(`${qty} x ${item.name}`);
-  }
+  if (!body || typeof body !== "object") return errorResponse("PSC-001", "Invalid JSON body");
 
   if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
     return errorResponse("PSC-005", "Payments aren't configured yet - Square credentials are missing", 503);
@@ -64,15 +50,23 @@ export async function onRequestPost(context) {
     return errorResponse("PSC-006", "Database isn't configured", 503);
   }
 
+  let customer, priced;
+  try {
+    customer = cleanCustomer(body.customer, body.note, "PSC");
+    priced = await priceBasket(body.items, env, "PSC", fetch);
+  } catch (e) {
+    if (e instanceof PriceError) return priceErrorResponse(e);
+    return errorResponse("PSC-999", "That didn't go through - please ring us", 500);
+  }
+  const totalPence = priced.totalPence;
+
   const orderRef = makeOrderRef();
-  const description = lines.join(", ");
+  const description = priced.description;
 
   // Square Payment Links - quick_pay only takes one name+price, so a
   // multi-item cart is summarised as one line; the itemised breakdown
   // lives in our own order record for Jo to see in admin.
-  const squareName = items.length === 1
-    ? items[0].name
-    : `Peach State order (${items.length} items)`;
+  const squareName = priced.squareName;
 
   let squareRes, squareData;
   try {
@@ -120,8 +114,8 @@ export async function onRequestPost(context) {
       p_order_ref: orderRef,
       p_customer_name: customer.name,
       p_customer_phone: customer.phone,
-      p_customer_email: customer.email || null,
-      p_description: description + (body.note ? ` — ${body.note}` : ""),
+      p_customer_email: customer.email,
+      p_description: description + (customer.note ? ` — ${customer.note}` : ""),
       p_total: totalPence / 100,
       p_square_order_id: squareOrderId
     })

@@ -6,12 +6,16 @@
    the customer, reminds them automatically, and takes each payment
    through its own hosted page — nothing for us to chase manually.
 
-   Body: { items: [{name, price, qty}], customer: {name, phone, email},
-           note }
+   Body: { items: [{product_id, qty, size?, colour?, initials?}],
+           customer: {name, phone, email}, note }
+   Prices are looked up on the server (lib/price-basket.js); anything
+   price-like sent by the browser is ignored.
 
    Returns { checkout_url, order_ref } — checkout_url is the invoice's
    public payment page for the first instalment.
    ============================================================ */
+
+import { priceBasket, cleanCustomer, priceErrorResponse, PriceError } from "../../lib/price-basket.js";
 
 function errorResponse(code, message, status) {
   return new Response(JSON.stringify({ error: code, message }), {
@@ -38,30 +42,13 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await request.json();
+    const raw = await request.text();
+    if (raw.length > 20000) return errorResponse("PSI-018", "That order is too large", 413);
+    body = JSON.parse(raw);
   } catch {
     return errorResponse("PSI-001", "Invalid JSON body");
   }
-
-  const items = Array.isArray(body.items) ? body.items : [];
-  const customer = body.customer || {};
-
-  if (items.length === 0) return errorResponse("PSI-002", "Basket is empty");
-  if (!customer.name || !customer.phone) return errorResponse("PSI-003", "Customer name and phone are required");
-
-  let totalPence = 0;
-  const lines = [];
-  for (const item of items) {
-    const price = Number(item.price);
-    const qty = Number(item.qty) || 1;
-    if (!item.name || !Number.isFinite(price) || price <= 0 || qty <= 0) {
-      return errorResponse("PSI-004", "Every item needs a name, a positive price, and a quantity");
-    }
-    totalPence += Math.round(price * 100) * qty;
-    lines.push(`${qty} x ${item.name}`);
-  }
-  // Square requires whole-percentage splits that sum to 100 exactly.
-  // 34% + 33% + 33% avoids rounding leftovers.
+  if (!body || typeof body !== "object") return errorResponse("PSI-001", "Invalid JSON body");
 
   if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
     return errorResponse("PSI-005", "Payments aren't configured yet - Square credentials are missing", 503);
@@ -70,11 +57,21 @@ export async function onRequestPost(context) {
     return errorResponse("PSI-006", "Database isn't configured", 503);
   }
 
+  let customer, priced;
+  try {
+    customer = cleanCustomer(body.customer, body.note, "PSI");
+    priced = await priceBasket(body.items, env, "PSI", fetch);
+  } catch (e) {
+    if (e instanceof PriceError) return priceErrorResponse(e);
+    return errorResponse("PSI-999", "That didn't go through - please ring us", 500);
+  }
+  const totalPence = priced.totalPence;
+  // Square requires whole-percentage splits that sum to 100 exactly.
+  // 34% + 33% + 33% avoids rounding leftovers.
+
   const orderRef = makeOrderRef();
-  const description = lines.join(", ");
-  const squareName = items.length === 1
-    ? items[0].name
-    : `Peach State order (${items.length} items)`;
+  const description = priced.description;
+  const squareName = priced.squareName;
 
   const headers = {
     "Square-Version": "2026-08-19",
@@ -84,7 +81,7 @@ export async function onRequestPost(context) {
 
   try {
     // 1. Square customer record (so the invoice has someone to bill)
-    const [firstName, ...rest] = customer.name.trim().split(/\s+/);
+    const [firstName, ...rest] = customer.name.split(/\s+/);
     const custRes = await fetch("https://connect.squareup.com/v2/customers", {
       method: "POST", headers,
       body: JSON.stringify({
@@ -130,7 +127,7 @@ export async function onRequestPost(context) {
           delivery_method: customer.email ? "EMAIL" : "SHARE_MANUALLY",
           accepted_payment_methods: { card: true },
           title: "Peach State — school uniform (3 payments)",
-          description: description + (body.note ? ` — ${body.note}` : "")
+          description: description + (customer.note ? ` — ${customer.note}` : "")
         }
       })
     });
@@ -159,8 +156,8 @@ export async function onRequestPost(context) {
         p_order_ref: orderRef,
         p_customer_name: customer.name,
         p_customer_phone: customer.phone,
-        p_customer_email: customer.email || null,
-        p_description: description + (body.note ? ` — ${body.note}` : "") + " · 3-payment plan",
+        p_customer_email: customer.email,
+        p_description: description + (customer.note ? ` — ${customer.note}` : "") + " · 3-payment plan",
         p_total: totalPence / 100,
         p_square_order_id: squareOrderId
       })
