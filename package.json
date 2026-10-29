@@ -10,6 +10,7 @@
     "test:schools": "node tests/schools-shared-items.mjs && node tests/schools-registry.mjs",
     "test:pages": "node tests/category-pages.mjs",
     "test:checkout": "node tests/checkout-pricing.mjs",
+    "test:admin": "node tests/admin-polish.mjs",
     "build:pages": "node tools/build-category-pages.mjs"
   }
 }
