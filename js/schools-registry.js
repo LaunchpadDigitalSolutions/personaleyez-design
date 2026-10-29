@@ -28,11 +28,11 @@ function registryRow(name){
   return SCHOOL_REGISTRY.find(s => s.name === name) || null;
 }
 
-/* Phase comes from the registry. A product category that isn't in it
-   (a typo, "Needs Sorting") lands in "Other" so it is visible rather
-   than guessed at. Only if the registry itself couldn't be read do we
-   fall back to the old name check, so a database blip doesn't hide
-   every school under "Other". */
+/* Phase comes from the registry. Only if the registry itself couldn't
+   be read do we fall back to the old name check, so a database blip
+   doesn't push every school into "Other". With the registry readable,
+   buildSchoolList never offers an unknown name, so "other" is only
+   reachable in that fallback. */
 function classifyPhase(name){
   const r = registryRow(name);
   if(r) return r.phase;
@@ -45,13 +45,20 @@ function crestFor(name){
   return r && r.crest_url ? r.crest_url : null;
 }
 
-/* Registry schools in Jo's order (even with no products), then any
-   product category the registry doesn't know. "All Schools" is the
-   shared pool, never a school of its own. */
+/* Job 16: the registry is the only source of schools on the public
+   page. A product whose category isn't an active registry school
+   (a typo, the "Needs Sorting" holding pen) is ignored here, so it
+   can never become a circle. Those rows stay in the database and in
+   the admin Shop tab. "All Schools" is the shared pool, never a
+   school of its own.
+   Only if the registry couldn't be read do we fall back to the
+   categories found in the products (so the shop isn't blank), and
+   even then "Needs Sorting" is never offered as a school. */
 function buildSchoolList(categories){
   const names = SCHOOL_REGISTRY.map(s => s.name);
+  if(REGISTRY_OK) return names;
   (categories || []).forEach(c => {
-    if(c && c !== "All Schools" && !names.includes(c)) names.push(c);
+    if(c && c !== "All Schools" && c !== "Needs Sorting" && !names.includes(c)) names.push(c);
   });
   return names;
 }
