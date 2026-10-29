@@ -15,7 +15,9 @@ const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 
 /* Price of "initials stitched on" for a crested item. One value, used by the
-   page label, the basket line and the unit price, so they can never disagree. */
+   page label, the basket line and the unit price, so they can never disagree.
+   DISPLAY ONLY: the amount actually charged is looked up on the server
+   (ps_checkout_config.initials_pence), so keep the two in step. */
 const INITIALS_PRICE = 2;
 
 function note(el, cls, msg){
@@ -158,7 +160,7 @@ function renderPicker(){
     ${cols.length ? `<div class="fld"><label for="su-colour">Colour</label>
       <select id="su-colour">${cols.map(c => `<option>${c}</option>`).join("")}</select></div>` : ""}
     <div class="fld"><label for="su-qty">Quantity</label>
-      <input id="su-qty" type="number" min="1" value="1" inputmode="numeric"></div>
+      <input id="su-qty" type="number" min="1" max="20" value="1" inputmode="numeric"></div>
     ${crested ? `<div class="su-toggles">
       <label><span>Embroidered school logo</span><input type="checkbox" checked disabled></label>
       <label><span>Initials stitched on <span class="dim">+${money(INITIALS_PRICE)}</span></span>
@@ -189,8 +191,10 @@ function addToBasket(){
   if(crested) bits.push("logo embroidered");
   if(initials) bits.push("initials +" + money(INITIALS_PRICE));
 
+  // id/size/colour/initials are what the server prices from; unit and opts are for display.
   basket.push({
-    name: p.name, qty, unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits
+    id: p.id, name: p.name, qty, size, colour, initials: !!initials,
+    unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits
   });
   renderBasket();
   activeItem = null;
