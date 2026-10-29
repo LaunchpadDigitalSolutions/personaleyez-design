@@ -8,6 +8,11 @@ import { PAGES } from './category-page.js';
 /* Keep these names free for the template pages (the database refuses them too). */
 Object.keys(PAGES).forEach(k => { if (!PAGE_RESERVED.includes(k)) PAGE_RESERVED.push(k); });
 
+/* admin.html doesn't load the feature's styles, so add them here (once) and scope the form with .cp-root. */
+['css/category-page.css?v=0.1.0', 'css/category-page-theme.css?v=0.1.1'].forEach(h => {
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l);
+});
+
 const labelOf = k => (WHERE.find(w => w[0] === k) || [])[1] || k;
 const getPin = () => { try { return sessionStorage.getItem('ps_admin_pin') || ''; } catch (e) { return ''; } };
 let lastWhere = 'workwear';
@@ -33,6 +38,8 @@ window.renderShop = function (p) {
   const card = p.querySelector('.newcard');
   if (!card) return;
   const host = document.createElement('div');
+  host.className = 'cp-root';
+  host.style.cssText = 'max-width:640px;margin:0 auto 18px';
   card.replaceWith(host);
   mountAddItem({
     el: host, where: lastWhere, onWhere: w => { lastWhere = w; },
