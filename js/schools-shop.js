@@ -14,8 +14,9 @@ let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, ac
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 
-/* Price of "initials stitched on" for a crested item. One value, used by the
-   page label, the basket line and the unit price, so they can never disagree. */
+/* Price of "initials stitched on" for a crested item: DISPLAY ONLY. The server
+   (lib/price-basket.js INITIALS_PENCE) sets the real amount; tests/checkout-pricing.mjs
+   fails if the two differ. */
 const INITIALS_PRICE = 2;
 
 function note(el, cls, msg){
@@ -158,7 +159,7 @@ function renderPicker(){
     ${cols.length ? `<div class="fld"><label for="su-colour">Colour</label>
       <select id="su-colour">${cols.map(c => `<option>${c}</option>`).join("")}</select></div>` : ""}
     <div class="fld"><label for="su-qty">Quantity</label>
-      <input id="su-qty" type="number" min="1" value="1" inputmode="numeric"></div>
+      <input id="su-qty" type="number" min="1" max="20" value="1" inputmode="numeric"></div>
     ${crested ? `<div class="su-toggles">
       <label><span>Embroidered school logo</span><input type="checkbox" checked disabled></label>
       <label><span>Initials stitched on <span class="dim">+${money(INITIALS_PRICE)}</span></span>
@@ -178,7 +179,7 @@ function isCrestedItem(p){
 
 function addToBasket(){
   const p = activeItem;
-  const qty = parseInt(($("su-qty") || {}).value) || 1;
+  const qty = Math.min(20, Math.max(1, parseInt(($("su-qty") || {}).value) || 1));   // server cap is 20 too
   const size = $("su-size") ? $("su-size").value : null;
   const colour = $("su-colour") ? $("su-colour").value : null;
   const crested = isCrestedItem(p);
@@ -190,7 +191,8 @@ function addToBasket(){
   if(initials) bits.push("initials +" + money(INITIALS_PRICE));
 
   basket.push({
-    name: p.name, qty, unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits
+    id: p.id, name: p.name, qty, unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits,
+    size, colour, initials: !!initials   // what the server needs to price it; unit is display only
   });
   renderBasket();
   activeItem = null;
