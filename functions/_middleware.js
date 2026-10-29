@@ -97,7 +97,7 @@ async function pinGuard({ request, env }) {
   if (!sent.pin) return null;
 
   if (samePin(sent.pin, env.STAFF_PIN)) {
-    if (rec.n > 0) await env.RATE_LIMIT_KV.delete(key);
+    if (rec.n > 0) { try { await env.RATE_LIMIT_KV.delete(key); } catch (e) { /* KV delete limit hit: the right PIN still gets in */ } }
     return null;
   }
 
