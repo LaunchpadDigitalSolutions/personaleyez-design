@@ -115,8 +115,10 @@ function renderPhases(){
 }
 
 function selectPhase(phase){
+  const hadFocus = $("su-phases").contains(document.activeElement); // re-render below would drop keyboard focus
   activePhase = phase; activeSchool = null; activeItem = null;
   renderPhases();
+  if(hadFocus){ const on = document.querySelector("#su-phases .su-phase.on"); if(on) on.focus(); }
   renderTabs();
   $("su-schools-wrap").style.display = "block";
   $("su-preview").innerHTML = "";
