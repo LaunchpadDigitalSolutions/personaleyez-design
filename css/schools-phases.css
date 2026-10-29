@@ -1,0 +1,10 @@
+/* ============================================================
+   schools-phases.css — screen 1 of /schools-shop (phase circles).
+   Icon sizing + focus ring. Colours come from the existing
+   .su-school-circle / .su-school.on rules in style.css.
+   ============================================================ */
+.su-phase{cursor:pointer;min-height:44px}
+.su-phase .su-school-circle svg{width:30px;height:30px;flex-shrink:0;fill:none;
+  stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.su-phase:focus{outline:none}
+.su-phase:focus-visible .su-school-circle{outline:2px solid var(--terracotta-deep);outline-offset:3px}
