@@ -1,0 +1,26 @@
+/* nav-dropdown.css - structure only. Colours, type and sizes come from --nd-* tokens;
+   a host re-maps them (Peach State: css/nav-dropdown-theme.css). Rows are 44px minimum. */
+:root{--nd-bg:#fff;--nd-text:#222;--nd-muted:#666;--nd-line:#ddd;--nd-hover:#f3f3f3;--nd-accent:#c2542f;
+  --nd-radius:10px;--nd-tap:44px;--nd-z:90;--nd-item-size:15px}
+.nd-group{position:relative;display:flex;align-items:center}
+.nd-parent{display:inline-flex;align-items:center;gap:7px;min-height:var(--nd-tap);margin:0;padding:0;border:0;background:none;
+  font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}
+.nd-chev{flex:none;transition:transform .15s}
+.nd-parent[aria-expanded="true"] .nd-chev,.nd-mparent[aria-expanded="true"] .nd-chev{transform:rotate(180deg)}
+.nd-menu{position:absolute;top:100%;left:0;z-index:var(--nd-z);padding-top:10px}
+.nd-menu[hidden],.nd-kids[hidden]{display:none}
+.nd-group:last-child .nd-menu{left:auto;right:0}
+.nd-panel{min-width:240px;max-width:min(320px,90vw);padding:6px;background:var(--nd-bg);border:1px solid var(--nd-line);border-radius:var(--nd-radius)}
+.nd-item{display:flex;align-items:center;min-height:var(--nd-tap);padding:8px 14px;border-radius:6px;white-space:normal;
+  font-size:var(--nd-item-size);line-height:1.35;color:var(--nd-text);text-transform:none;letter-spacing:0}
+.nd-item:hover,.nd-item:focus-visible,.nd-item.on{background:var(--nd-hover);color:var(--nd-text)}
+.nd-mgroup{border-bottom:1px solid var(--nd-line)}
+.nd-mparent{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:0;border:0;background:none;
+  font:inherit;color:inherit;text-align:left;cursor:pointer}
+.nd-kids{padding:0 0 12px 14px}
+.nd-kid{display:flex;align-items:center;min-height:var(--nd-tap);margin:2px 0;padding:6px 0 6px 14px;border-left:2px solid var(--nd-accent);
+  font-size:var(--nd-item-size);line-height:1.3;color:var(--nd-text)}
+.nd-kid.on{color:var(--nd-accent)}
+.nd-fgroup{display:block;padding:4px 0}
+.nd-fsub{margin:0 0 6px;padding-left:14px;border-left:1px solid var(--nd-line)}
+@media (prefers-reduced-motion:reduce){.nd-chev{transition:none}}

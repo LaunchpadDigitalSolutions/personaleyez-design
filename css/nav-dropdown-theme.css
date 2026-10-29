@@ -1,0 +1,17 @@
+/* Maps the Nav dropdown feature's tokens onto Peach State's own and matches the header, mobile panel and footer type.
+   Feature CSS: nav-dropdown.css. */
+:root{--nd-bg:var(--cream);--nd-text:var(--charcoal);--nd-muted:var(--muted);--nd-line:var(--line);--nd-hover:var(--peach-soft);
+  --nd-accent:var(--terracotta-deep);--nd-radius:2px;--nd-z:81;--nd-item-size:15px}
+.nd-panel{box-shadow:0 12px 32px rgba(43,38,34,.12)}
+.nav-desktop .nd-parent{font-family:var(--sans);font-size:11.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted);padding:10px 0;transition:.2s}
+.nav-desktop .nd-parent:hover,.nav-desktop .nd-parent.on,.nav-desktop .nd-parent[aria-expanded="true"]{color:var(--charcoal)}
+.nav-desktop .nd-item{font-size:15px;font-weight:400;letter-spacing:.01em;text-transform:none;color:var(--ink);padding:8px 14px}
+.nav-desktop .nd-item:hover,.nav-desktop .nd-item.on{color:var(--charcoal);background:var(--peach-soft)}
+.nav-mobile .nd-mparent{padding:var(--s4) 0;font-family:var(--display);font-size:34px;line-height:1.15;color:var(--charcoal)}
+.nav-mobile .nd-mparent span{min-width:0}
+.nav-mobile .nd-kid{font-family:var(--sans);font-size:18px;color:var(--ink)}
+.nav-mobile .nd-kid.on{color:var(--terracotta-deep)}
+.site-footer .nd-fgroup{display:flex;align-items:center;min-height:44px;color:var(--cream);font-size:15.5px}
+.site-footer .nd-fsub{margin:0 0 6px 2px;padding-left:14px;border-left:1px solid rgba(251,245,238,.25)}
+@media (max-width:360px){.nav-mobile .nd-mparent{font-size:30px}}
