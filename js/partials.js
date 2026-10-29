@@ -13,14 +13,22 @@
    Saved site values are also cached in localStorage so the header and
    footer render with Jo's wording on first paint, not after a flicker.
    ============================================================ */
+/* Grouped menu: js/nav-dropdown.js is a copy of launchpad-features nav-dropdown; pulled in here if the page lacks it. */
+if (document.getElementById("site-header") && typeof NavDropdown === "undefined")
+  document.write('<link rel="stylesheet" href="css/nav-dropdown.css?v=0.1.0"><link rel="stylesheet" href="css/nav-dropdown-theme.css?v=0.1.0">'
+    + '<script src="js/nav-dropdown.js?v=0.1.0"><\/script>');
 const NAV = [
   ["index.html",    "Home"],
   ["services.html", "What We Make"],
-  ["schools.html",  "Schools"],
   ["clubs.html",    "Club Shops"],
   ["track.html",    "Track Order"],
   ["contact.html",  "Contact"]
 ];
+/* "Order a product" dropdown; wording editable (site_nav_order_product, one key per item). Admin pages with
+   ps_pages.nav_group = "order" join it. School Uniform replaced the top-level Schools link (it goes to the shop). */
+const NAV_GROUP = { key: "order", label: "Order a product", labelKey: "nav_order_product", after: "services.html",
+  children: [["schools-shop.html", "School Uniform"], ["workwear.html", "Workwear"],
+             ["sportswear.html", "Sportswear"], ["gifts.html", "Gifts & Accessories"]] };
 // "Shop" is deliberately left out of NAV - shop.html still works, it's
 // just empty right now. Every product currently in ps_products carries a
 // `category`, and category means "which school" there (see shop.js),
@@ -94,14 +102,26 @@ function extraNav(){
     return rows.filter(p => p && /^[a-z0-9-]+$/.test(p.slug) && p.title).map(p => ["p/" + p.slug, p.title]);
   } catch (e) { return []; }
 }
-const allNav = () => NAV.concat(extraNav());
 /* Built-in menu labels are editable (same key in header, mobile menu and
    footer); labels of admin-made pages come from that page's own title. */
-const navLabel = (h, t) => NAV.some(n => n[0] === h) ? T("nav_" + h.replace(/\W+/g, "_"), t) : navEsc(t);
+const navKey = h => "nav_" + h.replace(/\W+/g, "_");
+const navLabel = (h, t) => NAV.concat(NAV_GROUP.children).some(n => n[0] === h) ? T(navKey(h), t) : navEsc(t);
+const navLabelOf = it => it.type === "group" ? T(it.labelKey, it.label) : (it.custom ? navEsc(it.label) : T(navKey(it.href), it.label));
+const navWarn = (code, msg) => { try { console.warn(code, msg); } catch (e) { /* no console */ } };
+/* kind: "desktop" | "mobile" | "footer". Without the module the menu is flat: same links, no dropdown. */
+function navHtml(kind, here){
+  if (window.NavDropdown) {
+    let raw = "[]";
+    try { raw = localStorage.getItem(NAV_PAGES_KEY) || "[]"; } catch (e) { /* private mode: no saved pages */ }
+    const model = NavDropdown.build({ links: NAV, group: NAV_GROUP, pages: raw, onError: navWarn });
+    return NavDropdown[kind](model, { here, label: navLabelOf });
+  }
+  return NAV.concat(NAV_GROUP.children, extraNav()).map(([h, t]) => `<a href="${h}" class="${kind==="mobile"?"navlink":h===here&&kind==="desktop"?"on":""}">${navLabel(h,t)}</a>`).join("");
+}
 async function refreshNavPages(){
   if (typeof sb !== "function") return;
   try {
-    const rows = await sb("ps_pages?select=slug,title&published=eq.true&show_in_nav=eq.true&order=sort_order,created_at", {}, "PS-510");
+    const rows = await sb("ps_pages?select=slug,title,nav_group&published=eq.true&show_in_nav=eq.true&order=sort_order,created_at", {}, "PS-510");
     const next = JSON.stringify(rows || []);
     if (next === (localStorage.getItem(NAV_PAGES_KEY) || "[]")) return;
     localStorage.setItem(NAV_PAGES_KEY, next);
@@ -116,8 +136,7 @@ const currentPage = () => location.pathname.indexOf("/p/") === 0
 
 function renderHeader(){
   const here = currentPage();
-  const links = allNav().map(([h,t]) =>
-    `<a href="${h}" class="${h===here?"on":""}">${navLabel(h,t)}</a>`).join("");
+  const links = navHtml("desktop", here);
   document.getElementById("site-header").innerHTML = `
     <div class="header-inner">
       <a href="index.html" class="brandlink">
@@ -146,7 +165,7 @@ function renderHeader(){
     document.body.appendChild(nav);
   }
   nav.innerHTML = `
-      ${allNav().map(([h,t]) => `<a class="navlink" href="${h}">${navLabel(h,t)}</a>`).join("")}
+      ${navHtml("mobile", here)}
       <div class="navfoot">
         <span class="label">${T("nav_callus", "Call the studio")}</span>
         <a href="${BRAND.phoneLink}" data-brand-href="phoneLink"><span data-edit="site_brand_phone">${navEsc(BRAND.phone)}</span></a>
@@ -172,7 +191,7 @@ function renderFooter(){
         </div>
         <div>
           <span class="label">${T("foot_explore", "Explore")}</span>
-          <nav>${allNav().map(([h,t]) => `<a href="${h}">${navLabel(h,t)}</a>`).join("")}</nav>
+          <nav>${navHtml("footer", currentPage())}</nav>
         </div>
         <div>
           <span class="label">${T("foot_make", "We Make")}</span>
@@ -212,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderHours();
   if (document.getElementById("site-header")) renderHeader();
   if (document.getElementById("site-footer")) renderFooter();
+  if (window.NavDropdown) NavDropdown.init(document, { onError: navWarn });
   refreshNavPages();
 });
 
