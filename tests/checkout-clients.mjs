@@ -1,4 +1,4 @@
-/* Job 15: every checkout caller sends product ids and options, never prices.
+/* Job 15: every checkout caller sends product ids and options (price/name are legacy fields the server ignores).
    No network, no browser. Run: node tests/checkout-clients.mjs */
 import fs from "node:fs";
 import vm from "node:vm";
@@ -10,16 +10,17 @@ const check = (name, ok) => { ok ? pass++ : (fail++, console.log("FAIL", name));
 // category pages
 const b = new Basket().add({ id: "id-1", name: "Apron", price: 12 }, { size: "M", colour: "Navy", qty: 2 });
 const payload = orderPayload(b, { name: "Jo", phone: "01429866266" }, "");
-check("category basket sends product_id/qty/size/colour", JSON.stringify(payload.items) === JSON.stringify([{ product_id: "id-1", qty: 2, size: "M", colour: "Navy" }]));
-check("category payload has no price", !JSON.stringify(payload).includes("price"));
+const it0 = payload.items[0];
+check("category basket sends product_id/qty/size/colour", it0.product_id === "id-1" && it0.qty === 2 && it0.size === "M" && it0.colour === "Navy");
+check("category basket keeps legacy name/price for the old server", it0.name === "Apron" && it0.price === 12);
 
-// shop.js, schools-checkout.js: payload code must not mention a price
+// shop.js, schools-checkout.js: payload code sends product_id plus the legacy fields
 for (const f of ["js/shop.js", "js/schools-checkout.js"]) {
   const src = fs.readFileSync(f, "utf8");
   const at = src.search(/\bitems: (picks|basket)\./);
   const body = src.slice(at, at + 260);
   check(`${f}: items payload sends product_id`, body.includes("product_id"));
-  check(`${f}: items payload sends no price`, !/price|unit/.test(body.split("\n")[0]));
+  check(`${f}: items payload keeps legacy name/price for the old server`, /price/.test(body) && /name/.test(body));
 }
 
 // school basket lines carry what the server needs

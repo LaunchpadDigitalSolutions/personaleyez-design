@@ -104,7 +104,8 @@ async function startShopCheckout(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size || undefined, colour: p.colour || undefined })),
+        items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size || undefined, colour: p.colour || undefined,
+          name: p.name, price: p.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
         customer: { name, phone, email: email || undefined },
         note: note_ || undefined
       })

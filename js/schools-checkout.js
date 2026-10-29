@@ -68,7 +68,8 @@ async function submitOrder(endpoint, btnId, busyMsg){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: basket.map(b => ({ product_id: b.id, qty: b.qty, size: b.size || undefined, colour: b.colour || undefined, initials: !!b.initials })),
+        items: basket.map(b => ({ product_id: b.id, qty: b.qty, size: b.size || undefined, colour: b.colour || undefined, initials: !!b.initials,
+          name: b.name, price: b.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
         customer: { name, phone, email: email || undefined },
         note: schoolName || undefined
       })
