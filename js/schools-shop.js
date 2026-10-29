@@ -24,6 +24,17 @@ function groupBySchool(products){
   return map;
 }
 
+/* Single source of truth for "what does this school's list contain":
+   the school's own items first, then the shared "All Schools" items
+   (trousers, pinafores, skirts, playsuits, skorts). renderList(),
+   selectItem() and renderPreview() all use this so they can never
+   disagree about which rows exist. (Job 06 will restructure this area
+   for per-school overrides - change it here, in one place.) */
+function getSchoolItems(school){
+  const grouped = groupBySchool(ALL_PRODUCTS);
+  return (grouped[school] || []).concat(grouped["All Schools"] || []);
+}
+
 /* ------------------------------------------------------------
    Primary / Secondary phase lookup — sourced from Hartlepool
    Borough Council's own school directory (hartlepool.gov.uk),
@@ -130,7 +141,7 @@ function selectSchool(school){
 }
 
 function renderPreview(){
-  const items = groupBySchool(ALL_PRODUCTS)[activeSchool] || [];
+  const items = getSchoolItems(activeSchool);
   const shown = activeItem || items[0];
   $("su-preview").innerHTML = shown && shown.image_url
     ? `<img loading="lazy" src="${shown.image_url}" alt="${shown.name}">`
@@ -138,9 +149,7 @@ function renderPreview(){
 }
 
 function renderList(){
-  const grouped = groupBySchool(ALL_PRODUCTS);
-  const shared = grouped["All Schools"] || [];
-  const items = (grouped[activeSchool] || []).concat(shared);
+  const items = getSchoolItems(activeSchool);
   $("su-list").innerHTML = items.length ? items.map(p => `
     <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" onclick="selectItem('${p.id}')">
       <div>
@@ -153,8 +162,7 @@ function renderList(){
 }
 
 function selectItem(id){
-  const items = groupBySchool(ALL_PRODUCTS)[activeSchool] || [];
-  activeItem = items.find(p => p.id === id);
+  activeItem = getSchoolItems(activeSchool).find(p => p.id === id);
   renderList();
   renderPreview();
   renderPicker();
