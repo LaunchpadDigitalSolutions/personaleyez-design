@@ -72,7 +72,8 @@ async function recordFailedAttempt(env, key, count) {
 
 async function clearAttempts(env, key) {
   if (!env.RATE_LIMIT_KV) return;
-  await env.RATE_LIMIT_KV.delete(key);
+  // Free-tier KV allows 1,000 deletes a day. If that is used up, a right PIN must still get in.
+  try { await env.RATE_LIMIT_KV.delete(key); } catch (e) { /* the old count just expires on its own */ }
 }
 
 export async function onRequestPost({ request, env }) {
@@ -96,7 +97,7 @@ export async function onRequestPost({ request, env }) {
     if (rate.key) await recordFailedAttempt(env, rate.key, rate.count);
     return new Response(JSON.stringify({ error: "PS-ADMIN-AUTH" }), { status: 401 });
   }
-  if (rate.key) await clearAttempts(env, rate.key);
+  if (rate.key && rate.count > 0) await clearAttempts(env, rate.key);   // nothing to clear = no KV delete (was one per call)
 
   // "ping" is used only by the login screen, to check the PIN without
   // running any real query.
