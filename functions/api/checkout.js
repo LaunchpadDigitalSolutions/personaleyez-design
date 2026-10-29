@@ -1,17 +1,20 @@
 /* ============================================================
    POST /api/checkout
-   Turns a cart into a Square-hosted payment page.
+   Turns a basket into a Square-hosted payment page.
 
-   Body: { items: [{name, price, qty}], customer: {name, phone, email},
-           note }
+   Body: { items: [{product_id, qty, size?, colour?, initials?}],
+           customer: {name, phone, email?}, note? }
 
-   - The total is computed here from the submitted items - never taken
-     from the browser as a single trusted number.
-   - A pending order (PD-XXXXX) is created in ps_orders before we ever
-     talk to Square, so nothing is lost if the customer abandons payment
-     partway through.
+   - The browser sends WHICH products and how many. Every price,
+     including the initials add-on, is looked up here from the
+     database (functions/_lib/pricing.js). Any price or name sent by
+     the browser is ignored.
+   - A pending order (PD-XXXXX) is saved in ps_orders after Square
+     accepts the link. Its description lists each line with the price
+     we charged, so Jo sees exactly what was billed.
    - Returns { checkout_url, order_ref } for the caller to redirect to.
    ============================================================ */
+import { OrderError, validateCustomer, priceBasket, makeLookup } from "../_lib/pricing.js";
 
 function errorResponse(code, message, status) {
   return new Response(JSON.stringify({ error: code, message }), {
@@ -36,26 +39,7 @@ export async function onRequestPost(context) {
   } catch {
     return errorResponse("PSC-001", "Invalid JSON body");
   }
-
-  const items = Array.isArray(body.items) ? body.items : [];
-  const customer = body.customer || {};
-
-  if (items.length === 0) return errorResponse("PSC-002", "Cart is empty");
-  if (!customer.name || !customer.phone) return errorResponse("PSC-003", "Customer name and phone are required");
-
-  // Compute the total ourselves - price/qty from the client is a starting
-  // point, never a trusted final figure.
-  let totalPence = 0;
-  const lines = [];
-  for (const item of items) {
-    const price = Number(item.price);
-    const qty = Number(item.qty) || 1;
-    if (!item.name || !Number.isFinite(price) || price <= 0 || qty <= 0) {
-      return errorResponse("PSC-004", "Every item needs a name, a positive price, and a quantity");
-    }
-    totalPence += Math.round(price * 100) * qty;
-    lines.push(`${qty} x ${item.name}`);
-  }
+  if (!body || typeof body !== "object") return errorResponse("PSC-001", "Invalid JSON body");
 
   if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
     return errorResponse("PSC-005", "Payments aren't configured yet - Square credentials are missing", 503);
@@ -64,16 +48,22 @@ export async function onRequestPost(context) {
     return errorResponse("PSC-006", "Database isn't configured", 503);
   }
 
+  let customer, priced;
+  try {
+    customer = validateCustomer("PSC", body.customer, body.note);
+    priced = await priceBasket("PSC", body.items, makeLookup("PSC", env));
+  } catch (e) {
+    if (e instanceof OrderError) return errorResponse(e.code, e.message, e.status);
+    return errorResponse("PSC-999", "That didn't go through - please ring us", 500);
+  }
+
+  const { totalPence, description, squareName } = priced;
   const orderRef = makeOrderRef();
-  const description = lines.join(", ");
+  const fullDescription = description + (customer.note ? ` — ${customer.note}` : "");
 
   // Square Payment Links - quick_pay only takes one name+price, so a
-  // multi-item cart is summarised as one line; the itemised breakdown
+  // multi-item basket is summarised as one line; the itemised breakdown
   // lives in our own order record for Jo to see in admin.
-  const squareName = items.length === 1
-    ? items[0].name
-    : `Peach State order (${items.length} items)`;
-
   let squareRes, squareData;
   try {
     squareRes = await fetch("https://connect.squareup.com/v2/online-checkout/payment-links", {
@@ -120,8 +110,8 @@ export async function onRequestPost(context) {
       p_order_ref: orderRef,
       p_customer_name: customer.name,
       p_customer_phone: customer.phone,
-      p_customer_email: customer.email || null,
-      p_description: description + (body.note ? ` — ${body.note}` : ""),
+      p_customer_email: customer.email,
+      p_description: fullDescription,
       p_total: totalPence / 100,
       p_square_order_id: squareOrderId
     })

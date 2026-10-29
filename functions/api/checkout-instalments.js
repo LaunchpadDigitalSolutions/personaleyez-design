@@ -6,12 +6,16 @@
    the customer, reminds them automatically, and takes each payment
    through its own hosted page — nothing for us to chase manually.
 
-   Body: { items: [{name, price, qty}], customer: {name, phone, email},
-           note }
+   Body: { items: [{product_id, qty, size?, colour?, initials?}],
+           customer: {name, phone, email?}, note? }
+
+   Prices are looked up on the server (functions/_lib/pricing.js);
+   anything price-like sent by the browser is ignored.
 
    Returns { checkout_url, order_ref } — checkout_url is the invoice's
    public payment page for the first instalment.
    ============================================================ */
+import { OrderError, validateCustomer, priceBasket, makeLookup } from "../_lib/pricing.js";
 
 function errorResponse(code, message, status) {
   return new Response(JSON.stringify({ error: code, message }), {
@@ -42,26 +46,7 @@ export async function onRequestPost(context) {
   } catch {
     return errorResponse("PSI-001", "Invalid JSON body");
   }
-
-  const items = Array.isArray(body.items) ? body.items : [];
-  const customer = body.customer || {};
-
-  if (items.length === 0) return errorResponse("PSI-002", "Basket is empty");
-  if (!customer.name || !customer.phone) return errorResponse("PSI-003", "Customer name and phone are required");
-
-  let totalPence = 0;
-  const lines = [];
-  for (const item of items) {
-    const price = Number(item.price);
-    const qty = Number(item.qty) || 1;
-    if (!item.name || !Number.isFinite(price) || price <= 0 || qty <= 0) {
-      return errorResponse("PSI-004", "Every item needs a name, a positive price, and a quantity");
-    }
-    totalPence += Math.round(price * 100) * qty;
-    lines.push(`${qty} x ${item.name}`);
-  }
-  // Square requires whole-percentage splits that sum to 100 exactly.
-  // 34% + 33% + 33% avoids rounding leftovers.
+  if (!body || typeof body !== "object") return errorResponse("PSI-001", "Invalid JSON body");
 
   if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
     return errorResponse("PSI-005", "Payments aren't configured yet - Square credentials are missing", 503);
@@ -70,11 +55,18 @@ export async function onRequestPost(context) {
     return errorResponse("PSI-006", "Database isn't configured", 503);
   }
 
+  let customer, priced;
+  try {
+    customer = validateCustomer("PSI", body.customer, body.note);
+    priced = await priceBasket("PSI", body.items, makeLookup("PSI", env));
+  } catch (e) {
+    if (e instanceof OrderError) return errorResponse(e.code, e.message, e.status);
+    return errorResponse("PSI-999", "That didn't go through - please ring us", 500);
+  }
+
+  const { totalPence, description, squareName } = priced;
   const orderRef = makeOrderRef();
-  const description = lines.join(", ");
-  const squareName = items.length === 1
-    ? items[0].name
-    : `Peach State order (${items.length} items)`;
+  const fullDescription = description + (customer.note ? ` — ${customer.note}` : "");
 
   const headers = {
     "Square-Version": "2026-08-19",
@@ -84,7 +76,7 @@ export async function onRequestPost(context) {
 
   try {
     // 1. Square customer record (so the invoice has someone to bill)
-    const [firstName, ...rest] = customer.name.trim().split(/\s+/);
+    const [firstName, ...rest] = customer.name.split(/\s+/);
     const custRes = await fetch("https://connect.squareup.com/v2/customers", {
       method: "POST", headers,
       body: JSON.stringify({
@@ -114,6 +106,8 @@ export async function onRequestPost(context) {
     const squareOrderId = orderData.order.id;
 
     // 3. Invoice split into 3 payments: today, +30 days, +60 days
+    // Square requires whole-percentage splits that sum to 100 exactly.
+    // 34% + 33% + 33% avoids rounding leftovers.
     const invRes = await fetch("https://connect.squareup.com/v2/invoices", {
       method: "POST", headers,
       body: JSON.stringify({
@@ -130,7 +124,7 @@ export async function onRequestPost(context) {
           delivery_method: customer.email ? "EMAIL" : "SHARE_MANUALLY",
           accepted_payment_methods: { card: true },
           title: "Peach State — school uniform (3 payments)",
-          description: description + (body.note ? ` — ${body.note}` : "")
+          description: fullDescription
         }
       })
     });
@@ -159,8 +153,8 @@ export async function onRequestPost(context) {
         p_order_ref: orderRef,
         p_customer_name: customer.name,
         p_customer_phone: customer.phone,
-        p_customer_email: customer.email || null,
-        p_description: description + (body.note ? ` — ${body.note}` : "") + " · 3-payment plan",
+        p_customer_email: customer.email,
+        p_description: fullDescription + " · 3-payment plan",
         p_total: totalPence / 100,
         p_square_order_id: squareOrderId
       })
@@ -177,4 +171,3 @@ export async function onRequestPost(context) {
     return errorResponse("PSI-999", "That didn't go through - please ring us", 502);
   }
 }
-// redeploy-trigger 2026-09-08T15:06:00Z
