@@ -24,8 +24,15 @@ const PAGE_RESERVED = ["admin", "index", "shop", "clubs", "services", "schools",
 const pageApi = {
   list: () => adminRpc("ps_admin_list_pages", {}, "PS-320"),
   create: (title, slug, nav) => adminRpc("ps_admin_create_page", { p_title: title, p_slug: slug, p_show_in_nav: nav }, "PS-321"),
-  update: (id, patch) => adminRpc("ps_admin_update_page", { p_id: id, ...patch }, "PS-322")
+  update: (id, patch) => adminRpc("ps_admin_update_page", { p_id: id, ...patch }, "PS-322"),
+  group: (id, group) => adminRpc("ps_admin_set_page_nav_group", { p_id: id, p_group: group }, "PS-722")   // "order" or "" (main menu)
 };
+
+/* Where a page sits in the menu. The dropdown's name is Jo's own wording when she has changed it. */
+const orderLabel = () => (typeof siteGet === "function" && siteGet("site_nav_order_product")) || "Order a product";
+const menuWhere = p => !p.show_in_nav ? "Not in menu" : p.nav_group === "order" ? "In menu under " + orderLabel() : "In menu";
+const navRadio = (v, text, on) => '<label style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;cursor:pointer">'
+  + '<input type="radio" name="pgn-menu" value="' + v + '"' + (on ? " checked" : "") + ' style="width:20px;height:20px;min-height:0;flex:none"> ' + text + '</label>';
 
 async function loadPages() {
   try { customPages = await pageApi.list(); } catch (e) { customPages = []; }
@@ -51,6 +58,8 @@ function pageButtons(p) {
   return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'
     + '<a href="p/' + attr(p.slug) + '?edit=1" style="' + PG_BTN + 'background:#F6B49C">Edit</a>'
     + '<button style="' + PG_BTN + 'background:#EADBCD" onclick="toggleNavPage(\'' + p.id + '\')">' + (p.show_in_nav ? "Hide from menu" : "Add to menu") + '</button>'
+    + (p.show_in_nav ? '<button style="' + PG_BTN + 'background:#EADBCD" onclick="moveNavPage(\'' + p.id + '\')">'
+      + (p.nav_group === "order" ? "Move to main menu" : "Move under " + esc(orderLabel())) + '</button>' : '')
     + '<button style="' + PG_BTN + 'background:#EADBCD" onclick="askRemovePage(\'' + p.id + '\')">Remove</button></div>';
 }
 
@@ -60,7 +69,7 @@ function pagesHtml() {
   const live = customPages.filter(p => p.published), gone = customPages.filter(p => !p.published);
   const liveRows = live.length ? live.map(p =>
     '<div style="' + PG_ROW + '"><div style="font-size:16px">' + esc(p.title) + '</div>'
-    + '<div style="font-size:12px;opacity:.65;margin-top:2px">/p/' + esc(p.slug) + ' · ' + (p.show_in_nav ? "In menu" : "Not in menu") + '</div>'
+    + '<div style="font-size:12px;opacity:.65;margin-top:2px">/p/' + esc(p.slug) + ' · ' + esc(menuWhere(p)) + '</div>'
     + pageButtons(p) + '</div>').join("")
     : '<div style="' + PG_ROW + ';opacity:.65;font-size:14px">No pages yet. Make one below.</div>';
   const goneRows = gone.length ? '<h2 style="margin:22px 0 4px;font-size:18px">Removed pages</h2>'
@@ -84,9 +93,8 @@ function newPageHtml() {
     + '<div class="fld"><label for="pgn-slug">Web address</label>'
     + '<input id="pgn-slug" type="text" placeholder="spring-offers" oninput="newPageSlugTyped()" autocomplete="off" autocapitalize="none"></div>'
     + '<p id="pgn-url" style="font-size:12px;color:var(--muted);margin:-4px 0 14px">peachstate.co.uk/p/… Letters, numbers and dashes only.</p>'
-    + '<div class="fld" style="display:flex;justify-content:space-between;align-items:center;gap:12px">'
-    + '<label for="pgn-nav" style="margin:0">Show in the site menu</label>'
-    + '<input id="pgn-nav" type="checkbox" checked style="width:auto;min-height:auto"></div>'
+    + '<div class="fld"><label>Where should it show in the menu?</label>'
+    + navRadio("top", "In the main menu", true) + navRadio("order", "Under " + esc(orderLabel()), false) + navRadio("none", "Not in the menu", false) + '</div>'
     + '<div class="notice" id="pgn-notice"></div>'
     + '<button class="btn-solid" id="pgn-save" onclick="createNewPage()" style="margin-top:18px">Create page and start building</button>'
     + '</div></div>';
@@ -107,7 +115,8 @@ function newPageSlugTyped() { npSlugTouched = true; npShowUrl(); }
 function pageGoTo(url) { location.href = url; }
 
 async function createNewPage() {
-  const title = $("pgn-title").value.trim(), slug = pageSlug($("pgn-slug").value || title), nav = $("pgn-nav").checked;
+  const title = $("pgn-title").value.trim(), slug = pageSlug($("pgn-slug").value || title);
+  const choice = ((document.querySelector('input[name="pgn-menu"]:checked') || {}).value) || "top", nav = choice !== "none";
   const n = $("pgn-notice"), btn = $("pgn-save"), err = m => { n.className = "notice show err"; n.textContent = m; };
   if (!title) return err("Give the page a name.");
   if (!slug) return err("The web address needs some letters or numbers.");
@@ -117,6 +126,7 @@ async function createNewPage() {
   btn.disabled = true; n.className = "notice show busy"; n.textContent = "Creating…";
   try {
     const p = await pageApi.create(title, slug, nav);
+    if (choice === "order") { try { await pageApi.group(p.id, "order"); } catch (e) { /* page exists, in the main menu; "Move under" on the list fixes it */ } }
     pageGoTo("p/" + p.slug + "?edit=1");               // straight into the editor
   } catch (e) {
     err("Couldn't create that page (" + e.message + "). The web address may already be used.");
@@ -137,6 +147,15 @@ const restorePage = id => pageChange(id, { p_published: true }, "Page restored")
 function toggleNavPage(id) {
   const p = customPages.find(x => x.id === id);
   if (p) pageChange(id, { p_show_in_nav: !p.show_in_nav }, p.show_in_nav ? "Taken out of the menu" : "Added to the menu");
+}
+
+async function moveNavPage(id) {
+  const p = customPages.find(x => x.id === id);
+  if (!p) return;
+  const to = p.nav_group === "order" ? "" : "order";
+  try { await pageApi.group(id, to); await loadPages(); toast(to ? "Moved under " + orderLabel() : "Moved to the main menu"); }
+  catch (e) { toast("Couldn't do that (" + e.message + ")"); }
+  pageToRemove = null; render();
 }
 
 /* ---------- wiring into the dashboard ---------- */
