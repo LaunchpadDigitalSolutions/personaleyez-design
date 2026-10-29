@@ -4,14 +4,31 @@
    sessionStorage rather than carried in a URL, since a full
    uniform order can run to a dozen+ lines with size/colour/
    embroidery notes attached to each.
+
+   Prices shown here are for display only. What we send is WHICH
+   product, how many, size/colour and initials yes/no; the server
+   looks up every price itself (functions/_lib/pricing.js).
    ============================================================ */
 
 let basket = [], schoolName = "";
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
+const PHONE_FALLBACK = () => "That didn't go through. Please ring us on " + BRAND.phone + ".";
+const STALE_MSG = "We've updated the shop, so please choose your uniform again.";
 
 function note(el, cls, msg){
   const n = $(el); n.className = "notice show " + cls; n.textContent = msg;
+}
+
+function showEmpty(msg){
+  sessionStorage.removeItem("su_basket");
+  $("suc-content").style.display = "none";
+  $("suc-empty").style.display = "block";
+  if(msg){
+    const p = document.createElement("p");
+    p.className = "body"; p.style.fontWeight = "500"; p.textContent = msg;
+    $("suc-empty").insertBefore(p, $("suc-empty").firstChild);
+  }
 }
 
 function renderOrder(){
@@ -29,84 +46,51 @@ function renderOrder(){
 
 function removeItem(i){
   basket.splice(i, 1);
-  if(!basket.length){
-    sessionStorage.removeItem("su_basket");
-    $("suc-content").style.display = "none";
-    $("suc-empty").style.display = "block";
-    return;
-  }
+  if(!basket.length){ showEmpty(); return; }
   sessionStorage.setItem("su_basket", JSON.stringify(basket));
   renderOrder();
 }
 
-async function startUniformCheckout(){
+/* One path for both buttons: same checks, same payload, different endpoint. */
+async function submitOrder(endpoint, btnId, busyMsg){
   const name  = $("suc-cname").value.trim();
   const phone = $("suc-cphone").value.trim();
   const email = $("suc-cemail").value.trim();
-  const btn   = $("suc-pay");
+  const btn   = $(btnId);
 
   if(!name){ note("suc-notice", "err", "We need your name."); return; }
   if(phone.length < 9){ note("suc-notice", "err", "We need a phone number."); return; }
   if(!$("suc-consent").checked){ note("suc-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
 
-  btn.disabled = true; note("suc-notice", "busy", "Setting up your payment…");
+  btn.disabled = true; note("suc-notice", "busy", busyMsg);
   try{
-    const res = await fetch("/api/checkout", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
+        items: basket.map(b => ({ product_id: b.id, qty: b.qty, size: b.size || undefined, colour: b.colour || undefined, initials: !!b.initials,
+          name: b.name, price: b.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
         customer: { name, phone, email: email || undefined },
         note: schoolName || undefined
       })
     });
     const data = await res.json();
     if(!res.ok || !data.checkout_url){
-      note("suc-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
+      // 02x = something the customer can fix (the server's message is written for them)
+      const friendly = res.status < 500 && /^PS[CI]-02\d$/.test(data.error || "");
+      note("suc-notice", "err", friendly ? data.message : PHONE_FALLBACK());
       btn.disabled = false; return;
     }
     sessionStorage.removeItem("su_basket");
     location.href = data.checkout_url;
   }catch(e){
-    note("suc-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
+    note("suc-notice", "err", PHONE_FALLBACK());
     btn.disabled = false;
   }
 }
 
-async function startInstalmentCheckout(){
-  const name  = $("suc-cname").value.trim();
-  const phone = $("suc-cphone").value.trim();
-  const email = $("suc-cemail").value.trim();
-  const btn   = $("suc-spread");
-
-  if(!name){ note("suc-notice", "err", "We need your name."); return; }
-  if(phone.length < 9){ note("suc-notice", "err", "We need a phone number."); return; }
-  if(!$("suc-consent").checked){ note("suc-notice", "err", "Please tick the box to say you're happy for us to use your details for this order."); return; }
-
-  btn.disabled = true; note("suc-notice", "busy", "Setting up your payment plan…");
-  try{
-    const res = await fetch("/api/checkout-instalments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
-        customer: { name, phone, email: email || undefined },
-        note: schoolName || undefined
-      })
-    });
-    const data = await res.json();
-    if(!res.ok || !data.checkout_url){
-      note("suc-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-      btn.disabled = false; return;
-    }
-    sessionStorage.removeItem("su_basket");
-    location.href = data.checkout_url;
-  }catch(e){
-    note("suc-notice", "err", "That didn't go through. Please ring us on " + BRAND.phone + ".");
-    btn.disabled = false;
-  }
-}
-
+const startUniformCheckout    = () => submitOrder("/api/checkout", "suc-pay", "Setting up your payment…");
+const startInstalmentCheckout = () => submitOrder("/api/checkout-instalments", "suc-spread", "Setting up your payment plan…");
 
 document.addEventListener("DOMContentLoaded", async () => {
   if(!(await healthCheck())) $("health").style.display = "block";
@@ -118,6 +102,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("suc-empty").style.display = "block";
     return;
   }
+  // A basket saved before the shop sent product ids can't be priced: empty it, say why.
+  if(basket.some(b => !b || !b.id)){ basket = []; showEmpty(STALE_MSG); return; }
   $("suc-content").style.display = "block";
   renderOrder();
 });

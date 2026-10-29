@@ -19,8 +19,8 @@
        onError: msg => {}
      })
 
-   Not fixed here: the checkout endpoint trusts prices sent by the browser
-   (see README). Items carry product_id so the server can look prices up.
+   The basket sends product_id, qty, size and colour. The server looks up
+   every price itself and ignores any price the browser sends (Job 15).
    Error codes: PS-700 load, PS-701/702 checkout, PS-710 basket, PS-711 setup.
 */
 
@@ -55,7 +55,7 @@ export class Basket {
     const opts = [size, colour].filter(Boolean);
     const found = this.lines.find(l => l.id === product.id && l.opts.join('|') === opts.join('|'));
     if (found) found.qty += qty;
-    else this.lines.push({ id: product.id, name: product.name, price: Number(product.price), opts, qty });
+    else this.lines.push({ id: product.id, name: product.name, price: Number(product.price), opts, qty, size, colour });
     return this;
   }
 
@@ -64,12 +64,11 @@ export class Basket {
   get count() { return this.lines.reduce((s, l) => s + l.qty, 0); }
   get total() { return Math.round(this.lines.reduce((s, l) => s + Math.round(l.price * 100) * l.qty, 0)) / 100; }
 
-  /* Same shape /api/checkout already takes; options are folded into the name. */
+  /* What /api/checkout takes: which product, how many, which options. The server
+     prices every line itself (display prices here are for show). */
   items() {
-    return this.lines.map(l => ({
-      name: l.opts.length ? `${l.name} (${l.opts.join(', ')})` : l.name,
-      price: l.price, qty: l.qty, product_id: l.id
-    }));
+    // name/price are legacy fields the server ignores; they keep the old server working during rollout
+    return this.lines.map(l => ({ product_id: l.id, qty: l.qty, size: l.size || undefined, colour: l.colour || undefined, name: l.name, price: l.price }));
   }
 }
 
@@ -93,7 +92,12 @@ export async function checkoutViaApi(payload, { fetchFn = globalThis.fetch, url 
     res = await fetchFn(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     data = await res.json();
   } catch (e) { throw new Error('PS-701: could not reach checkout'); }
-  if (!res.ok || !data || !data.checkout_url) throw new Error('PS-702: checkout refused');
+  if (!res.ok || !data || !data.checkout_url) {
+    const err = new Error('PS-702: checkout refused');
+    // 02x = a problem the customer can fix; the server's message is written for them
+    err.friendly = (res.status < 500 && /^PS[CI]-02\d$/.test((data && data.error) || '')) ? data.message : '';
+    throw err;
+  }
   return data.checkout_url;
 }
 
@@ -193,7 +197,7 @@ export function mountCategoryPage(o) {
       go(await checkout(orderPayload(basket, c, q('note-text').value.trim())));
     } catch (e) {
       onError(e.message);
-      say('err', "That didn't go through. Please ring us" + (o.phone ? ' on ' + o.phone : '') + '.');
+      say('err', e.friendly || ("That didn't go through. Please ring us" + (o.phone ? ' on ' + o.phone : '') + '.'));
       btn.disabled = false;
     }
   }

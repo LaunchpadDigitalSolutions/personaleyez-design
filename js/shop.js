@@ -1,8 +1,9 @@
 /* ============================================================
    shop.js — public shop: browse, basket, pay by card.
    Checkout goes through /api/checkout (a Cloudflare Pages Function),
-   never touches Supabase directly for payment - that keeps pricing
-   and payment status out of the browser's hands entirely.
+   never touches Supabase directly for payment. We send product ids,
+   quantities and options; the server looks up every price itself, so
+   the prices shown here are for display only.
    ============================================================ */
 
 let PRODUCTS = [], picks = [];
@@ -48,7 +49,7 @@ function renderProducts(){
         ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
           <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
         <div class="fld"><label for="qt-${i}">Quantity</label>
-          <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
+          <input id="qt-${i}" type="number" min="0" max="20" value="0" inputmode="numeric" onchange="renderBasket()"></div>
       </div>`;
     }).join("")}
   `).join("");
@@ -62,7 +63,9 @@ function collectPicks(){
       const bits = [];
       if($("sz-"+i)) bits.push($("sz-"+i).value);
       if($("co-"+i)) bits.push($("co-"+i).value);
-      picks.push({ name:p.name, qty:q, unit:Number(p.price||0), opts:bits });
+      // id/size/colour are what the server prices from; unit and opts are for display
+      picks.push({ id:p.id, name:p.name, qty:q, unit:Number(p.price||0), opts:bits,
+                   size: $("sz-"+i) ? $("sz-"+i).value : "", colour: $("co-"+i) ? $("co-"+i).value : "" });
     }
   });
   return picks;
@@ -101,17 +104,17 @@ async function startShopCheckout(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: picks.map(p => ({
-          name: p.opts.length ? `${p.name} (${p.opts.join(", ")})` : p.name,
-          price: p.unit, qty: p.qty
-        })),
+        items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size || undefined, colour: p.colour || undefined,
+          name: p.name, price: p.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
         customer: { name, phone, email: email || undefined },
         note: note_ || undefined
       })
     });
     const data = await res.json();
     if(!res.ok || !data.checkout_url){
-      note("p-notice","err","That didn't go through. Please ring us on " + BRAND.phone + ".");
+      // PSC-02x = something the customer can fix; the server's message is written for them
+      const friendly = res.status < 500 && /^PSC-02\d$/.test(data.error || "");
+      note("p-notice","err", friendly ? data.message : "That didn't go through. Please ring us on " + BRAND.phone + ".");
       btn.disabled = false; return;
     }
     // Off to Square's own checkout page - we never see the card details.
