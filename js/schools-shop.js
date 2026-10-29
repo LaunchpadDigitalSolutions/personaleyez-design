@@ -14,6 +14,10 @@ let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, ac
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 
+/* Price of "initials stitched on" for a crested item. One value, used by the
+   page label, the basket line and the unit price, so they can never disagree. */
+const INITIALS_PRICE = 2;
+
 function note(el, cls, msg){
   const n = $(el); n.className = "notice show " + cls; n.textContent = msg;
 }
@@ -157,7 +161,7 @@ function renderPicker(){
       <input id="su-qty" type="number" min="1" value="1" inputmode="numeric"></div>
     ${crested ? `<div class="su-toggles">
       <label><span>Embroidered school logo</span><input type="checkbox" checked disabled></label>
-      <label><span>Initials stitched on <span class="dim">+£3.50</span></span>
+      <label><span>Initials stitched on <span class="dim">+${money(INITIALS_PRICE)}</span></span>
         <input type="checkbox" id="su-initials"></label>
     </div>` : ""}
     <button class="btn-solid" style="width:100%;margin-top:20px" onclick="addToBasket()">Add to order</button>`;
@@ -183,10 +187,10 @@ function addToBasket(){
   if(size) bits.push(size);
   if(colour) bits.push(colour);
   if(crested) bits.push("logo embroidered");
-  if(initials) bits.push("initials +£3.50");
+  if(initials) bits.push("initials +" + money(INITIALS_PRICE));
 
   basket.push({
-    name: p.name, qty, unit: Number(p.price || 0) + (initials ? 3.50 : 0), opts: bits
+    name: p.name, qty, unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits
   });
   renderBasket();
   activeItem = null;
