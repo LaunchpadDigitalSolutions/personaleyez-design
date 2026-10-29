@@ -9,6 +9,7 @@
     "test:preview": "node tests/e2e.mjs --base=https://peach-state.pages.dev",
     "test:schools": "node tests/schools-shared-items.mjs && node tests/schools-registry.mjs",
     "test:pages": "node tests/category-pages.mjs",
+    "test:checkout": "node tests/checkout-pricing.mjs",
     "build:pages": "node tools/build-category-pages.mjs"
   }
 }
