@@ -48,7 +48,7 @@ const ADMIN_RPCS = new Set([
   // School items: pool + per-school overrides (Job 06), whole-kit save (Job 05)
   "ps_admin_list_school_items", "ps_admin_list_pool", "ps_admin_set_school_item", "ps_admin_add_pool_to_school",
   "ps_admin_set_school_kit",
-  // Pages made from the admin (shown at /p/<n>)
+  // Pages made from the admin (shown at /p/<name>)
   "ps_admin_list_pages", "ps_admin_create_page", "ps_admin_update_page", "ps_admin_set_page_nav_group"
 ]);
 
