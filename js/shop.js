@@ -32,21 +32,21 @@ function renderProducts(){
   });
   const showHeadings = groups.size > 1;
   $("p-products").innerHTML = [...groups.entries()].map(([cat, idxs]) => `
-    ${showHeadings ? `<div class="shop-cat-head"><span class="label">${cat}</span></div>` : ""}
+    ${showHeadings ? `<div class="shop-cat-head"><span class="label">${escHtml(cat)}</span></div>` : ""}
     ${idxs.map(i => {
       const p = PRODUCTS[i];
       const sizes = (p.sizes||"").split(",").map(s=>s.trim()).filter(Boolean);
       const cols  = (p.colours||"").split(",").map(s=>s.trim()).filter(Boolean);
       return `<div class="piece">
-        ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
-                      : `<div class="imgwrap noimg" style="aspect-ratio:1/1"><span>${p.name}</span></div>`}
-        <h3>${p.name}</h3>
+        ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${escHtml(p.image_url)}" alt="${escHtml(p.name)}"></div>`
+                      : `<div class="imgwrap noimg" style="aspect-ratio:1/1"><span>${escHtml(p.name)}</span></div>`}
+        <h3>${escHtml(p.name)}</h3>
         <p style="color:var(--charcoal);font-family:var(--display);font-size:19px">${money(p.price)}</p>
-        ${p.description ? `<p>${p.description}</p>` : ""}
+        ${p.description ? `<p>${escHtml(p.description)}</p>` : ""}
         ${sizes.length ? `<div class="fld"><label for="sz-${i}">Size</label>
-          <select id="sz-${i}">${sizes.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+          <select id="sz-${i}">${sizes.map(s=>`<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
         ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
-          <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+          <select id="co-${i}">${cols.map(s=>`<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
         <div class="fld"><label for="qt-${i}">Quantity</label>
           <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
       </div>`;
@@ -74,7 +74,7 @@ function renderBasket(){
   if(!picks.length){ box.style.display="none"; co.style.display="none"; return; }
   box.style.display = "block"; co.style.display = "block";
   $("p-basket").innerHTML = picks.map(p =>
-    `<li><b>${p.qty} × ${p.name}${p.opts.length ? " · " + p.opts.join(" · ") : ""}</b>
+    `<li><b>${p.qty} × ${escHtml(p.name)}${p.opts.length ? " · " + escHtml(p.opts.join(" · ")) : ""}</b>
      <span>${money(p.unit*p.qty)}</span></li>`).join("");
   const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);
   $("p-total").textContent = money(total);
