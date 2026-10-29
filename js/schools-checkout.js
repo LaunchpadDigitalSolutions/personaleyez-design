@@ -17,14 +17,22 @@ function note(el, cls, msg){
 function renderOrder(){
   $("suc-basket").innerHTML = basket.map((b, i) =>
     `<li style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-      <span><b>${b.qty} × ${b.name} · ${b.opts.join(" · ")}</b></span>
+      <span><b>${b.qty} × ${escHtml(b.name)}${b.opts.length ? " · " + escHtml(b.opts.join(" · ")) : ""}</b></span>
       <span style="display:flex;align-items:center;gap:14px;white-space:nowrap">
         ${money(b.unit * b.qty)}
-        <button onclick="removeItem(${i})" style="min-height:auto;padding:0;border:none;background:none;font-size:12px;text-decoration:underline;color:var(--muted);cursor:pointer">Remove</button>
+        <button data-remove="${i}" style="min-height:auto;padding:0;border:none;background:none;font-size:12px;text-decoration:underline;color:var(--muted);cursor:pointer">Remove</button>
       </span>
     </li>`).join("");
   const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
   $("suc-total").textContent = money(total);
+}
+
+/* Remove buttons carry data-remove="<index>"; one listener on the list. */
+function bindCheckoutEvents(){
+  $("suc-basket").addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("[data-remove]");
+    if(b) removeItem(Number(b.dataset.remove));
+  });
 }
 
 function removeItem(i){
@@ -55,7 +63,7 @@ async function startUniformCheckout(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
+        items: basket.map(b => ({ name: lineName(b.name, b.opts), price: b.unit, qty: b.qty })),
         customer: { name, phone, email: email || undefined },
         note: schoolName || undefined
       })
@@ -89,7 +97,7 @@ async function startInstalmentCheckout(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: basket.map(b => ({ name: `${b.name} (${b.opts.join(", ")})`, price: b.unit, qty: b.qty })),
+        items: basket.map(b => ({ name: lineName(b.name, b.opts), price: b.unit, qty: b.qty })),
         customer: { name, phone, email: email || undefined },
         note: schoolName || undefined
       })
@@ -113,6 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try{ basket = JSON.parse(sessionStorage.getItem("su_basket") || "[]"); }
   catch(e){ basket = []; }
   schoolName = sessionStorage.getItem("su_school") || "";
+  bindCheckoutEvents();
 
   if(!basket.length){
     $("suc-empty").style.display = "block";
