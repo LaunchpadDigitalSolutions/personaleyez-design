@@ -102,11 +102,14 @@ function renderPhases(){
   SCHOOLS.forEach(s => { const p = classifyPhase(s); (byPhase[p] = byPhase[p] || []).push(s); });
   const phases = PHASE_ORDER.filter(p => byPhase[p] && byPhase[p].length);
 
-  $("su-phases").innerHTML = phases.map(p => `
-    <button class="su-school${p === activePhase ? " on" : ""}" onclick="selectPhase('${p}')">
-      <span class="su-school-circle">${byPhase[p].length}</span>
+  $("su-phases").innerHTML = phases.map(p => {
+    const n = byPhase[p].length;
+    return `
+    <button class="su-school su-phase${p === activePhase ? " on" : ""}" aria-pressed="${p === activePhase}" aria-label="${PHASE_LABEL[p]}, ${n} school${n === 1 ? "" : "s"}" onclick="selectPhase('${p}')">
+      <span class="su-school-circle">${typeof phaseIcon === "function" ? phaseIcon(p) : ""}</span>
       <span class="su-school-name">${PHASE_LABEL[p]}</span>
-    </button>`).join("");
+    </button>`;
+  }).join("");
 
   return byPhase;
 }
