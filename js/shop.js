@@ -1,8 +1,8 @@
 /* ============================================================
    shop.js — public shop: browse, basket, pay by card.
    Checkout goes through /api/checkout (a Cloudflare Pages Function),
-   never touches Supabase directly for payment - that keeps pricing
-   and payment status out of the browser's hands entirely.
+   never touches Supabase directly for payment. The browser sends only
+   product ids, quantities and options; the server sets every price.
    ============================================================ */
 
 let PRODUCTS = [], picks = [];
@@ -48,7 +48,7 @@ function renderProducts(){
         ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
           <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
         <div class="fld"><label for="qt-${i}">Quantity</label>
-          <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
+          <input id="qt-${i}" type="number" min="0" max="20" value="0" inputmode="numeric" onchange="renderBasket()"></div>
       </div>`;
     }).join("")}
   `).join("");
@@ -62,7 +62,8 @@ function collectPicks(){
       const bits = [];
       if($("sz-"+i)) bits.push($("sz-"+i).value);
       if($("co-"+i)) bits.push($("co-"+i).value);
-      picks.push({ name:p.name, qty:q, unit:Number(p.price||0), opts:bits });
+      picks.push({ id:p.id, name:p.name, qty:q, unit:Number(p.price||0), opts:bits,
+        size: $("sz-"+i) ? $("sz-"+i).value : undefined, colour: $("co-"+i) ? $("co-"+i).value : undefined });
     }
   });
   return picks;
@@ -101,17 +102,17 @@ async function startShopCheckout(){
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: picks.map(p => ({
-          name: p.opts.length ? `${p.name} (${p.opts.join(", ")})` : p.name,
-          price: p.unit, qty: p.qty
-        })),
+        // product_id/qty/size/colour is what the server prices from. name/price are legacy:
+        // the live server still reads them until Job 15's server change deploys, the new one ignores them.
+        items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size, colour: p.colour,
+          name: p.opts.length ? `${p.name} (${p.opts.join(", ")})` : p.name, price: p.unit })),
         customer: { name, phone, email: email || undefined },
         note: note_ || undefined
       })
     });
     const data = await res.json();
     if(!res.ok || !data.checkout_url){
-      note("p-notice","err","That didn't go through. Please ring us on " + BRAND.phone + ".");
+      note("p-notice","err", data && data.message && res.status < 500 ? data.message : "That didn't go through. Please ring us on " + BRAND.phone + ".");
       btn.disabled = false; return;
     }
     // Off to Square's own checkout page - we never see the card details.
