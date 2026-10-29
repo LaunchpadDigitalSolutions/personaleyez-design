@@ -6,10 +6,10 @@
   "scripts": {
     "test": "node tests/e2e.mjs",
     "test:pin": "node tests/pin-lockout.mjs && node tests/unlock-per-ip.mjs",
+    "test:menu": "node tests/nav-menu.mjs",
     "test:preview": "node tests/e2e.mjs --base=https://peach-state.pages.dev",
     "test:schools": "node tests/schools-shared-items.mjs && node tests/schools-registry.mjs",
     "test:pages": "node tests/category-pages.mjs",
-    "test:menu": "node tests/nav-menu.mjs",
     "build:pages": "node tools/build-category-pages.mjs"
   }
 }
