@@ -19,11 +19,12 @@ function makeCtx(sbImpl){
     toast(){}, healthCheck: async () => true, location: {}, console: { log: console.log, error(){} },
     sb: sbImpl, listShopProducts: async () => [], phaseIcon: p => `<svg data-p="${p}"></svg>`
   });
-  for(const f of ["js/schools-registry.js", "js/schools-shop.js"]) vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
+  for(const f of ["js/escape.js", "js/schools-registry.js", "js/schools-shop.js"]) vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
   return { ctx, els, run: c => vm.runInContext(c, ctx) };
 }
 const mk = (id, name, category) => ({ id, name, category, price: 10, is_school_item: true, sizes: "4-5", colours: "Grey" });
-const names = html => [...html.matchAll(/<span class="su-school-name">([^<]*)<\/span>/g)].map(m => m[1]);
+const unesc = t => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+const names = html => [...html.matchAll(/<span class="su-school-name">([^<]*)<\/span>/g)].map(m => unesc(m[1]));
 const init = async (run, products) => { run(`ALL_PRODUCTS = ${JSON.stringify(products)}`); await run("loadSchoolRegistry()"); run(`SCHOOLS = buildSchoolList(Object.keys(groupBySchool(ALL_PRODUCTS)))`); };
 
 check("fixture: Jo's list is 30", JO.length === 30);
@@ -48,12 +49,12 @@ check("slugs unique", new Set(REG.map(r => r.slug)).size === 30);
   // 2. empty school: friendly line, shared rows still orderable, no error
   run(`selectSchool("Brougham Primary School")`);
   check("empty school shows friendly line", els["su-list"].innerHTML.includes("No uniform listed for this school yet"));
-  check("empty school still lists shared item", els["su-list"].innerHTML.includes("selectItem('s')"));
+  check("empty school still lists shared item", els["su-list"].innerHTML.includes('data-item="s"'));
   run(`selectSchool("Fens Primary School")`);
   check("school with items has no empty line", !els["su-list"].innerHTML.includes("No uniform listed"));
-  // St Aidan's apostrophe round-trips through onclick
+  // St Aidan's apostrophe round-trips through the data-school attribute (no inline JS)
   run(`selectPhase("primary")`);
-  check("apostrophe names escaped in onclick", els["su-tabs"].innerHTML.includes("selectSchool('St Aidan\\'s Church of England Memorial Primary School')"));
+  check("apostrophe names escaped in data-school", els["su-tabs"].innerHTML.includes('data-school="St Aidan&#39;s Church of England Memorial Primary School"') && !els["su-tabs"].innerHTML.includes("onclick"));
   run(`selectSchool("St Aidan's Church of England Memorial Primary School")`);
   check("apostrophe school selectable", run("activeSchool") === "St Aidan's Church of England Memorial Primary School");
 }
