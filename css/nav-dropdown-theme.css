@@ -15,7 +15,12 @@
 .site-footer .nd-fgroup{display:flex;align-items:center;min-height:44px;color:var(--cream);font-size:15.5px}
 .site-footer .nd-fsub{margin:0 0 6px 2px;padding-left:14px;border-left:1px solid rgba(251,245,238,.25)}
 @media (max-width:360px){.nav-mobile .nd-mparent{font-size:30px}}
-/* "Order a product" is wider than the old Schools link. A little less gap from 1000px keeps the bar inside the
-   page; from 1200px (where the bar fitted on one line before) the items stay on one line, as they did. */
+/* "Order a product" is wider than the old Schools link. A little less gap from 1000px keeps the bar inside the page.
+   From 1200px (where the bar fitted on one line before) the links stay on one line, as they did, and a long custom
+   dropdown label is cut with an ellipsis instead of pushing the bar wider. Below 1200px items wrap as they always have. */
 @media (min-width:1000px){.nav-desktop{gap:var(--s5)}}
-@media (min-width:1200px){.nav-desktop>a,.nav-desktop .nd-parent{white-space:nowrap}}
+@media (min-width:1200px){
+  .nav-desktop>a{white-space:nowrap}
+  .nav-desktop .nd-parent{white-space:normal;max-width:230px}
+  .nav-desktop .nd-parent>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
