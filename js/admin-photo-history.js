@@ -37,12 +37,13 @@ const phWhen = ts => new Date(ts).toLocaleDateString("en-GB", { day: "numeric", 
     phApi.list(id).then(photos => {
       if (!schForm || schForm.id !== id || schView !== "form") return;
       const have = new Set([phBase(schForm.cur), ...schForm.alts.map(a => phBase(a.url))]);
+      let added = 0;
       photos.forEach(p => {
         if (have.has(p.url)) return;
-        have.add(p.url);
+        have.add(p.url); added++;
         schForm.alts.push({ url: p.url, label: "Earlier photo (" + phWhen(p.uploaded) + ")" });
       });
-      if (photos.length) render();
+      if (added) { render(); schShown(); }
     }).catch(() => { /* earlier photos are a bonus: the form works without them */ });
   };
 
