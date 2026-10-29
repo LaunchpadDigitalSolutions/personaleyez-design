@@ -7,6 +7,8 @@
     "test": "node tests/e2e.mjs",
     "test:pin": "node tests/pin-lockout.mjs && node tests/unlock-per-ip.mjs",
     "test:preview": "node tests/e2e.mjs --base=https://peach-state.pages.dev",
-    "test:schools": "node tests/schools-shared-items.mjs"
+    "test:schools": "node tests/schools-shared-items.mjs",
+    "test:pages": "node tests/category-pages.mjs",
+    "build:pages": "node tools/build-category-pages.mjs"
   }
 }

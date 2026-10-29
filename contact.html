@@ -49,6 +49,7 @@
           <select id="c-cat">
             <option value="school">School uniform</option>
             <option value="workwear">Workwear or team kit</option>
+            <option value="sportswear">Sportswear</option>
             <option value="personalised">Personalised gift</option>
             <option value="other">Something else</option>
           </select></div>
@@ -82,6 +83,9 @@
    editable and sitewide - nothing to build here. */
 document.addEventListener("DOMContentLoaded",async()=>{
   await loadContent("contact");applyContent();psInitInlineEditor("contact");
+  /* Category pages link here as contact.html?cat=workwear so the right option is already chosen. */
+  const want=new URLSearchParams(location.search).get("cat"), sel=document.getElementById("c-cat");
+  if(want&&sel&&[...sel.options].some(o=>o.value===want))sel.value=want;
 });
 function cSay(c,m){const n=document.getElementById("c-notice");n.className="notice show "+c;n.textContent=m;}
 async function submitEnquiry(){

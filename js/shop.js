@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // is_school_item is the actual flag that separates the two - category
     // means "which school" on a uniform row, but "shop section" (Tops/
     // Gifts/etc) on a general one, so it can't be used to tell them apart.
-    PRODUCTS = (await listShopProducts()).filter(p => !p.is_school_item);
+    PRODUCTS = (await listShopProducts()).filter(p => !p.is_school_item && !p.page_key);   // page_key rows belong to the category pages
   }catch(e){ PRODUCTS = []; }
   renderProducts();
   renderBasket();
