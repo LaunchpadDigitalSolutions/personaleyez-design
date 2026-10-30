@@ -198,9 +198,10 @@ function renderFooter(){
           <nav>
             <a href="services.html#embroidery">${T("foot_make_1", "Embroidery")}</a>
             <a href="services.html#print">${T("foot_make_2", "Print & vinyl")}</a>
-            <a href="schools.html">${T("foot_make_3", "School uniform")}</a>
-            <a href="services.html#workwear">${T("foot_make_4", "Workwear")}</a>
-            <a href="services.html#gifts">${T("foot_make_5", "Personalised gifts")}</a>
+            <a href="schools-shop.html">${T("foot_make_3", "School uniform")}</a>
+            <a href="workwear.html">${T("foot_make_4", "Workwear")}</a>
+            <a href="sportswear.html">${T("foot_make_6", "Sportswear")}</a>
+            <a href="gifts.html">${T("foot_make_5", "Personalised gifts")}</a>
           </nav>
         </div>
         <div>
