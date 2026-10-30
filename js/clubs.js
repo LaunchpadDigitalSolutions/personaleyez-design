@@ -7,9 +7,7 @@
 let GROUP = null, PRODUCTS = [], picks = [];
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
-const escHtml = v => v == null ? "" : String(v).replace(/[&<>"']/g, c => ({
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-}[c]));
+// escHtml() comes from js/escape.js
 
 function note(el, cls, msg){
   const n = $(el); n.className = "notice show " + cls; n.textContent = msg;
@@ -93,15 +91,15 @@ function renderProducts(){
       ? `<h2 class="display-md" style="grid-column:1/-1;margin:40px 0 4px;padding:0 20px">${escHtml(range)}</h2>` : "";
     lastRange = range;
     return heading + `<div class="piece">
-      ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${p.image_url}" alt="${p.name}"></div>`
-                    : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${p.name}</span></div>`}
-      <h3>${p.name}</h3>
+      ${p.image_url ? `<div class="imgwrap"><img loading="lazy" src="${escHtml(p.image_url)}" alt="${escHtml(p.name)}"></div>`
+                    : `<div class="imgwrap noimg" style="aspect-ratio:3/4"><span>${escHtml(p.name)}</span></div>`}
+      <h3>${escHtml(p.name)}</h3>
       ${p.price != null ? `<p style="color:var(--charcoal);font-family:var(--display);font-size:19px">${money(p.price)}</p>` : ""}
-      ${p.description ? `<p>${p.description}</p>` : ""}
+      ${p.description ? `<p>${escHtml(p.description)}</p>` : ""}
       ${sizes.length ? `<div class="fld"><label for="sz-${i}">Size</label>
-        <select id="sz-${i}">${sizes.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+        <select id="sz-${i}">${sizes.map(s=>`<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
       ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
-        <select id="co-${i}">${cols.map(s=>`<option>${s}</option>`).join("")}</select></div>` : ""}
+        <select id="co-${i}">${cols.map(s=>`<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
       <div class="fld"><label for="qt-${i}">Quantity</label>
         <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
     </div>`;
@@ -128,7 +126,7 @@ function renderBasket(){
   if(!picks.length){ box.style.display="none"; co.style.display="none"; return; }
   box.style.display = "block"; co.style.display = "block";
   $("s-basket").innerHTML = picks.map(p =>
-    `<li><b>${p.qty} × ${p.name}${p.opts.length ? " · " + p.opts.join(" · ") : ""}</b>
+    `<li><b>${p.qty} × ${escHtml(p.name)}${p.opts.length ? " · " + escHtml(p.opts.join(" · ")) : ""}</b>
      <span>${p.unit ? money(p.unit*p.qty) : "Price on confirmation"}</span></li>`).join("");
   const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);
   $("s-total").textContent = total ? money(total) : "TBC";
@@ -163,7 +161,7 @@ async function placeGroupOrder(){
       status:"enquiry"
     });
     $("s-ref").textContent = o.order_ref;
-    $("s-tracklink").href = "track.html?ref=" + o.order_ref;
+    $("s-tracklink").href = "track.html?ref=" + encodeURIComponent(o.order_ref);
     clearNote("s-notice");
     $("s-checkout").style.display = "none";
     $("s-basketbox").style.display = "none";

@@ -58,10 +58,30 @@ function schoolInitials(name){
 /* Crest comes from the registry (ps_schools.crest_url). No crest, or one
    that fails to load, falls back to the school's initials. */
 function schoolCircle(name){
-  const crest = crestFor(name);
+  const crest = crestFor(name), ini = escHtml(schoolInitials(name));
   return crest
-    ? `<span class="su-school-circle has-crest"><img src="${crest}" alt="${name} crest" loading="lazy" onerror="this.parentElement.classList.remove('has-crest');this.remove();this.parentElement.textContent='${schoolInitials(name)}'"></span>`
-    : `<span class="su-school-circle">${schoolInitials(name)}</span>`;
+    ? `<span class="su-school-circle has-crest" data-initials="${ini}"><img src="${escHtml(crest)}" alt="${escHtml(name)} crest" loading="lazy"></span>`
+    : `<span class="su-school-circle">${ini}</span>`;
+}
+
+/* One set of click handlers for the whole page (event delegation). Rows carry
+   data-phase / data-school / data-item, so no id or name is ever written into
+   a JavaScript string. A crest that fails to load falls back to initials
+   (error events don't bubble, hence the capture listener). */
+function bindSchoolShopEvents(){
+  const on = (box, attr, fn) => $(box).addEventListener("click", e => {
+    const hit = e.target.closest && e.target.closest(`[${attr}]`);
+    if(hit) fn(hit.dataset[attr.slice(5)]);
+  });
+  on("su-phases", "data-phase", selectPhase);
+  on("su-tabs", "data-school", selectSchool);
+  on("su-list", "data-item", selectItem);
+  $("su-tabs").addEventListener("error", e => {
+    const img = e.target, box = img && img.parentElement;
+    if(!img || img.tagName !== "IMG" || !box) return;
+    box.classList.remove("has-crest");
+    box.textContent = box.dataset.initials || "";
+  }, true);
 }
 
 /* ---------- screen 1: pick a phase ---------- */
@@ -73,7 +93,7 @@ function renderPhases(){
   $("su-phases").innerHTML = phases.map(p => {
     const n = byPhase[p].length;
     return `
-    <button class="su-school su-phase${p === activePhase ? " on" : ""}" aria-pressed="${p === activePhase}" aria-label="${PHASE_LABEL[p]}, ${n} school${n === 1 ? "" : "s"}" onclick="selectPhase('${p}')">
+    <button class="su-school su-phase${p === activePhase ? " on" : ""}" aria-pressed="${p === activePhase}" aria-label="${PHASE_LABEL[p]}, ${n} school${n === 1 ? "" : "s"}" data-phase="${escHtml(p)}">
       <span class="su-school-circle">${typeof phaseIcon === "function" ? phaseIcon(p) : ""}</span>
       <span class="su-school-name">${PHASE_LABEL[p]}</span>
     </button>`;
@@ -98,9 +118,9 @@ function selectPhase(phase){
 function renderTabs(){
   const inPhase = SCHOOLS.filter(s => classifyPhase(s) === activePhase);
   $("su-tabs").innerHTML = inPhase.map(s => `
-    <button class="su-school${s === activeSchool ? " on" : ""}" onclick="selectSchool('${s.replace(/'/g,"\\'")}')">
+    <button class="su-school${s === activeSchool ? " on" : ""}" data-school="${escHtml(s)}">
       ${schoolCircle(s)}
-      <span class="su-school-name">${s}</span>
+      <span class="su-school-name">${escHtml(s)}</span>
     </button>`).join("");
 }
 
@@ -117,8 +137,8 @@ function renderPreview(){
   const items = getSchoolItems(activeSchool);
   const shown = activeItem || items[0];
   $("su-preview").innerHTML = shown && shown.image_url
-    ? `<img loading="lazy" src="${shown.image_url}" alt="${shown.name}">`
-    : `<div class="su-preview-empty">${shown ? shown.name : "Pick an item to see it"}</div>`;
+    ? `<img loading="lazy" src="${escHtml(shown.image_url)}" alt="${escHtml(shown.name)}">`
+    : `<div class="su-preview-empty">${shown ? escHtml(shown.name) : "Pick an item to see it"}</div>`;
 }
 
 const EMPTY_SCHOOL_LINE = `<p class="body dim">No uniform listed for this school yet — give us a ring and we'll sort it.</p>`;
@@ -128,10 +148,10 @@ const EMPTY_SCHOOL_LINE = `<p class="body dim">No uniform listed for this school
 function renderList(){
   const items = getSchoolItems(activeSchool);
   const rows = items.map(p => `
-    <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" onclick="selectItem('${p.id}')">
+    <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" data-item="${escHtml(p.id)}">
       <div>
-        <div class="su-row-name">${p.name}</div>
-        ${p.sizes ? `<div class="su-row-meta">Sizes: ${p.sizes}</div>` : ""}
+        <div class="su-row-name">${escHtml(p.name)}</div>
+        ${p.sizes ? `<div class="su-row-meta">Sizes: ${escHtml(p.sizes)}</div>` : ""}
         <div class="su-row-price">${money(p.price)}</div>
       </div>
     </div>`).join("");
@@ -154,11 +174,11 @@ function renderPicker(){
   const crested = isCrestedItem(p);
   box.style.display = "block";
   box.innerHTML = `
-    <h3 style="font-size:19px">${p.name}</h3>
+    <h3 style="font-size:19px">${escHtml(p.name)}</h3>
     ${sizes.length ? `<div class="fld"><label for="su-size">Size</label>
-      <select id="su-size">${sizes.map(s => `<option>${s}</option>`).join("")}</select></div>` : ""}
+      <select id="su-size">${sizes.map(s => `<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
     ${cols.length ? `<div class="fld"><label for="su-colour">Colour</label>
-      <select id="su-colour">${cols.map(c => `<option>${c}</option>`).join("")}</select></div>` : ""}
+      <select id="su-colour">${cols.map(c => `<option>${escHtml(c)}</option>`).join("")}</select></div>` : ""}
     <div class="fld"><label for="su-qty">Quantity</label>
       <input id="su-qty" type="number" min="1" max="20" value="1" inputmode="numeric"></div>
     ${crested ? `<div class="su-toggles">
@@ -224,6 +244,7 @@ function goToUniformCheckout(){
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  bindSchoolShopEvents();
   if(!(await healthCheck())) $("health").style.display = "block";
   // js/schools-items.js: pool + this school's overrides, already merged
   try{ ALL_PRODUCTS = await listSchoolItems(); }
