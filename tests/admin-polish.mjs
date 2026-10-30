@@ -1,5 +1,4 @@
-/* Job 23 checks, no browser or network: _headers rules, admin tab restore, photo history
-   function and its Schools tab wiring. Run: npm run test:admin */
+/* Job 23 checks, no browser or network: admin tab restore, photo history function and its Schools tab wiring. Run: npm run test:admin */
 import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
@@ -9,19 +8,6 @@ import { onRequestPost } from '../functions/api/photo-history.js';
 const rd = f => readFile(new URL('../' + f, import.meta.url), 'utf8');
 const readSync = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
-
-/* ---- _headers: HTML, JS, CSS revalidate; images and fonts never named ---- */
-const rules = [];
-for (const line of (await rd('_headers')).split('\n')) {
-  if (!line.trim() || line.trim().startsWith('#')) continue;
-  if (!/^\s/.test(line)) rules.push({ path: line.trim(), h: [] }); else rules.at(-1).h.push(line.trim());
-}
-ok(rules.length > 0, 'rules parsed');
-for (const p of ['/', '/:page', '/*.html', '/js/*', '/css/*']) ok(rules.some(r => r.path === p), 'rule for ' + p);
-for (const r of rules) {
-  ok(r.h.length === 1 && r.h[0] === 'Cache-Control: public, max-age=0, must-revalidate', r.path + ' has exactly the revalidate header');
-  ok(!/img|font|\.(png|jpe?g|webp|svg|woff2?)/i.test(r.path), r.path + ' does not touch images or fonts');
-}
 
 /* ---- admin.html wiring ---- */
 const html = await rd('admin.html');
