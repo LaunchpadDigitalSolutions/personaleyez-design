@@ -69,7 +69,7 @@ async function submitOrder(endpoint, btnId, busyMsg){
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         items: basket.map(b => ({ product_id: b.id, qty: b.qty, size: b.size || undefined, colour: b.colour || undefined, initials: !!b.initials,
-          name: b.name, price: b.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
+          own_uniform: b.own_uniform || undefined, name: b.name, price: b.unit })),   // name/price: legacy fields, ignored by the server (needed only until it is upgraded)
         customer: { name, phone, email: email || undefined },
         note: schoolName || undefined
       })
@@ -77,7 +77,7 @@ async function submitOrder(endpoint, btnId, busyMsg){
     const data = await res.json();
     if(!res.ok || !data.checkout_url){
       // 02x = something the customer can fix (the server's message is written for them)
-      const friendly = res.status < 500 && /^PS[CI]-02\d$/.test(data.error || "");
+      const friendly = res.status < 500 && /^PS[CI]-0[24]\d$/.test(data.error || "");
       note("suc-notice", "err", friendly ? data.message : PHONE_FALLBACK());
       btn.disabled = false; return;
     }
