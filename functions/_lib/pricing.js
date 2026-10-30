@@ -12,6 +12,8 @@
    the customer can fix; 030+ are server-side.
    ============================================================ */
 
+import { ownUniformOptions } from "./own-uniform.js";
+
 export const LIMITS = { maxQty: 20, maxLines: 30, name: 80, email: 120, note: 500 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -84,7 +86,8 @@ export async function priceBasket(prefix, rawItems, lookup) {
       opts.push(c);
     } else if (clean(it.colour)) throw new OrderError(prefix + "-028", REFRESH);
 
-    let unitPence = Math.round(price * 100);
+for (const o of ownUniformOptions(it, row, (c, m) => { throw new OrderError(prefix + "-" + c, m); })) opts.push(o);
+        let unitPence = Math.round(price * 100);
     const crested = row.is_school_item === true && row.crest === true;
     if (crested) opts.push("logo embroidered");
     if (it.initials === true) {
