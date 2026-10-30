@@ -1,7 +1,7 @@
 /* Checks the "Order a product" menu without a browser or network: runs the real js/partials.js in a stub page,
    with and without the dropdown module, against old, new and broken saved-menu data.
    Run: npm run test:menu */
-import { readFile, access } from 'node:fs/promises';
+import { readFile, access, readdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -63,6 +63,13 @@ for (const bad of ['not json', '{"a":1}', 'null', '[1,"x",null,{"slug":"Bad Slug
 }
 ok(site({ throwStorage: true }) && run(site({ throwStorage: true }), 'navHtml("mobile", "index.html")').includes('nd-mparent'), 'blocked storage still draws the menu');
 ok(run(site({ store: { [NAV_KEY]: '[{"slug":"x","title":"<img src=x onerror=1>","nav_group":"order"}]' } }), 'navHtml("desktop","index.html")').includes('&lt;img'), 'owner page titles are escaped');
+const EVIL = '[{"slug":"x","title":"<img src=x onerror=1>","nav_group":"order"},{"slug":"y","title":"\\"><b>b</b>","nav_group":null}]';
+for (const [label, ctx] of [['with the module', site({ store: { [NAV_KEY]: EVIL } })], ['flat fallback', site({ withModule: false, store: { [NAV_KEY]: EVIL } })]]) {
+  for (const kind of ['desktop', 'mobile', 'footer']) {
+    const h = run(ctx, 'navHtml("' + kind + '","index.html")');
+    ok(h.includes('&lt;img') && !h.includes('<img') && !h.includes('<b>b'), kind + ' menu escapes owner page titles (' + label + ')');
+  }
+}
 
 /* ---- module missing: a flat but working menu ---- */
 const flat = site({ withModule: false, store: { [NAV_KEY]: '[{"slug":"kits","title":"Kits","nav_group":"order"}]' } });
@@ -88,6 +95,14 @@ ok(!adminHtml.includes('admin-pages.js?v=0.9.5'), 'admin-pages.js version bumped
 ok(/revoke all on function public\.ps_admin_set_page_nav_group/.test(sql) && /nav_group in|nav_group = 'order'/.test(sql) && /Rollback/.test(sql), 'migration restricts access, limits values, and records a rollback');
 ok(moduleSrc.includes('PS-720') && moduleSrc.includes('PS-721'), 'module reports its codes');
 
-/* every page that draws a header gets the module (from partials.js) */
-ok(partials.includes('css/nav-dropdown.css') && partials.includes('css/nav-dropdown-theme.css') && partials.includes('js/nav-dropdown.js'), 'partials.js loads the module and both stylesheets');
+/* every page that draws a header loads the module and both stylesheets with ordinary tags, before partials.js (no document.write) */
+ok(!partials.includes('document.write'), 'partials.js no longer uses document.write');
+let withHeader = 0;
+for (const f of (await readdir(new URL('../', import.meta.url))).filter(x => x.endsWith('.html'))) {
+  const h = await rd(f);
+  if (!h.includes('id="site-header"')) continue;
+  withHeader++;
+  ok(h.includes('href="css/nav-dropdown.css') && h.includes('href="css/nav-dropdown-theme.css') && /<script src="js\/nav-dropdown\.js[^"]*"><\/script>\s*<script src="js\/partials\.js/.test(h), f + ' loads the menu module and styles before partials.js');
+}
+ok(withHeader >= 17, 'checked every page with a header (' + withHeader + ')');
 console.log(n + ' checks passed');

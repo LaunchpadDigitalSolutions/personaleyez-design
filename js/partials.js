@@ -13,10 +13,8 @@
    Saved site values are also cached in localStorage so the header and
    footer render with Jo's wording on first paint, not after a flicker.
    ============================================================ */
-/* Grouped menu: js/nav-dropdown.js is a copy of launchpad-features nav-dropdown; pulled in here if the page lacks it. */
-if (document.getElementById("site-header") && typeof NavDropdown === "undefined")
-  document.write('<link rel="stylesheet" href="css/nav-dropdown.css?v=0.1.0"><link rel="stylesheet" href="css/nav-dropdown-theme.css?v=0.1.0">'
-    + '<script src="js/nav-dropdown.js?v=0.1.0"><\/script>');
+/* Grouped menu: js/nav-dropdown.js (a copy of launchpad-features nav-dropdown) and its two stylesheets are loaded by each page with ordinary
+   <script>/<link> tags. If a page lacks them the menu falls back to a flat list (see navHtml). */
 const NAV = [
   ["index.html",    "Home"],
   ["services.html", "What We Make"],
