@@ -13,10 +13,11 @@ export const PAGES = {
   },
   sportswear: {
     title: 'Sportswear', file: 'sportswear.html', contact: 'sportswear', enq: 'sportswear',
-    desc: 'Personalised sportswear for clubs, teams and training, embroidered or printed in Hartlepool.',
+    desc: 'Dancewear, cheerwear, football and rugby kit for clubs and teams, embroidered or printed in Hartlepool.',
     h1: ['Kit for the whole', 'team.'],
-    intro: 'Embroidered and printed sportswear for clubs, teams and training. Choose from the range below, or ask us about a full team order.',
-    tiles: ['Team kit', 'Training wear', 'Club extras']
+    intro: 'Dancewear, cheerwear, football and rugby kit, embroidered or printed here in Hartlepool. Browse the range below, or ask us about a team order.',
+    tiles: ['Dancewear', 'Cheerwear', 'Football', 'Rugby'],
+    club: true
   },
   gifts: {
     title: 'Gifts & Accessories', file: 'gifts.html', contact: 'personalised', enq: 'a gift',
@@ -29,10 +30,14 @@ export const PAGES = {
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+const li = (n, cap) => `  <li style="display:contents"><figure><img loading="lazy" data-img="tile${n}" src="" alt=""><figcaption data-edit="tile${n}_cap">${esc(cap)}</figcaption></figure></li>\n`;
+const CLUB = '    <a class="cp-club" href="clubs.html"><span data-edit="club_text">Part of a club? Find your club shop</span><b data-edit="club_cta">Club shops &rarr;</b></a>\n';
+
 export function render(template, key, p) {
+  const raw = { TILE4: p.tiles[3] ? li(4, p.tiles[3]) : '', CLUB: p.club ? CLUB : '' };
   const v = { KEY: key, TITLE: p.title, FILE: p.file, DESC: p.desc, H1A: p.h1[0], H1B: p.h1[1], INTRO: p.intro,
     T1: p.tiles[0], T2: p.tiles[1], T3: p.tiles[2], CONTACT: p.contact, ENQ: p.enq };
-  return template.replace(/\{\{([A-Z0-9]+)\}\}/g, (m, k) => { if (!(k in v)) throw new Error('unknown placeholder ' + m); return esc(v[k]); });
+  return template.replace(/\{\{([A-Z0-9]+)\}\}/g, (m, k) => { if (k in raw) return raw[k]; if (!(k in v)) throw new Error('unknown placeholder ' + m); return esc(v[k]); });
 }
 
 if (process.argv[1] && process.argv[1].endsWith('build-category-pages.mjs')) {
