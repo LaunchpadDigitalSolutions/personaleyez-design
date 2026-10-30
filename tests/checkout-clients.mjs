@@ -28,6 +28,7 @@ for (const f of ["js/shop.js", "js/schools-checkout.js"]) {
   const els = {};
   const el = id => els[id] || (els[id] = { id, innerHTML: "", textContent: "", className: "", value: "", checked: false, style: {} });
   const ctx = vm.createContext({ document: { getElementById: el, addEventListener(){}, querySelector(){ return null; } }, sessionStorage: { getItem(){ return null; }, setItem(){} }, toast(){}, console });
+  vm.runInContext(fs.readFileSync("js/escape.js", "utf8"), ctx);   // shared escape helper loads before page scripts
   vm.runInContext(fs.readFileSync("js/schools-shop.js", "utf8"), ctx);
   const run = c => vm.runInContext(c, ctx);
   run(`activeItem = { id: "p-1", name: "Red Hoody", price: 25, category: "Fens Primary School", crest: true }; activeSchool = "Fens Primary School"; ALL_PRODUCTS = [activeItem]`);
