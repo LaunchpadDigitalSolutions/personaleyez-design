@@ -45,12 +45,12 @@ function renderShop(p){
     ${shopProducts.length ? shopProducts.map(pr => `
       <div class="orow">
         <div class="orow-top">
-          <span class="oref" style="font-size:15px">${pr.name}</span>
+          <span class="oref" style="font-size:15px">${esc(pr.name)}</span>
           <span class="stat-word ${pr.active?"s-ready":"s-collected"}">${pr.active?"Live":"Paused"}</span>
           <span class="otime">${money(pr.price)}</span>
         </div>
-        ${pr.description?`<div class="odesc">${pr.description}</div>`:""}
-        <div class="ometa">${pr.is_school_item?"School uniform":"General shop"}${pr.category?" · "+pr.category:""}${pr.sizes?" · Sizes: "+pr.sizes:""}${pr.colours?" · Colours: "+pr.colours:""}</div>
+        ${pr.description?`<div class="odesc">${esc(pr.description)}</div>`:""}
+        <div class="ometa">${pr.is_school_item?"School uniform":"General shop"}${pr.category?" · "+esc(pr.category):""}${pr.sizes?" · Sizes: "+esc(pr.sizes):""}${pr.colours?" · Colours: "+esc(pr.colours):""}</div>
         <div class="oact">
           <button class="ghost" onclick="toggleShopProduct('${pr.id}',${!pr.active})">${pr.active?"Pause":"Reactivate"}</button>
           <button class="ghost" onclick="removeShopProduct('${pr.id}')">Remove</button>
