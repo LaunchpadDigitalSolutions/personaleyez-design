@@ -8,7 +8,7 @@
     "test:pin": "node tests/pin-lockout.mjs && node tests/unlock-per-ip.mjs && node tests/kv-delete-limit.mjs",
     "test:menu": "node tests/nav-menu.mjs",
     "test:preview": "node tests/e2e.mjs --base=https://peach-state.pages.dev",
-    "test:schools": "node tests/schools-shared-items.mjs && node tests/schools-registry.mjs",
+    "test:schools": "node tests/schools-shared-items.mjs && node tests/schools-registry.mjs && node tests/schools-hidden-admin.mjs",
     "test:pages": "node tests/category-pages.mjs",
     "test:checkout": "node tests/checkout-pricing.mjs",
     "test:admin": "node tests/admin-polish.mjs",

@@ -27,7 +27,7 @@ function renderSquareProducts(p){
   if(squareLoadError){
     p.innerHTML = `
       <div class="newcard" style="text-align:center">
-        <p style="color:var(--muted)">Couldn't load the Square catalog (${squareLoadError}).</p>
+        <p style="color:var(--muted)">Couldn't load the Square catalog (${esc(squareLoadError)}).</p>
         <button class="btn-solid" onclick="reloadSquareTab()" style="margin-top:14px">Try again</button>
       </div>`;
     return;
@@ -53,17 +53,17 @@ function renderSquareItem(item){
   const variationCount = item.variations.length;
   const variationLabel = variationCount > 1 ? variationCount + " variations" : (item.variations[0]?.name || "");
   return `
-    <div class="orow" data-item-id="${item.id}">
+    <div class="orow" data-item-id="${esc(item.id)}">
       <div class="orow-top">
         <div style="width:56px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--cream-deep);
              display:flex;align-items:center;justify-content:center">
           ${item.photo_url
-            ? `<img src="${item.photo_url}" alt="" style="width:100%;height:100%;object-fit:cover">`
+            ? `<img src="${esc(item.photo_url)}" alt="" style="width:100%;height:100%;object-fit:cover">`
             : `<span style="font-size:11px;color:var(--muted)">No photo</span>`}
         </div>
         <div style="flex:1;min-width:0">
-          <span class="oref" style="font-size:15px">${item.name}</span>
-          <div class="ometa">${variationLabel}${item.price_from!=null ? " · from "+money(item.price_from) : ""}</div>
+          <span class="oref" style="font-size:15px">${esc(item.name)}</span>
+          <div class="ometa">${esc(variationLabel)}${item.price_from!=null ? " · from "+money(item.price_from) : ""}</div>
         </div>
       </div>
       <div class="oact">
