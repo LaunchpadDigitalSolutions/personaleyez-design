@@ -1,4 +1,5 @@
 /* Job 03: the school list comes from the ps_schools registry.
+   Job 16: a product category that isn't a registry school never produces a circle.
    No network, no browser (vm + fake DOM). Run: node tests/schools-registry.mjs */
 import vm from "node:vm";
 import fs from "node:fs";
@@ -59,23 +60,44 @@ check("slugs unique", new Set(REG.map(r => r.slug)).size === 30);
   check("apostrophe school selectable", run("activeSchool") === "St Aidan's Church of England Memorial Primary School");
 }
 
-// 3. products not in the registry stay visible under Other (e.g. Needs Sorting)
+// 3. Job 16: a category that isn't a registry school never produces a circle
 {
   const { els, run } = makeCtx(async () => REG);
-  await init(run, [mk("n","Purple Cardigan","Needs Sorting"), mk("t","Typo","Fenns Primary School")]);
-  run(`selectPhase("other")`);
-  const shown = names(els["su-tabs"].innerHTML);
-  check("unknown categories land in Other, visible", shown.includes("Needs Sorting") && shown.includes("Fenns Primary School"));
+  const products = [mk("n","Purple Cardigan","Needs Sorting"), mk("t","Typo","Fenns Primary School"), mk("1","Cardigan","Fens Primary School"), mk("s","Grey Trousers","All Schools")];
+  await init(run, products);
+  const list = run("SCHOOLS");
+  check("registry readable: school list is exactly the registry", JSON.stringify(list) === JSON.stringify(JO));
+  check("Needs Sorting is never a school", !list.includes("Needs Sorting"));
+  check("typo category is never a school", !list.includes("Fenns Primary School"));
+  run(`renderPhases()`);
+  const phases = els["su-phases"].innerHTML;
+  check("no Other circle", !phases.includes('data-phase="other"') && !phases.includes("Other"));
+  check("only the Primary circle", phases.includes("Primary Schools, 30 schools") && (phases.match(/data-phase="/g) || []).length === 1);
+  run(`selectPhase("primary")`);
+  check("no Needs Sorting or typo tab", !names(els["su-tabs"].innerHTML).some(n => n === "Needs Sorting" || n === "Fenns Primary School"));
+  run(`selectSchool("Fens Primary School")`);
+  check("shared All Schools row still orderable for a real school", els["su-list"].innerHTML.includes('data-item="s"'));
+  check("Needs Sorting row never reachable from a school list", !els["su-list"].innerHTML.includes('data-item="n"'));
   check("Needs Sorting keeps no crest option", run(`isCrestedItem(${JSON.stringify(mk("n","x","Needs Sorting"))})`) === false);
 }
 
-// 4. registry down / empty: never throws, shop still shows schools from products
+// 3b. Job 16: secondary circle still appears next to Primary, and still no Other
+{
+  const { els, run } = makeCtx(async () => REG.concat([{ name: "Example High School", slug: "example-high-school", phase: "secondary", crest_url: null, sort_order: 400 }]));
+  await init(run, [mk("n","Purple Cardigan","Needs Sorting")]);
+  run(`renderPhases()`);
+  const phases = els["su-phases"].innerHTML;
+  check("Primary 30 and Secondary 1, no Other", phases.includes("Primary Schools, 30 schools") && phases.includes("Secondary Schools, 1 school") && !phases.includes("Other"));
+}
+
+// 4. registry down / empty: never throws, shop still shows schools from products (never Needs Sorting)
 for(const [label, impl] of [["read fails", async () => { throw new Error("PS-510"); }], ["table empty", async () => []]]){
   const { els, run } = makeCtx(impl);
-  await init(run, [mk("1","Cardigan","Fens Primary School"), mk("2","Sweatshirt","Eldon Grove Academy")]);
+  await init(run, [mk("1","Cardigan","Fens Primary School"), mk("2","Sweatshirt","Eldon Grove Academy"), mk("n","Purple Cardigan","Needs Sorting")]);
   run(`renderPhases()`);
   check(`${label}: no throw, falls back to product schools`, JSON.stringify(run("SCHOOLS")) === JSON.stringify(["Fens Primary School","Eldon Grove Academy"]));
   check(`${label}: primary circle still shown`, els["su-phases"].innerHTML.includes("Primary Schools, 2 schools"));
+  check(`${label}: Needs Sorting still no Other circle`, !els["su-phases"].innerHTML.includes('data-phase="other"'));
 }
 
 // 5. adding a 31st school needs no code change
