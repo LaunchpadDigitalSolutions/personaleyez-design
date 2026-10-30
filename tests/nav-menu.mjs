@@ -78,7 +78,8 @@ ok(JSON.parse(live.ls[NAV_KEY])[0].nav_group === 'order', 'refresh saves nav_gro
 
 /* ---- source contracts ---- */
 ok(partials.split('\n').length < 300, 'partials.js stays under 300 lines');
-ok(/foot_make_4", "Workwear"/.test(partials) && partials.includes('services.html#workwear') && partials.includes('schools.html">${T("foot_make_3"'), 'the We Make footer links are untouched');
+const foot = k => partials.match(new RegExp('<a href="([^"]+)">\\$\\{T\\("' + k + '"'));
+ok(['foot_make_3:schools-shop.html', 'foot_make_4:workwear.html', 'foot_make_6:sportswear.html', 'foot_make_5:gifts.html'].every(x => { const [k, h] = x.split(':'); const m = foot(k); return m && m[1] === h; }), 'the We Make footer links go to the new pages and keep their editable keys');
 const adminFn = await rd('functions/api/admin.js'), pages = await rd('js/admin-pages.js'), sql = await rd('supabase/job09-nav-group.sql'), adminHtml = await rd('admin.html');
 ok(adminFn.includes('"ps_admin_set_page_nav_group"'), 'the admin proxy forwards the new RPC');
 ok(pages.includes('"ps_admin_set_page_nav_group"') && pages.includes('"PS-722"'), 'admin calls it with a code');

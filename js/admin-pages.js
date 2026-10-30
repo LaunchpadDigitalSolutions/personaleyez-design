@@ -19,7 +19,7 @@ let customPages = [], pagesLoaded = false, pagesView = "list", pageToRemove = nu
 /* Same list the database refuses (ps_page_create_impl) - checked here too so the message is friendly. */
 const PAGE_RESERVED = ["admin", "index", "shop", "clubs", "services", "schools", "contact", "track", "p", "api", "js", "css",
   "img", "functions", "privacy", "terms", "refund", "cookies", "maintenance", "schools-shop", "schools-checkout",
-  "sitemap", "robots", "page", "page-shell", "new", "edit", "tests", "package"];
+  "sitemap", "robots", "page", "page-shell", "new", "edit", "tests", "package", "workwear", "sportswear", "gifts"];
 
 const pageApi = {
   list: () => adminRpc("ps_admin_list_pages", {}, "PS-320"),
