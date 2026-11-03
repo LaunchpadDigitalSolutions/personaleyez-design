@@ -10,13 +10,50 @@
      { kind: "priced",  group, priced }   every item has a price: pay online
      { kind: "enquiry", group, description, quantity }
                                           at least one item has no price yet
-   Error codes are PCC-0xx. 010 = club name/code wrong; 020-029 are
-   things the customer can fix; 030+ are server-side.
+   Also holds the collection / delivery rule (see DELIVERY below).
+   Error codes are PCC-0xx. 010 = club name/code wrong; 011-013 =
+   collection/delivery choice; 020-029 are things the customer can fix;
+   030+ are server-side.
    ============================================================ */
 
 import { OrderError, priceBasket, clean } from "./pricing.js";
 
 const pounds = n => "£" + Number(n).toFixed(2);
+
+/* Delivery rule (Jo, 3 Nov 2026): collection is free; delivery is £4.99
+   when the items come to under £150, free at £150.00 or more. The fee
+   is worked out here from database prices. The browser only says
+   "collection" or "delivery" plus an address. Keep js/club-delivery.js
+   (display only) in step with these numbers. */
+export const DELIVERY = { feePence: 499, freeFromPence: 15000 };
+
+/* delivery: { method: "collection" | "delivery", address?: {line1, town, postcode} }.
+   Missing = collection. PCC-011 bad method, 012 address, 013 postcode. */
+export function validateDelivery(d) {
+  const x = d && typeof d === "object" ? d : {};
+  const method = x.method == null ? "collection" : x.method;
+  if (method !== "collection" && method !== "delivery") throw new OrderError("PCC-011", "Please choose collection or delivery.");
+  if (method === "collection") return { method, text: null };
+  const a = x.address && typeof x.address === "object" ? x.address : {};
+  const line1 = clean(a.line1), town = clean(a.town);
+  const code = clean(a.postcode).toUpperCase().replace(/\s+/g, "");
+  if (line1.length < 3 || line1.length > 80 || town.length < 2 || town.length > 60) throw new OrderError("PCC-012", "Please enter your full delivery address.");
+  if (!/^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test(code)) throw new OrderError("PCC-013", "Please check your postcode.");
+  const postcode = code.slice(0, -3) + " " + code.slice(-3);
+  return { method, text: `${line1}, ${town}, ${postcode}` };
+}
+
+export function deliveryFeePence(method, subtotalPence) {
+  return method === "delivery" && subtotalPence < DELIVERY.freeFromPence ? DELIVERY.feePence : 0;
+}
+
+/* The line that goes into the order description (and so Jo's emails).
+   feePence = null means the fee isn't known yet (enquiry). */
+export function deliveryLine(delivery, feePence) {
+  if (delivery.method === "collection") return "Collection (free)";
+  if (feePence == null) return `Delivery to ${delivery.text} (fee to confirm)`;
+  return `${feePence ? "Delivery " + pounds(feePence / 100) : "Delivery free"} to ${delivery.text}`;
+}
 
 /* Service-role lookup. Never exposed to the browser. */
 export function makeClubLookup(env, slug, code, fetchFn) {

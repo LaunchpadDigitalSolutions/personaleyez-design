@@ -5,6 +5,7 @@
    Orders go to /api/club-checkout: the server checks the club code,
    looks up every price itself and either sends the customer to Square
    or saves an enquiry. Prices shown here are for display only.
+   Collection / delivery lives in js/club-delivery.js.
    ============================================================ */
 
 let GROUP = null, GROUP_CODE = "", PRODUCTS = [], picks = [];
@@ -135,9 +136,10 @@ function renderBasket(){
      <span>${p.unit ? money(p.unit*p.qty) : "Price on confirmation"}</span></li>`).join("");
   const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);
   const allPriced = picks.every(p => p.unit > 0);
-  $("s-total").textContent = allPriced ? money(total) : "TBC";
+  const grand = renderDelivery(total, allPriced);   // js/club-delivery.js: fee, address box, totals
+  $("s-total").textContent = allPriced ? money(grand) : "TBC";
   // Button and small print follow the basket: pay now, or send an enquiry
-  $("s-send").textContent = allPriced ? "Pay " + money(total) + " online" : "Send enquiry";
+  $("s-send").textContent = allPriced ? "Pay " + money(grand) + " online" : "Send enquiry";
   const small = $("s-send").nextElementSibling;
   if(small) small.textContent = allPriced
     ? "Secure payment by Square. We check the prices on our side. Add your email to get a receipt."
@@ -154,6 +156,8 @@ async function placeGroupOrder(){
   const btn  = $("s-send");
 
   if(!picks.length){ note("s-notice","err","Choose at least one item."); return; }
+  const dv = readDelivery();
+  if(dv.error){ note("s-notice","err",dv.error); return; }
   if(!name){ note("s-notice","err","We need your name."); return; }
   if(phone.length < 9){ note("s-notice","err","We need a phone number."); return; }
   if(!$("s-consent").checked){ note("s-notice","err","Please tick the box to say you're happy for us to use your details for this order."); return; }
@@ -167,6 +171,7 @@ async function placeGroupOrder(){
       body: JSON.stringify({
         group: { slug: GROUP.slug, code: GROUP_CODE },
         items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size || undefined, colour: p.colour || undefined })),
+        delivery: dv.delivery,
         customer: { name, phone, email: email || undefined },
         note: note_ || undefined
       })
