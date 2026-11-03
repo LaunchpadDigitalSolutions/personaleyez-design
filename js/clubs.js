@@ -2,9 +2,12 @@
    clubs.js — club / team private shops
    The access code is verified server-side by ps_group_login;
    nothing here ever reads the codes table directly.
+   Orders go to /api/club-checkout: the server checks the club code,
+   looks up every price itself and either sends the customer to Square
+   or saves an enquiry. Prices shown here are for display only.
    ============================================================ */
 
-let GROUP = null, PRODUCTS = [], picks = [];
+let GROUP = null, GROUP_CODE = "", PRODUCTS = [], picks = [];
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 // escHtml() comes from js/escape.js
@@ -32,7 +35,7 @@ async function enterGroup(){
       note("g-notice","err","That club name and code don't match. Check with whoever runs your club.");
       btn.disabled = false; return;
     }
-    GROUP = res.group; PRODUCTS = res.products || []; picks = [];
+    GROUP = res.group; GROUP_CODE = code; PRODUCTS = res.products || []; picks = [];
     try{ sessionStorage.setItem("ps_group", JSON.stringify({slug, code})); }catch(e){}
     clearNote("g-notice");
     showShop();
@@ -44,7 +47,7 @@ async function enterGroup(){
 
 function leaveGroup(){
   try{ sessionStorage.removeItem("ps_group"); }catch(e){}
-  GROUP = null; PRODUCTS = []; picks = [];
+  GROUP = null; GROUP_CODE = ""; PRODUCTS = []; picks = [];
   $("shop").style.display = "none";
   $("gate").style.display = "block";
   $("s-done").style.display = "none";
@@ -59,7 +62,7 @@ function showShop(){
   $("s-kind").textContent = (GROUP.kind === "school" ? "School shop"
                           : GROUP.kind === "business" ? "Team shop" : "Club shop");
   $("s-name").textContent = GROUP.name;
-  $("s-intro").textContent = GROUP.intro || "Everything below is made just for your club. Pick what you need and we'll be in touch to confirm.";
+  $("s-intro").textContent = GROUP.intro || "Everything below is made just for your club. Pick what you need and check out when you're ready.";
   renderProducts();
   renderBasket();
   window.scrollTo(0,0);
@@ -101,7 +104,7 @@ function renderProducts(){
       ${cols.length ? `<div class="fld"><label for="co-${i}">Colour</label>
         <select id="co-${i}">${cols.map(s=>`<option>${escHtml(s)}</option>`).join("")}</select></div>` : ""}
       <div class="fld"><label for="qt-${i}">Quantity</label>
-        <input id="qt-${i}" type="number" min="0" value="0" inputmode="numeric" onchange="renderBasket()"></div>
+        <input id="qt-${i}" type="number" min="0" max="20" value="0" inputmode="numeric" onchange="renderBasket()"></div>
     </div>`;
   }).join("");
 }
@@ -114,7 +117,9 @@ function collectPicks(){
       const bits = [];
       if($("sz-"+i)) bits.push($("sz-"+i).value);
       if($("co-"+i)) bits.push($("co-"+i).value);
-      picks.push({ name:p.name, qty:q, unit:Number(p.price||0), opts:bits });
+      // id/size/colour are what the server prices from; unit and opts are for display
+      picks.push({ id:p.id, name:p.name, qty:q, unit:Number(p.price||0), opts:bits,
+                   size: $("sz-"+i) ? $("sz-"+i).value : "", colour: $("co-"+i) ? $("co-"+i).value : "" });
     }
   });
   return picks;
@@ -129,7 +134,14 @@ function renderBasket(){
     `<li><b>${p.qty} × ${escHtml(p.name)}${p.opts.length ? " · " + escHtml(p.opts.join(" · ")) : ""}</b>
      <span>${p.unit ? money(p.unit*p.qty) : "Price on confirmation"}</span></li>`).join("");
   const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);
-  $("s-total").textContent = total ? money(total) : "TBC";
+  const allPriced = picks.every(p => p.unit > 0);
+  $("s-total").textContent = allPriced ? money(total) : "TBC";
+  // Button and small print follow the basket: pay now, or send an enquiry
+  $("s-send").textContent = allPriced ? "Pay " + money(total) + " online" : "Send enquiry";
+  const small = $("s-send").nextElementSibling;
+  if(small) small.textContent = allPriced
+    ? "Secure payment by Square. We check the prices on our side. Add your email to get a receipt."
+    : "An item in your basket needs a price from us. Nothing is charged now. We'll confirm the price and send you a payment link.";
 }
 
 /* ---------- order ---------- */
@@ -146,32 +158,51 @@ async function placeGroupOrder(){
   if(phone.length < 9){ note("s-notice","err","We need a phone number."); return; }
   if(!$("s-consent").checked){ note("s-notice","err","Please tick the box to say you're happy for us to use your details for this order."); return; }
 
-  btn.disabled = true; note("s-notice","busy","Placing your order…");
-  const total = picks.reduce((s,p)=>s + p.unit*p.qty, 0);
-  const desc  = picks.map(p => `${p.qty} × ${p.name}${p.opts.length?" ("+p.opts.join(", ")+")":""}`).join("; ");
+  btn.disabled = true; note("s-notice","busy","Setting up your order…");
 
   try{
-    const o = await createOrder({
-      customer_name:name, customer_phone:phone, customer_email:email||null,
-      category:"club", description:desc,
-      quantity: picks.reduce((s,p)=>s+p.qty,0),
-      quoted_total: total || null,
-      notes: (note_ ? note_ + " · " : "") + GROUP.name,
-      group_id: GROUP.id, group_slug: GROUP.slug,
-      status:"enquiry"
+    const res = await fetch("/api/club-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        group: { slug: GROUP.slug, code: GROUP_CODE },
+        items: picks.map(p => ({ product_id: p.id, qty: p.qty, size: p.size || undefined, colour: p.colour || undefined })),
+        customer: { name, phone, email: email || undefined },
+        note: note_ || undefined
+      })
     });
-    $("s-ref").textContent = o.order_ref;
-    $("s-tracklink").href = "track.html?ref=" + encodeURIComponent(o.order_ref);
-    clearNote("s-notice");
-    $("s-checkout").style.display = "none";
-    $("s-basketbox").style.display = "none";
-    $("s-products").style.display = "none";
-    $("s-done").style.display = "block";
-    $("s-done").scrollIntoView({behavior:"smooth", block:"center"});
+    const data = await res.json();
+
+    if(res.ok && data.checkout_url){
+      location.href = data.checkout_url;      // Square's own page; we never see card details
+      return;
+    }
+    if(res.ok && data.enquiry){
+      showDone(data.order_ref, true);
+      btn.disabled = false; return;
+    }
+    // PCC-01x/02x = something the customer can fix; the server's message is written for them
+    const friendly = res.status < 500 && /^PCC-0[12]\d$/.test(data.error || "");
+    const code = data.error ? " (" + data.error + ")" : "";
+    note("s-notice","err", friendly ? data.message : "That didn't go through. Please ring us on " + BRAND.phone + "." + code);
   }catch(e){
     note("s-notice","err","That didn't go through. Please ring us on " + BRAND.phone + ".");
   }
   btn.disabled = false;
+}
+
+/* Done screen for an enquiry (nothing paid). Paid orders land on track.html from Square. */
+function showDone(ref, isEnquiry){
+  $("s-ref").textContent = ref;
+  $("s-tracklink").href = "track.html?ref=" + encodeURIComponent(ref);
+  const label = $("s-done").querySelector(".label");
+  if(label) label.textContent = isEnquiry ? "Enquiry sent" : "Order placed";
+  clearNote("s-notice");
+  $("s-checkout").style.display = "none";
+  $("s-basketbox").style.display = "none";
+  $("s-products").style.display = "none";
+  $("s-done").style.display = "block";
+  $("s-done").scrollIntoView({behavior:"smooth", block:"center"});
 }
 
 /* ---------- boot ---------- */
@@ -187,7 +218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saved = JSON.parse(sessionStorage.getItem("ps_group") || "null");
     if(saved){
       const res = await groupLogin(saved.slug, saved.code);
-      if(res && res.ok){ GROUP = res.group; PRODUCTS = res.products || []; showShop(); }
+      if(res && res.ok){ GROUP = res.group; GROUP_CODE = saved.code; PRODUCTS = res.products || []; showShop(); }
     }
   }catch(e){}
 });
