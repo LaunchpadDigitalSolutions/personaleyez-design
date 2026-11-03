@@ -6,19 +6,25 @@
 
    Body: { group: {slug, code},
            items: [{product_id, qty, size?, colour?}],
+           delivery?: {method: "collection"|"delivery", address?: {line1, town, postcode}},
            customer: {name, phone, email?}, note? }
 
    - Club name + access code are checked here. Prices come from the
      database; any price or name from the browser is ignored.
+   - Collection is free. Delivery is £4.99 under £150 of items and free
+     from £150 (rule lives in _lib/club-order.js). The fee is added to
+     the Square amount here; the delivery line and address go into the
+     order description so Jo sees them in her emails. No delivery field
+     means collection.
    - Every item priced -> Square payment link, order saved as
      pending_payment, returns { checkout_url, order_ref }. The Square
      webhook marks it paid and emails Jo and the customer.
    - Any item without a price -> saved as an enquiry, Jo is emailed,
      returns { enquiry: true, order_ref }. Nothing is charged.
-   Error codes PCC-xxx (010 club/code, 02x customer fixable, 03x server).
+   Error codes PCC-xxx (010-013 club/delivery, 02x customer fixable, 03x server).
    ============================================================ */
 import { OrderError, validateCustomer, clean } from "../_lib/pricing.js";
-import { makeClubLookup, validateClub, priceClubBasket } from "../_lib/club-order.js";
+import { makeClubLookup, validateClub, priceClubBasket, validateDelivery, deliveryFeePence, deliveryLine } from "../_lib/club-order.js";
 
 const EMAIL_FROM = "Peach State <orders@peachstate.co.uk>";
 
@@ -99,10 +105,11 @@ export async function onRequestPost(context) {
 
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return errorResponse("PCC-006", "Database isn't configured", 503);
 
-  let customer, club, result;
+  let customer, club, delivery, result;
   try {
     customer = validateCustomer("PCC", body.customer, body.note);
     club = validateClub(body.group);
+    delivery = validateDelivery(body.delivery);
     result = await priceClubBasket(club, body.items, makeClubLookup(env, club.slug, club.code));
   } catch (e) {
     if (e instanceof OrderError) return errorResponse(e.code, e.message, e.status);
@@ -112,7 +119,7 @@ export async function onRequestPost(context) {
   const group = result.group;
   const clubName = clean(group.name);
   const orderRef = makeOrderRef();
-  const notes = (customer.note ? customer.note + " · " : "") + clubName;
+  const notes = (customer.note ? customer.note + " · " : "") + clubName + (delivery.text ? " · Deliver to: " + delivery.text : "");
   const base = {
     p_order_ref: orderRef, p_customer_name: customer.name, p_customer_phone: customer.phone,
     p_customer_email: customer.email, p_notes: notes, p_group_id: group.id, p_group_slug: group.slug
@@ -120,7 +127,7 @@ export async function onRequestPost(context) {
 
   /* Enquiry: some item has no price yet. Save, email Jo, nothing charged. */
   if (result.kind === "enquiry") {
-    const description = `${clubName}: ${result.description}`;
+    const description = `${clubName}: ${result.description}; ${deliveryLine(delivery, null)}`;
     const order = await saveOrder(env, { ...base, p_status: "enquiry", p_description: description, p_quantity: result.quantity, p_total: null, p_square_order_id: null });
     if (!order) return errorResponse("PCC-009", "That didn't go through - please ring us", 500);
     await emailEnquiry(env, order, clubName, customer);
@@ -131,8 +138,10 @@ export async function onRequestPost(context) {
   if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) {
     return errorResponse("PCC-005", "Payments aren't configured yet - Square credentials are missing", 503);
   }
-  const { totalPence, description, squareName } = result.priced;
-  const fullDescription = `${clubName}: ${description}` + (customer.note ? ` — ${customer.note}` : "");
+  const { totalPence: itemsPence, description, squareName } = result.priced;
+  const feePence = deliveryFeePence(delivery.method, itemsPence);
+  const totalPence = itemsPence + feePence;
+  const fullDescription = `${clubName}: ${description}; ${deliveryLine(delivery, feePence)}` + (customer.note ? ` — ${customer.note}` : "");
 
   let squareRes, squareData;
   try {
