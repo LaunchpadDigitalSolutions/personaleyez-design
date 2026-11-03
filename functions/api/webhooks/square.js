@@ -40,6 +40,10 @@ const EMAIL_WRAP = body => `
     <p style="margin-top:32px;font-size:13px;color:#999">Personalised Design · peachstate.co.uk</p>
   </div>`;
 
+/* Delivery orders carry a "Delivery ..." line in their description
+   (see _lib/club-order.js), so "collect" wording would be wrong for them. */
+const isDelivery = order => /;\s*Delivery\b/.test(order.description || "");
+
 function customerEmailFor(status, order) {
   const ref = order.order_ref;
   const templates = {
@@ -49,14 +53,14 @@ function customerEmailFor(status, order) {
         <p>Hi ${order.customer_name || "there"},</p>
         <p>Thanks — we've received your order <strong>${ref}</strong> and it's now in our queue.</p>
         <p>${order.description || ""}</p>
-        <p>We'll email you again once it's in production, and again when it's ready to collect.</p>`)
+        <p>We'll email you again once it's in production, and again when it's ready${isDelivery(order) ? "" : " to collect"}.</p>`)
     },
     in_production: {
       subject: `Your order is in production — ${ref}`,
       html: EMAIL_WRAP(`
         <p>Hi ${order.customer_name || "there"},</p>
         <p>Good news — order <strong>${ref}</strong> is now being made.</p>
-        <p>We'll email you as soon as it's ready to collect.</p>`)
+        <p>We'll email you as soon as it's ready${isDelivery(order) ? "" : " to collect"}.</p>`)
     },
     ready: {
       subject: `Ready to collect — ${ref}`,
@@ -68,6 +72,9 @@ function customerEmailFor(status, order) {
   return templates[status] || null;
 }
 
+/* Jo's email. Notes hold the club name, any note from the customer and,
+   for delivery orders, the delivery address (kept out of the description
+   because the public track page shows that). */
 function ownerNewOrderEmail(order) {
   return {
     subject: `New order — ${order.order_ref}`,
@@ -75,6 +82,7 @@ function ownerNewOrderEmail(order) {
       <p>New order paid and in the queue:</p>
       <p><strong>${order.order_ref}</strong> — ${order.customer_name || "unknown"} (${order.customer_phone || "no phone"})</p>
       <p>${order.description || ""}</p>
+      ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
       <p>Deposit: £${order.deposit_paid ?? "0.00"}</p>`)
   };
 }
