@@ -83,7 +83,7 @@
     <h2 class="display-md">Who's it for?</h2>
     <div class="fld"><label for="s-cname">Your name</label><input id="s-cname" type="text" autocomplete="name"></div>
     <div class="fld"><label for="s-cphone">Phone</label><input id="s-cphone" type="tel" autocomplete="tel"></div>
-    <div class="fld"><label for="s-cemail">Email (optional)</label><input id="s-cemail" type="email" autocomplete="email"></div>
+    <div class="fld"><label for="s-cemail">Email (for your receipt)</label><input id="s-cemail" type="email" autocomplete="email"></div>
     <div class="fld"><label for="s-cnote">Name to be personalised / notes</label>
       <textarea id="s-cnote" placeholder="e.g. embroider 'Ella M' on the hoodie"></textarea></div>
     <div class="consent">
@@ -91,9 +91,9 @@
       <label for="s-consent">I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
     </div>
     <div class="notice" id="s-notice"></div>
-    <button class="btn-solid" id="s-send" onclick="placeGroupOrder()" style="margin-top:20px">Place order</button>
+    <button class="btn-solid" id="s-send" onclick="placeGroupOrder()" style="margin-top:20px">Pay online</button>
     <p class="body dim" style="font-size:13.5px;margin-top:16px">
-      We'll confirm the price and let you know when it's ready. Nothing is charged here.</p>
+      Secure payment by Square.</p>
   </div>
 
   <div class="wrap-narrow" id="s-done" style="display:none;text-align:center">
@@ -119,6 +119,6 @@
 <script src="js/inline-edit.js?v=0.9.3"></script>
 <script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("clubs");applyContent();psInitInlineEditor("clubs");});</script>
 <script src="js/escape.js?v=j18a"></script>
-<script src="js/clubs.js?v=j18a"></script>
+<script src="js/clubs.js?v=cc1a"></script>
 </body>
 </html>
