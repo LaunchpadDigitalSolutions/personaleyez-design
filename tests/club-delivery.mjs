@@ -54,12 +54,12 @@ await run("no delivery field means collection", async () => {
   assert.equal(sqAmount(), 4600); assert.ok(saved().p_description.includes("Collection (free)"));
 });
 
-await run("delivery under £150 adds £4.99, address in description and notes", async () => {
+await run("delivery under £150 adds £4.99, address in notes only (never the public description)", async () => {
   const r = await post({ items: one(P.A), delivery: { method: "delivery", address: addr } });
   assert.equal(r.status, 200); assert.equal(sqAmount(), 5099);
   const s = saved();
   assert.equal(s.p_total, 50.99);
-  assert.ok(s.p_description.includes("Delivery £4.99 to 12 Example Street, Hartlepool, TS26 0AA"));
+  assert.ok(s.p_description.includes("Delivery £4.99")); assert.ok(!s.p_description.includes("Example Street") && !s.p_description.includes("TS26"));
   assert.ok(s.p_notes.includes("Deliver to: 12 Example Street, Hartlepool, TS26 0AA"));
 });
 
@@ -71,7 +71,7 @@ await run("£149.99 still pays delivery", async () => {
 await run("exactly £150.00 is free delivery", async () => {
   await post({ items: one(P.C), delivery: { method: "delivery", address: addr } });
   assert.equal(sqAmount(), 15000);
-  assert.ok(saved().p_description.includes("Delivery free to 12 Example Street"));
+  assert.ok(saved().p_description.includes("Delivery (free, £150+)")); assert.ok(!saved().p_description.includes("Example Street"));
 });
 
 await run("over £150 is free delivery", async () => {
@@ -105,16 +105,17 @@ await run("collection ignores any address sent", async () => {
 await run("postcode is tidied, angle brackets removed", async () => {
   await post({ items: one(P.A), delivery: { method: "delivery", address: { line1: "<b>12</b> Example St", town: "Hartlepool", postcode: "ts260aa" } } });
   const s = saved();
-  assert.ok(s.p_description.includes("TS26 0AA")); assert.ok(!/[<>]/.test(s.p_description + s.p_notes));
+  assert.ok(s.p_notes.includes("TS26 0AA")); assert.ok(!/[<>]/.test(s.p_description + s.p_notes));
 });
 
-await run("enquiry with delivery: no fee charged, address kept, Jo emailed", async () => {
+await run("enquiry with delivery: no fee charged, address kept in notes and Jo's email only", async () => {
   const r = await post({ items: one(P.TBC), delivery: { method: "delivery", address: addr } });
   assert.equal(r.data.enquiry, true); assert.ok(!hasSquare());
   const s = saved();
   assert.equal(s.p_total, null);
-  assert.ok(s.p_description.includes("Delivery to 12 Example Street, Hartlepool, TS26 0AA (fee to confirm)"));
-  assert.ok(calls.some(c => c.url.includes("resend") && c.body.to === "jo@test"));
+  assert.ok(s.p_description.includes("Delivery requested (fee to confirm)")); assert.ok(!s.p_description.includes("Example Street"));
+  const jo = calls.find(c => c.url.includes("resend") && c.body.to === "jo@test");
+  assert.ok(jo); assert.ok(jo.body.html.includes("Deliver to: 12 Example Street, Hartlepool, TS26 0AA"));
 });
 
 await run("enquiry with collection", async () => {
