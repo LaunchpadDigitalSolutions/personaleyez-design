@@ -47,12 +47,17 @@ export function deliveryFeePence(method, subtotalPence) {
   return method === "delivery" && subtotalPence < DELIVERY.freeFromPence ? DELIVERY.feePence : 0;
 }
 
-/* The line that goes into the order description (and so Jo's emails).
+/* The line that goes into the order description. The description is shown
+   on the public track page and in customer emails, so it never holds the
+   address: that lives in the order notes, which only Jo sees. The status
+   pages and emails spot delivery orders by this line starting with
+   "Delivery" after a semicolon (js/track.js, notify-status.js,
+   webhooks/square.js): keep that shape.
    feePence = null means the fee isn't known yet (enquiry). */
 export function deliveryLine(delivery, feePence) {
   if (delivery.method === "collection") return "Collection (free)";
-  if (feePence == null) return `Delivery to ${delivery.text} (fee to confirm)`;
-  return `${feePence ? "Delivery " + pounds(feePence / 100) : "Delivery free"} to ${delivery.text}`;
+  if (feePence == null) return "Delivery requested (fee to confirm)";
+  return feePence ? "Delivery " + pounds(feePence / 100) : "Delivery (free, £150+)";
 }
 
 /* Service-role lookup. Never exposed to the browser. */

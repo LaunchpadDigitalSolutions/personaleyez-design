@@ -13,9 +13,10 @@
      database; any price or name from the browser is ignored.
    - Collection is free. Delivery is £4.99 under £150 of items and free
      from £150 (rule lives in _lib/club-order.js). The fee is added to
-     the Square amount here; the delivery line and address go into the
-     order description so Jo sees them in her emails. No delivery field
-     means collection.
+     the Square amount here. No delivery field means collection.
+   - The description gets a short delivery line ("Delivery £4.99"). The
+     delivery ADDRESS goes in the order notes only, because the public
+     track page shows the description. Jo sees the notes in her emails.
    - Every item priced -> Square payment link, order saved as
      pending_payment, returns { checkout_url, order_ref }. The Square
      webhook marks it paid and emails Jo and the customer.
@@ -63,7 +64,8 @@ const wrap = body => `
     <p style="margin-top:32px;font-size:13px;color:#999">Personalised Design · peachstate.co.uk</p>
   </div>`;
 
-async function emailEnquiry(env, order, clubName, customer) {
+/* address = the delivery address for Jo's email only (null for collection). */
+async function emailEnquiry(env, order, clubName, customer, address) {
   const owner = env.OWNER_NOTIFY_EMAIL || "info@peachstate.co.uk";
   await sendEmail(env, {
     to: owner,
@@ -72,6 +74,7 @@ async function emailEnquiry(env, order, clubName, customer) {
       <p><strong>${order.order_ref}</strong> — ${clubName}</p>
       <p>${customer.name} (${customer.phone}${customer.email ? ", " + customer.email : ""})</p>
       <p>${order.description || ""}</p>
+      ${address ? `<p>Deliver to: ${address}</p>` : ""}
       ${customer.note ? `<p>Note: ${customer.note}</p>` : ""}`)
   });
   if (customer.email) {
@@ -130,7 +133,7 @@ export async function onRequestPost(context) {
     const description = `${clubName}: ${result.description}; ${deliveryLine(delivery, null)}`;
     const order = await saveOrder(env, { ...base, p_status: "enquiry", p_description: description, p_quantity: result.quantity, p_total: null, p_square_order_id: null });
     if (!order) return errorResponse("PCC-009", "That didn't go through - please ring us", 500);
-    await emailEnquiry(env, order, clubName, customer);
+    await emailEnquiry(env, order, clubName, customer, delivery.text);
     return new Response(JSON.stringify({ enquiry: true, order_ref: orderRef }), { headers: { "Content-Type": "application/json" } });
   }
 

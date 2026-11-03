@@ -34,8 +34,13 @@ const EMAIL_WRAP = body => `
     <p style="margin-top:32px;font-size:13px;color:#999">Personalised Design · peachstate.co.uk</p>
   </div>`;
 
+/* Delivery orders carry a "Delivery ..." line in their description
+   (see _lib/club-order.js), so "collect" wording would be wrong for them. */
+const isDelivery = order => /;\s*Delivery\b/.test(order.description || "");
+
 function customerEmailFor(status, order) {
   const ref = order.order_ref;
+  const delivery = isDelivery(order);
   const templates = {
     enquiry: {
       subject: `Order received — ${ref}`,
@@ -43,16 +48,21 @@ function customerEmailFor(status, order) {
         <p>Hi ${order.customer_name || "there"},</p>
         <p>Thanks — we've received your order <strong>${ref}</strong> and it's now in our queue.</p>
         <p>${order.description || ""}</p>
-        <p>We'll email you again once it's in production, and again when it's ready to collect.</p>`)
+        <p>We'll email you again once it's in production, and again when it's ready${delivery ? "" : " to collect"}.</p>`)
     },
     in_production: {
       subject: `Your order is in production — ${ref}`,
       html: EMAIL_WRAP(`
         <p>Hi ${order.customer_name || "there"},</p>
         <p>Good news — order <strong>${ref}</strong> is now being made.</p>
-        <p>We'll email you as soon as it's ready to collect.</p>`)
+        <p>We'll email you as soon as it's ready${delivery ? "" : " to collect"}.</p>`)
     },
-    ready: {
+    ready: delivery ? {
+      subject: `Ready for delivery — ${ref}`,
+      html: EMAIL_WRAP(`
+        <p>Hi ${order.customer_name || "there"},</p>
+        <p>Order <strong>${ref}</strong> is ready for delivery. We'll be in touch to arrange it.</p>`)
+    } : {
       subject: `Ready to collect — ${ref}`,
       html: EMAIL_WRAP(`
         <p>Hi ${order.customer_name || "there"},</p>
