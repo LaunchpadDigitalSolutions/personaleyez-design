@@ -1,37 +1,12 @@
 /* ============================================================
    functions/api/admin.js — the real admin gate.
-
-   Everything the kitchen^Wshop dashboard needs from the database
-   (listing orders/enquiries/groups/products, updating order status,
-   creating/editing groups and products) goes through here instead
-   of calling Supabase directly from the browser. Two secrets make
-   this work, and NEITHER of them is ever shipped to the browser:
-
-   - env.STAFF_PIN     — what Jo actually types on the login screen.
-   - env.ADMIN_PASSPHRASE — the long random value the database's
-     ps_admin_check() function checks before letting any ps_admin_*
-     RPC run. This used to be hardcoded in js/admin.js, which meant
-     anyone who fetched that one public file had full read/write
-     access to every customer's orders and enquiries. Now it only
-     ever exists here, on the server, and in the database itself.
-
-   Set both in the Cloudflare Pages project's environment variables
-   (Settings → Environment variables) — this file only reads them,
-   it doesn't define them.
-
-   - env.RATE_LIMIT_KV (optional) — a KV namespace, bound in the
-     Pages project's Functions settings, used to lock out a PIN after
-     MAX_PIN_ATTEMPTS wrong tries per IP. Without it, this file works
-     exactly as before (no lockout) — a 4-digit PIN with no lockout at
-     all is brute-forceable well under an hour, so create and bind a
-     KV namespace here when you get the chance.
+   Job 4 addition: ps_admin_list_news, ps_admin_create_news,
+   ps_admin_update_news, ps_admin_delete_news added to ADMIN_RPCS.
    ============================================================ */
 
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 
-// Only these may be called through this proxy — never a client-chosen
-// arbitrary function name.
 const ADMIN_RPCS = new Set([
   "ps_admin_list_orders", "ps_admin_create_order", "ps_admin_update_order_status",
   "ps_admin_list_enquiries", "ps_admin_mark_enquiry_handled",
@@ -41,22 +16,21 @@ const ADMIN_RPCS = new Set([
   "ps_admin_list_shop_products", "ps_admin_create_shop_product",
   "ps_admin_update_shop_product", "ps_admin_delete_shop_product",
   "ps_admin_save_content",
-  // Catalog (shared products linked into club shops), shop item photos, duplicating a club shop
   "ps_admin_list_catalog", "ps_admin_create_catalog_product", "ps_admin_update_catalog_product",
   "ps_admin_delete_catalog_product", "ps_admin_add_catalog_to_group",
   "ps_admin_set_group_item_photo", "ps_admin_duplicate_group",
-  // School items: pool + per-school overrides (Job 06), whole-kit save (Job 05)
   "ps_admin_list_school_items", "ps_admin_list_pool", "ps_admin_set_school_item", "ps_admin_add_pool_to_school",
   "ps_admin_set_school_kit",
-  // Pages made from the admin (shown at /p/<name>)
-  "ps_admin_list_pages", "ps_admin_create_page", "ps_admin_update_page", "ps_admin_set_page_nav_group"
+  "ps_admin_list_pages", "ps_admin_create_page", "ps_admin_update_page", "ps_admin_set_page_nav_group",
+  // News (Job 4)
+  "ps_admin_list_news", "ps_admin_create_news", "ps_admin_update_news", "ps_admin_delete_news"
 ]);
 
 const MAX_PIN_ATTEMPTS = 5;
-const LOCKOUT_SECONDS = 900; // 15 min
+const LOCKOUT_SECONDS = 900;
 
 async function checkRateLimit(env, request) {
-  if (!env.RATE_LIMIT_KV) return { limited: false }; // no KV bound yet - no-op
+  if (!env.RATE_LIMIT_KV) return { limited: false };
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const key = `pin_attempts:${ip}`;
   const raw = await env.RATE_LIMIT_KV.get(key);
@@ -72,8 +46,7 @@ async function recordFailedAttempt(env, key, count) {
 
 async function clearAttempts(env, key) {
   if (!env.RATE_LIMIT_KV) return;
-  // Free-tier KV allows 1,000 deletes a day. If that is used up, a right PIN must still get in.
-  try { await env.RATE_LIMIT_KV.delete(key); } catch (e) { /* the old count just expires on its own */ }
+  try { await env.RATE_LIMIT_KV.delete(key); } catch (e) { /* expires on its own */ }
 }
 
 export async function onRequestPost({ request, env }) {
@@ -97,10 +70,8 @@ export async function onRequestPost({ request, env }) {
     if (rate.key) await recordFailedAttempt(env, rate.key, rate.count);
     return new Response(JSON.stringify({ error: "PS-ADMIN-AUTH" }), { status: 401 });
   }
-  if (rate.key && rate.count > 0) await clearAttempts(env, rate.key);   // nothing to clear = no KV delete (was one per call)
+  if (rate.key && rate.count > 0) await clearAttempts(env, rate.key);
 
-  // "ping" is used only by the login screen, to check the PIN without
-  // running any real query.
   if (rpc === "ping") {
     return new Response(JSON.stringify(true), { status: 200, headers: { "Content-Type": "application/json" } });
   }
@@ -116,8 +87,6 @@ export async function onRequestPost({ request, env }) {
       Authorization: `Bearer ${SB_KEY}`,
       "Content-Type": "application/json"
     },
-    // Client params spread FIRST so a forged p_pass in the request body
-    // can never shadow the real passphrase set immediately after it.
     body: JSON.stringify({ ...(params || {}), p_pass: env.ADMIN_PASSPHRASE })
   });
 
