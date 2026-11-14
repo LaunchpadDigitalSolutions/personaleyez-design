@@ -1,20 +1,15 @@
 /* ============================================================
    Server-side basket pricing (Job 15).
-   Used by /api/checkout and /api/checkout-instalments.
-
-   The browser tells us WHICH products, how many, which size/colour
-   and whether initials are wanted. It never tells us a price. Every
-   amount comes from ps_checkout_lookup (service role), including the
-   initials add-on. Anything we can't verify is refused.
-
-   Error codes are `${prefix}-0xx`: PSC for /api/checkout, PSI for
-   /api/checkout-instalments. 020-029 are basket/customer problems
-   the customer can fix; 030+ are server-side.
+   Job 3 addition: per-item note (item.note) is sanitised and
+   appended to each line's label so it appears in the order
+   description saved to the DB and shown in admin + Jo's email.
+   The note never affects price.
+   Error codes: PSC-0xx / PSI-0xx.
    ============================================================ */
 
 import { ownUniformOptions } from "./own-uniform.js";
 
-export const LIMITS = { maxQty: 20, maxLines: 30, name: 80, email: 120, note: 500 };
+export const LIMITS = { maxQty: 20, maxLines: 30, name: 80, email: 120, note: 500, itemNote: 200 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REFRESH = "Please refresh the page and add your items again.";
@@ -23,10 +18,9 @@ export class OrderError extends Error {
   constructor(code, message, status) { super(message); this.code = code; this.status = status || 400; }
 }
 
-/* Free text: no angle brackets (order emails are HTML), no control chars. */
 export const clean = s => String(s == null ? "" : s).replace(/[<>]/g, "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
 const list = s => String(s || "").split(",").map(x => x.trim()).filter(Boolean);
-const pounds = pence => "£" + (pence / 100).toFixed(2);
+const pounds = pence => "\u00a3" + (pence / 100).toFixed(2);
 const pick = (options, wanted) => options.find(o => o.toLowerCase() === String(wanted).trim().toLowerCase());
 
 export function validateCustomer(prefix, customer, note) {
@@ -44,8 +38,6 @@ export function validateCustomer(prefix, customer, note) {
   return { name, phone, email: email || null, note: text };
 }
 
-/* items: [{product_id, qty, size?, colour?, initials?}]. Any `price` or
-   `name` the browser sends is ignored. lookup(ids) -> { items, initials_pence }. */
 export async function priceBasket(prefix, rawItems, lookup) {
   const items = Array.isArray(rawItems) ? rawItems : [];
   if (items.length === 0) throw new OrderError(prefix + "-002", "Your basket is empty");
@@ -86,8 +78,8 @@ export async function priceBasket(prefix, rawItems, lookup) {
       opts.push(c);
     } else if (clean(it.colour)) throw new OrderError(prefix + "-028", REFRESH);
 
-for (const o of ownUniformOptions(it, row, (c, m) => { throw new OrderError(prefix + "-" + c, m); })) opts.push(o);
-        let unitPence = Math.round(price * 100);
+    for (const o of ownUniformOptions(it, row, (c, m) => { throw new OrderError(prefix + "-" + c, m); })) opts.push(o);
+    let unitPence = Math.round(price * 100);
     const crested = row.is_school_item === true && row.crest === true;
     if (crested) opts.push("logo embroidered");
     if (it.initials === true) {
@@ -97,18 +89,22 @@ for (const o of ownUniformOptions(it, row, (c, m) => { throw new OrderError(pref
       opts.push("initials stitched on");
     }
 
-    const label = `${row.name} (${opts.join(", ")})`.replace(" ()", "");
+    /* Per-item note (Job 3): sanitised, capped at 200 chars, appended to label.
+       Never affects the price. */
+    const itemNote = it.note ? clean(String(it.note)).slice(0, LIMITS.itemNote) : "";
+
+    const baseLabel = `${row.name} (${opts.join(", ")})`.replace(" ()", "");
+    const label = baseLabel + (itemNote ? ` \u2014 Note: ${itemNote}` : "");
     const linePence = unitPence * it.qty;
     totalPence += linePence;
     lines.push({ product_id: row.id, label, qty: it.qty, unitPence, linePence });
   }
 
-  const description = lines.map(l => `${l.qty} × ${l.label} @ ${pounds(l.unitPence)} = ${pounds(l.linePence)}`).join("; ");
+  const description = lines.map(l => `${l.qty} \u00d7 ${l.label} @ ${pounds(l.unitPence)} = ${pounds(l.linePence)}`).join("; ");
   const squareName = lines.length === 1 ? lines[0].label.slice(0, 120) : `Peach State order (${lines.length} items)`;
   return { totalPence, lines, description, squareName };
 }
 
-/* Service-role lookup. Never exposed to the browser. */
 export function makeLookup(prefix, env, fetchFn) {
   const f = fetchFn || fetch;
   return async ids => {
