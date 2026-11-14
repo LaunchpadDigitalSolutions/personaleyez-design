@@ -22,6 +22,7 @@
   width:100%;min-height:var(--tap);padding:10px 2px;font-size:var(--input-size);font-family:inherit;color:var(--text);
   background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0}
 .cp-root textarea{min-height:96px}
+.cp-root select{padding:10px 0}
 .cp-root select:focus,.cp-root input:focus,.cp-root textarea:focus{outline:none;border-bottom-color:var(--brand)}
 
 .cp-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--tap-nav);margin-top:14px;padding:0 16px;
@@ -54,6 +55,7 @@
 .cp-note.err{background:var(--bg-2);color:var(--err)}
 .cp-note.ok{background:var(--bg-2);color:var(--ok)}
 .cp-note.busy{background:var(--bg-2);color:var(--text-2)}
+.cp-note.info{background:var(--bg-2);color:var(--text);border-left:3px solid var(--brand);padding-left:16px}
 
 .cp-admin{background:var(--surface);border:1px solid var(--border);padding:20px}
 .cp-admin h2{font-size:21px}
@@ -64,3 +66,7 @@
 .cp-photo .cp-chip{width:auto;padding:0 16px}
 .cp-thumb{display:flex;align-items:center;justify-content:center;width:64px;height:64px;overflow:hidden;background:var(--bg-2);font-size:10px;color:var(--text-2);text-align:center}
 .cp-thumb img{width:100%;height:100%;object-fit:cover}
+/* Toggle row for boolean options (allow_notes) */
+.cp-toggle{display:flex;align-items:center;gap:10px;min-height:var(--tap);cursor:pointer}
+.cp-toggle input[type=checkbox]{width:20px;min-width:20px;height:20px;min-height:0;accent-color:var(--brand)}
+.cp-toggle span{font-size:14.5px;color:var(--text)}
