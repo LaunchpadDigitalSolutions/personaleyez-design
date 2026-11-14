@@ -1,10 +1,57 @@
 /* ============================================================
-   schools-phases.css — screen 1 of /schools-shop (phase circles).
-   Icon sizing + focus ring. Colours come from the existing
-   .su-school-circle / .su-school.on rules in style.css.
+   schools-phases.css — school picker clarity (Job 2).
+   Adds styles for the selected-school header, change button,
+   and items cue. Existing phase circle styles preserved.
    ============================================================ */
 .su-phase{cursor:pointer;min-height:44px}
 .su-phase .su-school-circle svg{width:30px;height:30px;flex-shrink:0;fill:none;
   stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .su-phase:focus{outline:none}
 .su-phase:focus-visible .su-school-circle{outline:2px solid var(--terracotta-deep);outline-offset:3px}
+
+/* Selected school header */
+.su-school-header{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0 10px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:12px;
+}
+.su-school-header .su-school-circle{
+  flex-shrink:0;
+  font-size:13px;
+}
+.su-school-header-name{
+  flex:1;
+  font-weight:600;
+  font-size:16px;
+}
+.su-change-school{
+  flex-shrink:0;
+  min-height:44px;
+  padding:0 14px;
+  background:var(--cream-deep);
+  border:1px solid var(--line);
+  border-radius:2px;
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--text);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.su-change-school:hover{background:var(--line)}
+
+/* "N items below" cue */
+.su-items-cue{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  margin-bottom:12px;
+  background:var(--cream-deep);
+  border:1px solid var(--line);
+  border-radius:2px;
+  font-size:14px;
+  color:var(--text-muted);
+}
+.su-items-cue-arrow{
+  font-size:18px;
+  color:var(--terracotta);
+}
