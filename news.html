@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EE">
+<link rel="icon" href="img/icon-180.png?v=0.9.0">
+<link rel="apple-touch-icon" href="img/icon-180.png?v=0.9.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=0.9.0">
+<link rel="stylesheet" href="css/inline-edit.css?v=0.9.0">
+<title>News &mdash; Peach State, Hartlepool</title>
+<meta name="description" content="News, updates and press coverage from Peach State, Hartlepool's personalised embroidery and print studio.">
+<link rel="canonical" href="https://peachstate.co.uk/news.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Peach State">
+<meta property="og:title" content="News &mdash; Peach State, Hartlepool">
+<meta property="og:description" content="News, updates and press coverage from Peach State.">
+<meta property="og:url" content="https://peachstate.co.uk/news.html">
+<meta property="og:image" content="https://peachstate.co.uk/img/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="News &mdash; Peach State, Hartlepool">
+<meta name="twitter:description" content="News, updates and press coverage from Peach State.">
+<meta name="twitter:image" content="https://peachstate.co.uk/img/logo.png">
+<link rel="stylesheet" href="css/nav-dropdown.css?v=0.1.0">
+<link rel="stylesheet" href="css/nav-dropdown-theme.css?v=0.1.0">
+<style>
+.news-grid{max-width:1200px;margin:0 auto;padding:0 20px 60px;display:grid;grid-template-columns:1fr;gap:32px}
+@media(min-width:640px){.news-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:1024px){.news-grid{grid-template-columns:repeat(3,1fr)}}
+.news-card{background:#fff;border:1px solid var(--line)}
+.news-card-img{display:block;aspect-ratio:16/9;overflow:hidden;background:var(--cream-deep)}
+.news-card-img img{width:100%;height:100%;object-fit:cover}
+.news-card-body{padding:16px 18px 20px}
+.news-tag{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--terracotta)}
+.news-date{font-size:12px;color:var(--text-muted);margin-left:10px}
+.news-card-body h2{font-family:var(--display);font-size:20px;font-weight:400;margin:10px 0 8px;line-height:1.25}
+.news-card-body h2 a{color:inherit;text-decoration:none}
+.news-card-body h2 a:hover{text-decoration:underline}
+.news-card-body p{font-size:14.5px;color:var(--text-muted);line-height:1.6;margin:0 0 12px}
+</style>
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+
+<section class="sec" style="padding-bottom:20px">
+  <div class="wrap">
+    <span class="label">News</span>
+    <h1 class="display-lg" style="margin-top:18px">What's happening at<br><span class="italic tera">Peach State.</span></h1>
+    <p class="body" style="margin-top:22px">Updates, press and stories from the studio on York Road.</p>
+  </div>
+</section>
+
+<div id="news-grid" class="news-grid"></div>
+<p id="news-empty" class="body dim" style="display:none;padding:0 20px 60px">No posts yet &mdash; check back soon.</p>
+
+<nav class="mobilebar">
+  <a href="#" data-brand-href="phoneLink">Call</a>
+  <a href="contact.html" class="accent">Enquire</a>
+</nav>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="js/config.js?v=0.9.0"></script>
+<script src="js/api.js?v=0.9.3"></script>
+<script src="js/nav-dropdown.js?v=0.1.0"></script>
+<script src="js/partials.js?v=j04a"></script>
+<script src="js/inline-edit.js?v=0.9.3"></script>
+<script>document.addEventListener("DOMContentLoaded",async()=>{await loadContent("news");applyContent();psInitInlineEditor("news");});</script>
+<script src="js/news.js?v=j04a"></script>
+</body>
+</html>
