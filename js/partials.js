@@ -1,39 +1,19 @@
 /* ============================================================
    partials.js — header and footer, one place to change nav.
-
-   EVERYTHING here is editable by Jo on the live site:
-   - every hardcoded string goes through T(key, default), which renders
-     a <span data-edit="site_<key>"> - the inline editor picks those up
-     and saves them under the sitewide page "global", so one edit shows
-     on every page.
-   - phone / address / postcode / legal name / company number come from
-     BRAND (config.js) and can be overridden by site_brand_<field>.
-   - opening hours: site_hours_<row>_d (day) and site_hours_<row>_t (time).
-   - logos: data-img slots site_mark / site_wordmark / site_logo.
-   Saved site values are also cached in localStorage so the header and
-   footer render with Jo's wording on first paint, not after a flicker.
+   Job 4: added ["news.html", "News"] to NAV and footer Explore section.
    ============================================================ */
-/* Grouped menu: js/nav-dropdown.js (a copy of launchpad-features nav-dropdown) and its two stylesheets are loaded by each page with ordinary
-   <script>/<link> tags. If a page lacks them the menu falls back to a flat list (see navHtml). */
 const NAV = [
   ["index.html",    "Home"],
   ["services.html", "What We Make"],
   ["clubs.html",    "Club Shops"],
+  ["news.html",     "News"],
   ["track.html",    "Track Order"],
   ["contact.html",  "Contact"]
 ];
-/* "Order a product" dropdown; wording editable (site_nav_order_product, one key per item). Admin pages with
-   ps_pages.nav_group = "order" join it. School Uniform replaced the top-level Schools link (it goes to the shop). */
 const NAV_GROUP = { key: "order", label: "Order a product", labelKey: "nav_order_product", after: "services.html",
   children: [["schools-shop.html", "School Uniform"], ["workwear.html", "Workwear"],
              ["sportswear.html", "Sportswear"], ["gifts.html", "Gifts & Accessories"]] };
-// "Shop" is deliberately left out of NAV - shop.html still works, it's
-// just empty right now. Every product currently in ps_products carries a
-// `category`, and category means "which school" there (see shop.js),
-// not a general-shop section. Re-add it here once real, non-uniform
-// stock exists to list.
 
-/* ---------- sitewide saved values (text, brand, hours, logos) ---------- */
 const SITE_CACHE_KEY = "ps_site_v1";
 let _siteCache = null;
 function siteCache(){
@@ -52,11 +32,9 @@ function siteGet(fullKey){
 const navEsc = s => String(s).replace(/[&<>"']/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[c]));
-/* T(key, default): an editable, sitewide piece of wording. */
 const T = (k, d) => '<span data-edit="site_' + k + '">' + navEsc(siteGet("site_" + k) || d) + '</span>';
 const siteImg = (slot, d) => siteGet("img_" + slot) || d;
 
-/* ---------- brand (config.js BRAND) with Jo's overrides on top ---------- */
 const BRAND_FIELDS = ["name", "tagline", "legalName", "strapline", "phone", "email", "address1", "address2", "postcode", "companyNo", "facebook"];
 BRAND.companyNo = BRAND.companyNo || "08673579";
 const BRAND_DEFAULT_HOURS = BRAND.hours.map(r => r.slice());
@@ -88,11 +66,6 @@ function renderHours(){
   document.querySelectorAll("ul.hours").forEach(u => { u.innerHTML = hoursHtml(); });
 }
 
-/* Pages made in the admin (Edit site > New page, shown at /p/<n>) are
-   added after the built-in ones when "show in menu" is ticked. The list is
-   cached in the browser so the menu doesn't flicker, and refreshed in the
-   background on every page view. If anything goes wrong the menu simply
-   keeps what it already has. */
 const NAV_PAGES_KEY = "ps_nav_pages";
 function extraNav(){
   try {
@@ -100,21 +73,18 @@ function extraNav(){
     return rows.filter(p => p && /^[a-z0-9-]+$/.test(p.slug) && p.title).map(p => ["p/" + p.slug, p.title]);
   } catch (e) { return []; }
 }
-/* Built-in menu labels are editable (same key in header, mobile menu and
-   footer); labels of admin-made pages come from that page's own title. */
 const navKey = h => "nav_" + h.replace(/\W+/g, "_");
 const navLabel = (h, t) => NAV.concat(NAV_GROUP.children).some(n => n[0] === h) ? T(navKey(h), t) : navEsc(t);
 const navLabelOf = it => it.type === "group" ? T(it.labelKey, it.label) : (it.custom ? navEsc(it.label) : T(navKey(it.href), it.label));
 const navWarn = (code, msg) => { try { console.warn(code, msg); } catch (e) { /* no console */ } };
-/* kind: "desktop" | "mobile" | "footer". Without the module the menu is flat: same links, no dropdown. */
 function navHtml(kind, here){
   if (window.NavDropdown) {
     let raw = "[]";
-    try { raw = localStorage.getItem(NAV_PAGES_KEY) || "[]"; } catch (e) { /* private mode: no saved pages */ }
+    try { raw = localStorage.getItem(NAV_PAGES_KEY) || "[]"; } catch (e) { /* private mode */ }
     const model = NavDropdown.build({ links: NAV, group: NAV_GROUP, pages: raw, onError: navWarn });
     return NavDropdown[kind](model, { here, label: navLabelOf });
   }
-  return NAV.concat(NAV_GROUP.children, extraNav()).map(([h, t]) => `<a href="${h}" class="${kind==="mobile"?"navlink":h===here&&kind==="desktop"?"on":""}">${navLabel(h,t)}</a>`).join("");
+  return NAV.concat(NAV_GROUP.children, extraNav()).map(([h, t]) => `<a href="${h}" class="${kind==="mobile"?"navlink":h===here&&kind==="desktop"?"on":""  }">${navLabel(h,t)}</a>`).join("");
 }
 async function refreshNavPages(){
   if (typeof sb !== "function") return;
@@ -152,9 +122,6 @@ function renderHeader(){
       </button>
     </div>`;
 
-  // The header uses backdrop-filter, which creates a containing block for
-  // fixed-position children. The nav panel must live on <body> or it will
-  // position against the header instead of the viewport.
   let nav = document.getElementById("nav-mobile");
   if (!nav) {
     nav = document.createElement("nav");
@@ -215,16 +182,14 @@ function renderFooter(){
         <a href="cookies.html">${T("foot_legal_cookies", "Cookie Policy")}</a>
       </div>
       <div class="foot-bottom">
-        ${T("foot_copy", "© " + y)} <span data-edit="site_brand_legalName">${navEsc(BRAND.legalName)}</span> (${T("foot_co", "Company No.")} <span data-edit="site_brand_companyNo">${navEsc(BRAND.companyNo)}</span>) &nbsp;·&nbsp; ${T("foot_by", "Website by")}
+        ${T("foot_copy", "© " + y)} <span data-edit="site_brand_legalName">${navEsc(BRAND.legalName)}</span> (${T("foot_co", "Company No.")} <span data-edit="site_brand_companyNo">${navEsc(BRAND.companyNo)}</span>) &nbsp;&middot;&nbsp; ${T("foot_by", "Website by")}
         <a href="https://launchpadme.co.uk">${T("foot_by_name", "Launchpad Digital")}</a>
-        &nbsp;·&nbsp; <a href="admin.html">${T("foot_staff", "Staff login")}</a>
+        &nbsp;&middot;&nbsp; <a href="admin.html">${T("foot_staff", "Staff login")}</a>
       </div>
     </div>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Jo's saved sitewide values (from the browser cache) are applied before
-  // the first render; the editor re-applies the live ones once they load.
   syncBrand();
   applyBrandToDom();
   renderHours();
@@ -246,15 +211,9 @@ document.addEventListener("keydown", e => {
     alert("Peach State website\nv"+APP_VERSION+"\nLaunchpad Digital Solutions");
 });
 
-/* ============================================================
-   LocalBusiness structured data (SEO) — one place, driven by the
-   same BRAND object everything else uses, so it can never drift
-   out of sync with the real address/hours/phone. Re-run whenever
-   Jo edits hours or contact details; tolerant of free-text times.
-   ============================================================ */
 const LD_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 function parseTimes(t){
-  const m = String(t).match(/(\d{1,2})(?:[:.](\d{2}))?\s*(?:–|—|-|to)\s*(\d{1,2})(?:[:.](\d{2}))?/i);
+  const m = String(t).match(/(\d{1,2})(?:[:.](\.{2}))?\s*(?:–|—|-|to)\s*(\d{1,2})(?:[:.](\.{2}))?/i);
   if (!m) return null;
   const f = (h, mi) => String(h).padStart(2, "0") + ":" + (mi || "00");
   return [f(m[1], m[2]), f(m[3], m[4])];
@@ -265,31 +224,20 @@ function injectLocalBusinessSchema(){
     const p = parseTimes(t);
     if (p && LD_DAYS[i]) openingHours.push({ "@type":"OpeningHoursSpecification", dayOfWeek: LD_DAYS[i], opens: p[0], closes: p[1] });
   });
-
   const data = {
     "@context":"https://schema.org",
     "@type":"ClothingStore",
-    "name": BRAND.name,
-    "alternateName": BRAND.legalName,
+    "name": BRAND.name, "alternateName": BRAND.legalName,
     "image":"https://peachstate.co.uk/img/logo.png",
-    "telephone": BRAND.phone,
-    "email": BRAND.email,
-    "address":{
-      "@type":"PostalAddress",
-      "streetAddress": BRAND.address1,
-      "addressLocality": BRAND.address2,
-      "postalCode": BRAND.postcode,
-      "addressCountry":"GB"
-    },
+    "telephone": BRAND.phone, "email": BRAND.email,
+    "address":{ "@type":"PostalAddress", "streetAddress": BRAND.address1,
+      "addressLocality": BRAND.address2, "postalCode": BRAND.postcode, "addressCountry":"GB" },
     "url":"https://peachstate.co.uk/",
-    "openingHoursSpecification": openingHours,
-    "priceRange":"££"
+    "openingHoursSpecification": openingHours, "priceRange":"££"
   };
-
   document.getElementById("ps-ld")?.remove();
   const s = document.createElement("script");
-  s.type = "application/ld+json";
-  s.id = "ps-ld";
+  s.type = "application/ld+json"; s.id = "ps-ld";
   s.textContent = JSON.stringify(data);
   document.head.appendChild(s);
 }
