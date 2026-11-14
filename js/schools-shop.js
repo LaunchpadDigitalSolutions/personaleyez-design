@@ -1,23 +1,15 @@
 /* ============================================================
    schools-shop.js — school uniform ordering.
-   Same ps_products table and /api/checkout as the main shop
-   (js/shop.js) - only the rows with is_school_item=true come
-   here, grouped by their `category` value (the school name), so
-   Jo manages them from the same admin Shop tab she already has,
-   nothing new for her to learn.
-   Which schools exist, their order, phase and crest come from the
-   ps_schools registry (js/schools-registry.js), so a school shows
-   up even before it has any products.
+   Job 2 change: after a school is selected the other school circles
+   collapse away. The chosen school stays as a header with its name
+   and a "Change school" button, and a cue bar "N items below"
+   points down to the uniform list. "Change school" restores the grid.
    ============================================================ */
 
 let ALL_PRODUCTS = [], SCHOOLS = [], activePhase = null, activeSchool = null, activeItem = null, basket = [];
 const $ = id => document.getElementById(id);
 const money = n => "£" + Number(n || 0).toFixed(2);
 
-/* Price of "initials stitched on" for a crested item. One value, used by the
-   page label, the basket line and the unit price, so they can never disagree.
-   DISPLAY ONLY: the amount actually charged is looked up on the server
-   (ps_checkout_config.initials_pence), so keep the two in step. */
 const INITIALS_PRICE = 2;
 
 function note(el, cls, msg){
@@ -33,12 +25,6 @@ function groupBySchool(products){
   return map;
 }
 
-/* Single source of truth for "what does this school's list contain":
-   the school's own items first, then the shared "All Schools" items
-   (trousers, pinafores, skirts, playsuits, skorts). renderList(),
-   selectItem() and renderPreview() all use this so they can never
-   disagree about which rows exist. (Job 06 will restructure this area
-   for per-school overrides - change it here, in one place.) */
 function getSchoolItems(school){
   const grouped = groupBySchool(ALL_PRODUCTS);
   return (grouped[school] || []).concat(grouped["All Schools"] || []);
@@ -55,8 +41,6 @@ function schoolInitials(name){
   return name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 }
 
-/* Crest comes from the registry (ps_schools.crest_url). No crest, or one
-   that fails to load, falls back to the school's initials. */
 function schoolCircle(name){
   const crest = crestFor(name), ini = escHtml(schoolInitials(name));
   return crest
@@ -64,10 +48,6 @@ function schoolCircle(name){
     : `<span class="su-school-circle">${ini}</span>`;
 }
 
-/* One set of click handlers for the whole page (event delegation). Rows carry
-   data-phase / data-school / data-item, so no id or name is ever written into
-   a JavaScript string. A crest that fails to load falls back to initials
-   (error events don't bubble, hence the capture listener). */
 function bindSchoolShopEvents(){
   const on = (box, attr, fn) => $(box).addEventListener("click", e => {
     const hit = e.target.closest && e.target.closest(`[${attr}]`);
@@ -76,6 +56,12 @@ function bindSchoolShopEvents(){
   on("su-phases", "data-phase", selectPhase);
   on("su-tabs", "data-school", selectSchool);
   on("su-list", "data-item", selectItem);
+
+  /* Change school button (inside su-tabs) */
+  $("su-tabs").addEventListener("click", e => {
+    if(e.target.closest('[data-ca="change-school"]')) clearSchoolSelection();
+  });
+
   $("su-tabs").addEventListener("error", e => {
     const img = e.target, box = img && img.parentElement;
     if(!img || img.tagName !== "IMG" || !box) return;
@@ -103,7 +89,7 @@ function renderPhases(){
 }
 
 function selectPhase(phase){
-  const hadFocus = $("su-phases").contains(document.activeElement); // re-render below would drop keyboard focus
+  const hadFocus = $("su-phases").contains(document.activeElement);
   activePhase = phase; activeSchool = null; activeItem = null;
   renderPhases();
   if(hadFocus){ const on = document.querySelector("#su-phases .su-phase.on"); if(on) on.focus(); }
@@ -115,13 +101,35 @@ function selectPhase(phase){
 }
 
 /* ---------- screen 2: pick a school within that phase ---------- */
+/* When no school is selected: show all circles in the phase.
+   When a school is selected: show only the selected school as a header
+   with a "Change school" button, then the items cue below. */
 function renderTabs(){
   const inPhase = SCHOOLS.filter(s => classifyPhase(s) === activePhase);
-  $("su-tabs").innerHTML = inPhase.map(s => `
-    <button class="su-school${s === activeSchool ? " on" : ""}" data-school="${escHtml(s)}">
-      ${schoolCircle(s)}
-      <span class="su-school-name">${escHtml(s)}</span>
-    </button>`).join("");
+
+  if(activeSchool){
+    const items = getSchoolItems(activeSchool);
+    const count = items.length;
+    $("su-tabs").innerHTML = `
+      <div class="su-school-header">
+        ${schoolCircle(activeSchool)}
+        <span class="su-school-header-name">${escHtml(activeSchool)}</span>
+        <button class="su-change-school" data-ca="change-school" type="button" aria-label="Choose a different school">
+          Change school
+        </button>
+      </div>
+      <div class="su-items-cue" id="su-items-cue">
+        <span>${count} item${count !== 1 ? 's' : ''} below</span>
+        <span class="su-items-cue-arrow">&darr;</span>
+      </div>`;
+  } else {
+    $("su-tabs").innerHTML = inPhase.map(s =>
+      `<button class="su-school${s === activeSchool ? " on" : ""}" data-school="${escHtml(s)}">
+        ${schoolCircle(s)}
+        <span class="su-school-name">${escHtml(s)}</span>
+      </button>`
+    ).join("");
+  }
 }
 
 function selectSchool(school){
@@ -130,6 +138,21 @@ function selectSchool(school){
   renderTabs();
   renderList();
   renderPreview();
+  $("su-picker").style.display = "none";
+  /* Scroll the items into view on mobile */
+  setTimeout(() => {
+    const list = $("su-list");
+    if(list) list.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 80);
+}
+
+/* Restore the full school grid within the phase. */
+function clearSchoolSelection(){
+  activeSchool = null;
+  activeItem = null;
+  renderTabs();
+  $("su-preview").innerHTML = "";
+  $("su-list").innerHTML = "";
   $("su-picker").style.display = "none";
 }
 
@@ -143,8 +166,6 @@ function renderPreview(){
 
 const EMPTY_SCHOOL_LINE = `<p class="body dim">No uniform listed for this school yet — give us a ring and we'll sort it.</p>`;
 
-/* A school with none of its own items says so, then still lists the
-   shared pieces (plain bottoms) underneath so they can be ordered. */
 function renderList(){
   const items = getSchoolItems(activeSchool);
   const rows = items.map(p => `
@@ -189,29 +210,24 @@ function renderPicker(){
     <button class="btn-solid" style="width:100%;margin-top:20px" onclick="addToBasket()">Add to order</button>`;
 }
 
-/* Only the school-branded top half (sweatshirts/cardigans/polos/hoodies)
-   carries the crest — plain bottoms in the shared "All Schools" category
-   (trousers, pinafores, skirts, playsuits, skorts) are never embroidered,
-   so they shouldn't offer or claim it. */
 function isCrestedItem(p){
-  if(typeof p.crest === "boolean") return p.crest;   // merged value from the pool + school override
+  if(typeof p.crest === "boolean") return p.crest;
   return p.category !== "All Schools" && p.category !== "Needs Sorting";
 }
 
 function addToBasket(){
   const p = activeItem;
-  const qty = parseInt(($("su-qty") || {}).value) || 1;
-  const size = $("su-size") ? $("su-size").value : null;
-  const colour = $("su-colour") ? $("su-colour").value : null;
+  const qty = parseInt(($('su-qty') || {}).value) || 1;
+  const size = $('su-size') ? $('su-size').value : null;
+  const colour = $('su-colour') ? $('su-colour').value : null;
   const crested = isCrestedItem(p);
-  const initials = crested && $("su-initials") && $("su-initials").checked;
+  const initials = crested && $('su-initials') && $('su-initials').checked;
   const bits = [];
   if(size) bits.push(size);
   if(colour) bits.push(colour);
   if(crested) bits.push("logo embroidered");
   if(initials) bits.push("initials +" + money(INITIALS_PRICE));
 
-  // id/size/colour/initials are what the server prices from; unit and opts are for display.
   basket.push({
     id: p.id, name: p.name, qty, size, colour, initials: !!initials,
     unit: Number(p.price || 0) + (initials ? INITIALS_PRICE : 0), opts: bits
@@ -220,23 +236,20 @@ function addToBasket(){
   activeItem = null;
   renderList();
   renderPreview();
-  $("su-picker").style.display = "none";
+  $('su-picker').style.display = "none";
   toast(`${p.name} added to your order`);
 }
 
 function renderBasket(){
-  const bar = $("su-sticky");
+  const bar = $('su-sticky');
   if(!basket.length){ bar.style.display = "none"; return; }
   bar.style.display = "block";
   const items = basket.reduce((s, b) => s + b.qty, 0);
   const total = basket.reduce((s, b) => s + b.unit * b.qty, 0);
-  $("su-sticky-count").textContent = items === 1 ? "1 item" : `${items} items`;
-  $("su-sticky-total").textContent = money(total);
+  $('su-sticky-count').textContent = items === 1 ? "1 item" : `${items} items`;
+  $('su-sticky-total').textContent = money(total);
 }
 
-/* Hands the basket to the dedicated checkout page — sessionStorage rather
-   than a URL param since a full uniform order can run to a dozen+ lines
-   with sizes/colours/embroidery notes attached to each. */
 function goToUniformCheckout(){
   sessionStorage.setItem("su_basket", JSON.stringify(basket));
   sessionStorage.setItem("su_school", activeSchool || "");
@@ -245,8 +258,7 @@ function goToUniformCheckout(){
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindSchoolShopEvents();
-  if(!(await healthCheck())) $("health").style.display = "block";
-  // js/schools-items.js: pool + this school's overrides, already merged
+  if(!(await healthCheck())) $('health').style.display = "block";
   try{ ALL_PRODUCTS = await listSchoolItems(); }
   catch(e){ ALL_PRODUCTS = []; }
   await loadSchoolRegistry();
@@ -254,7 +266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if(SCHOOLS.length){
     renderPhases();
   }else{
-    $("su-phases").innerHTML = "";
-    $("su-list").innerHTML = `<p class="body dim">No schools set up yet — check back soon.</p>`;
+    $('su-phases').innerHTML = "";
+    $('su-list').innerHTML = `<p class="body dim">No schools set up yet — check back soon.</p>`;
   }
 });
