@@ -1,0 +1,3 @@
+# Uniform shop — per-school pages served from uniform.html
+# /uniform/SLUG stays in the address bar; content is served from /uniform.html
+/uniform/* /uniform.html 200
