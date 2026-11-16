@@ -31,6 +31,7 @@ const phBase = u => String(u || "").split("?")[0];
 const phWhen = ts => new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 (function () {
+  if (typeof schEdit === "undefined") return; // schEdit removed in rewrite — no-op cleanly
   const _edit = schEdit;
   schEdit = function (id) {
     _edit.apply(this, arguments);

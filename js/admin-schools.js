@@ -13,7 +13,7 @@ let schView = "list", schSchool = null, schSchoolSlug = null, schAssigned = [], 
 
 const schApi = {
   schools: () => sb("ps_schools?select=id,name,slug,phase,sort_order&active=eq.true&order=sort_order.asc,name.asc", {}, "PS-611"),
-  catalog: () => sb("ps_catalog_products?select=id,name,price,tag,image_url&active=eq.true&order=sort_order.asc,name.asc", {}, "PS-610"),
+  catalog: () => sb("ps_catalog_products?select=id,name,price,tag,image_url&order=sort_order.asc,name.asc", {}, "PS-610"),
   assign:  slug => adminRpc("ps_admin_get_uniform_assignments", { p_slug: slug }, "PS-613"),
   save:    (slug, name, ids) => adminRpc("ps_admin_save_uniform_assignments", { p_slug: slug, p_name: name, p_catalog_ids: ids }, "PS-612")
 };
@@ -148,7 +148,7 @@ async function schUniformSave() {
     btn.disabled       = false;
   } catch (e) {
     notice.className   = "notice show err";
-    notice.textContent = "Couldn’t save. Try again. (PS-612)";
+    notice.textContent = "Couldn't save. Try again. (PS-612)";
     btn.disabled       = false;
   }
 }
