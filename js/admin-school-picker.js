@@ -58,7 +58,7 @@ function schItemsHtml() {
   if (pkErr) return head + schNote("err", "Couldn't load your Square items. (" + esc(pkErr) + ")") + `<button class="btn-solid" style="width:100%" onclick="pkOpen()">Try again</button>`;
   const n = pkTicked.size + pkLegacyOn.size;
   return head + (schMsg ? schNote("ok", esc(schMsg)) : "") +
-    `<div style="display:flex;gap:8px;margin-bottom:6px"><button class="ghost" onclick="pkAll(true)">Tick all</button><button class="ghost" onclick="pkAll(false)">Clear</button></div>` +
+    (typeof pkAddHtml === "function" ? pkAddHtml() : "") + `<div style="display:flex;gap:8px;margin-bottom:6px"><button class="ghost" onclick="pkAll(true)">Tick all</button><button class="ghost" onclick="pkAll(false)">Clear</button></div>` +
     (pkLegacy.length ? `<h3 style="font-size:13px;color:var(--muted);margin:18px 0 6px">Existing items (not from Square)</h3>` +
       pkLegacy.map(r => pkCard(r.id, pkLegacyOn.has(r.id), r.name, r.price, r.image_url, `pkToggleLegacy('${esc(r.id)}')`)).join("") : "") +
     pkGridHtml() +
