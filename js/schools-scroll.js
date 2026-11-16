@@ -4,9 +4,10 @@
    Separate file so schools-shop.js stays untouched.
    ============================================================ */
 
+// Capture phase: check the target BEFORE the page redraws the crests
+// (a redrawn button is detached and no longer matches #su-tabs).
 document.addEventListener("click", e => {
   if (!e.target.closest("#su-tabs .su-school")) return;
-  // Wait a tick so the page's own click handler has drawn the list first.
   setTimeout(() => {
     const list = document.getElementById("su-list");
     if (!list) return;
@@ -15,4 +16,4 @@ document.addEventListener("click", e => {
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: list.getBoundingClientRect().top + window.scrollY - offset, behavior: calm ? "auto" : "smooth" });
   }, 60);
-});
+}, true);
