@@ -91,7 +91,7 @@ function upRenderBody() {
 
   if (!upPool.length) {
     body.innerHTML = `<div class="newcard" style="margin-top:0;border-top:none;text-align:center;padding:28px">
-      <p style="color:var(--muted)">No “School uniform” items in the catalog yet — add some in the Catalog tab first.</p>
+      <p style="color:var(--muted)">No "School uniform" items in the catalog yet — add some in the Catalog tab first.</p>
     </div>`;
     return;
   }
@@ -123,7 +123,7 @@ function upRenderBody() {
         <div style="font-size:15px;font-weight:500">${esc(c.name)}</div>
         <div class="ometa" style="margin-top:2px">${
           c.price != null ? money(c.price) : "No price"
-        }${c.sizes ? " &middot; " + esc(c.sizes) : ""}</div>
+        }${c.sizes ? " &middot; " + esc(c.sizes) : ""}${c.colours ? " &middot; " + esc(c.colours) : ""}</div>
       </div>
       <input type="checkbox" id="up-cb-${c.id}" value="${c.id}" class="up-cb"
         ${upCurrentAssigned && upCurrentAssigned.has(c.id) ? "checked" : ""}
@@ -192,11 +192,11 @@ async function upSave() {
     await upApi.save(upSelectedSlug, upSelectedName, ids);
     upCurrentAssigned = new Set(ids);
     n.className = "notice show ok";
-    n.textContent = "Saved. " + esc(upSelectedName) + "’s shop now shows " +
+    n.textContent = "Saved. " + esc(upSelectedName) + "'s shop now shows " +
                     ids.length + " item" + (ids.length === 1 ? "" : "s") + ".";
   } catch (e) {
     n.className = "notice show err";
-    n.textContent = "Couldn’t save — try again. (" + e.message + ")";
+    n.textContent = "Couldn't save — try again. (" + e.message + ")";
   }
   btn.disabled = false;
 }
