@@ -1,5 +1,5 @@
 /* ============================================================
-   admin-uniform-pool.js — "Uniform pool" admin tab.
+   admin-uniform-pool.js — "School uniform" admin tab.
 
    Jo picks a school from a dropdown, then ticks which catalog
    items (tagged "School uniform") appear in that school's public
@@ -62,8 +62,8 @@ function renderUniformPool(p) {
 
   p.innerHTML = `
     <div class="orow">
-      <div class="oref">Uniform pool</div>
-      <div class="ometa" style="margin-top:4px">Pick a school, tick the catalog items for its uniform shop, then save.</div>
+      <div class="oref">School uniform policy</div>
+      <div class="ometa" style="margin-top:4px">Pick a school, then tick which catalog items belong in its uniform shop. Save to update the live shop.</div>
     </div>
 
     <div class="newcard" style="margin-bottom:0;border-bottom:none">
