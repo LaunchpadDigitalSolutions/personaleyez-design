@@ -1,0 +1,44 @@
+/* Club / school shop on a phone: one scroll of compact rows with circle
+   photos instead of the homepage's sideways rail of big cards.
+   Desktop is untouched. Pairs with js/club-mobile.js. */
+.pc-ctl{display:contents}
+.pc-step,#pc-bar{display:none}
+
+@media (max-width:699px){
+  #s-products.collection{display:block;overflow:visible;scroll-snap-type:none;padding:0 20px}
+  #s-products h2.display-md{margin:30px 0 4px!important;padding:0!important}
+
+  #s-products .piece{display:grid;grid-template-columns:64px 1fr;column-gap:14px;align-items:start;
+    padding:14px 0;margin:0;border-top:1px solid var(--line)}
+  #s-products .piece:first-child{margin-right:0}
+  #s-products .piece > :not(.imgwrap){grid-column:2}
+
+  #s-products .piece .imgwrap{grid-column:1;grid-row:1 / span 4;width:64px;height:64px;
+    border-radius:50%;cursor:zoom-in}
+  #s-products .piece .imgwrap img{width:100%;height:100%;aspect-ratio:1/1;object-fit:cover}
+  #s-products .piece .imgwrap.noimg{aspect-ratio:1/1!important;display:flex;align-items:center;
+    justify-content:center;text-align:center;padding:6px;cursor:default}
+  #s-products .piece .imgwrap.noimg span{font-size:10px;line-height:1.2;overflow:hidden;max-height:100%}
+
+  #s-products .piece h3{margin:0;font-size:17px;line-height:1.25}
+  #s-products .piece p{margin:2px 0 0;font-size:13.5px;line-height:1.4}
+
+  .pc-ctl{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin-top:10px}
+  .pc-ctl .fld{margin:0}
+  .pc-ctl .fld label{margin-bottom:3px;letter-spacing:.1em}
+  .pc-ctl select{min-height:44px;font-size:16px;max-width:130px}
+  #s-products .pc-qty{display:none}
+  .pc-step{display:flex;align-items:center;gap:6px;margin-left:auto}
+  .pc-step button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;font-size:22px;line-height:1}
+  .pc-step span{min-width:24px;text-align:center;font-size:17px}
+
+  #pc-bar{position:fixed;left:12px;right:12px;bottom:calc(56px + 10px + env(safe-area-inset-bottom));
+    z-index:60;min-height:48px;border-radius:999px;background:var(--terracotta);color:#fff;
+    font-weight:600;font-size:15px;padding:0 20px}
+  #pc-bar.on{display:block}
+
+  #pc-zoom{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.82);display:flex;
+    align-items:center;justify-content:center;padding:20px}
+  #pc-zoom img{max-width:100%;max-height:80vh;border-radius:4px}
+}
