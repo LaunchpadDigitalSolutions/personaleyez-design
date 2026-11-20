@@ -1,9 +1,11 @@
 /* ============================================================
    schools-shop.js — school uniform ordering.
    Job 2 change: after a school is selected the other school circles
-   collapse away. The chosen school stays as a header with its name
-   and a "Change school" button, and a cue bar "N items below"
-   points down to the uniform list. "Change school" restores the grid.
+   fade to 25% opacity but stay visible and clickable. The chosen
+   school gets an amber highlight and a "← Change school" banner
+   appears above the grid. A cue bar "N items below" points down
+   to the uniform list. Clicking any faded circle switches school
+   directly. "Change school" restores the full opaque grid.
    Same ps_products table and /api/checkout as the main shop
    (js/shop.js) - only the rows with is_school_item=true come
    here, grouped by their `category` value (the school name), so
@@ -126,23 +128,32 @@ function selectPhase(phase){
 
 /* ---------- screen 2: pick a school within that phase ---------- */
 /* When no school is selected: show all circles in the phase.
-   When a school is selected: show only the selected school as a header
-   with a "Change school" button, then the items cue below. */
+   When a school is selected: show a banner with "← Change school",
+   then all circles in the phase — selected school highlighted in amber,
+   others faded to 25% opacity (still clickable to switch school).
+   "Change school" clears back to the full opaque grid. */
 function renderTabs(){
   const inPhase = SCHOOLS.filter(s => classifyPhase(s) === activePhase);
 
   if(activeSchool){
     const items = getSchoolItems(activeSchool);
     const count = items.length;
-    $("su-tabs").innerHTML = `
-      <div class="su-school-header">
+    $("su-tabs").innerHTML =
+      `<div class="su-school-header">
         ${schoolCircle(activeSchool)}
         <span class="su-school-header-name">${escHtml(activeSchool)}</span>
         <button class="su-change-school" data-ca="change-school" type="button" aria-label="Choose a different school">
-          Change school
+          &larr; Change school
         </button>
-      </div>
-      <div class="su-items-cue" id="su-items-cue">
+      </div>` +
+      inPhase.map(s => {
+        const isActive = s === activeSchool;
+        return `<button class="su-school${isActive ? " su-school--selected" : " su-school--faded"}" data-school="${escHtml(s)}">
+          ${schoolCircle(s)}
+          <span class="su-school-name">${escHtml(s)}</span>
+        </button>`;
+      }).join("") +
+      `<div class="su-items-cue" id="su-items-cue">
         <span>${count} item${count !== 1 ? "s" : ""} below</span>
         <span class="su-items-cue-arrow">&darr;</span>
       </div>`;
@@ -184,7 +195,7 @@ function renderPreview(){
   const items = getSchoolItems(activeSchool);
   const shown = activeItem || items[0];
   $("su-preview").innerHTML = shown && shown.image_url
-    ? `<img loading="lazy" src="${escHtml(shown.image_url)}" alt="${escHtml(shown.name)}">`
+    ? `<img loading="lazy" src="${escHtml(shown.image_url)}" alt="${escHtml(shown.name)}">` 
     : `<div class="su-preview-empty">${shown ? escHtml(shown.name) : "Pick an item to see it"}</div>`;
 }
 
