@@ -1,26 +1,11 @@
 /* Launchpad Feature — Category page (product grid, basket, enquiry, checkout hand-off)
-   Extracted from Peach State (Workwear / Sportswear / Gifts pages).
-
-   One template, many category pages. A product belongs to a page through
-   its page_key; the page shows only its own products, lets the customer
-   pick size and colour, collects a basket and hands it to a checkout
-   endpoint. With no products it shows a finished-looking empty state that
-   points at the enquiry form.
-
-   No host globals. Everything the page needs comes in as options:
-     mountCategoryPage({
-       pageKey: 'workwear',
-       grid:   el,                 // where product cards go
-       basket: el,                 // where basket + checkout form go
-       load:   () => rows,         // async, returns product rows
-       phone:  '01429 866266',     // shown if loading or paying fails
-       checkout: payload => url,   // default: POST /api/checkout
-       go:     url => location.assign(url),
-       onError: msg => {}
-     })
-
-   The basket sends product_id, qty, size and colour. The server looks up
-   every price itself and ignores any price the browser sends (Job 15).
+   Job 3 change: per-item personalisation note.
+   - cardHtml: if p.allow_notes, renders a note textarea with 200-char counter.
+   - Basket.add: captures note per line; two adds of the same item with
+     different notes become separate lines.
+   - linesHtml: shows the note under the basket line.
+   - Basket.items(): includes note per item so the server can include it
+     in the description.
    Error codes: PS-700 load, PS-701/702 checkout, PS-710 basket, PS-711 setup.
 */
 
@@ -34,11 +19,10 @@ const ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ENT[c]);
 export const money = n => '£' + (Math.round(Number(n || 0) * 100) / 100).toFixed(2);
 export const splitList = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
-export const safeUrl = u => (/^(https:\/\/|\/)/.test(String(u || '')) && !/^\/\//.test(String(u))) ? String(u) : '';
+export const safeUrl = u => (/^(https:\/\/|\/)/.test(String(u || '')) && !\/(^\/\/).test(String(u))) ? String(u) : '';
 export const enquiryHref = (page, base = 'contact.html') =>
   page && page.contact ? base + '?cat=' + encodeURIComponent(page.contact) : base;
 
-/* Rows for one page: active, not a school item, matching page_key, in order. */
 export function productsForPage(rows, pageKey) {
   return (rows || [])
     .filter(p => p && p.page_key === pageKey && p.active !== false && !p.is_school_item)
@@ -49,13 +33,15 @@ export function productsForPage(rows, pageKey) {
 export class Basket {
   constructor() { this.lines = []; }
 
-  add(product, { size = '', colour = '', qty = 1 } = {}) {
+  add(product, { size = '', colour = '', qty = 1, note = '' } = {}) {
     if (!product || !(Number(product.price) > 0)) throw new Error('PS-710: product has no price');
     qty = Math.max(1, Math.floor(Number(qty) || 1));
     const opts = [size, colour].filter(Boolean);
-    const found = this.lines.find(l => l.id === product.id && l.opts.join('|') === opts.join('|'));
+    const cleanNote = String(note || '').trim().slice(0, 200);
+    /* Lines with the same id + options + note are merged; different note = separate line. */
+    const found = this.lines.find(l => l.id === product.id && l.opts.join('|') === opts.join('|') && (l.note || '') === cleanNote);
     if (found) found.qty += qty;
-    else this.lines.push({ id: product.id, name: product.name, price: Number(product.price), opts, qty, size, colour });
+    else this.lines.push({ id: product.id, name: product.name, price: Number(product.price), opts, qty, size, colour, note: cleanNote });
     return this;
   }
 
@@ -64,11 +50,13 @@ export class Basket {
   get count() { return this.lines.reduce((s, l) => s + l.qty, 0); }
   get total() { return Math.round(this.lines.reduce((s, l) => s + Math.round(l.price * 100) * l.qty, 0)) / 100; }
 
-  /* What /api/checkout takes: which product, how many, which options. The server
-     prices every line itself (display prices here are for show). */
   items() {
-    // name/price are legacy fields the server ignores; they keep the old server working during rollout
-    return this.lines.map(l => ({ product_id: l.id, qty: l.qty, size: l.size || undefined, colour: l.colour || undefined, name: l.name, price: l.price }));
+    return this.lines.map(l => ({
+      product_id: l.id, qty: l.qty,
+      size: l.size || undefined, colour: l.colour || undefined,
+      note: l.note || undefined,
+      name: l.name, price: l.price  /* legacy; server ignores price */
+    }));
   }
 }
 
@@ -94,7 +82,6 @@ export async function checkoutViaApi(payload, { fetchFn = globalThis.fetch, url 
   } catch (e) { throw new Error('PS-701: could not reach checkout'); }
   if (!res.ok || !data || !data.checkout_url) {
     const err = new Error('PS-702: checkout refused');
-    // 02x = a problem the customer can fix; the server's message is written for them
     err.friendly = (res.status < 500 && /^PS[CI]-02\d$/.test((data && data.error) || '')) ? data.message : '';
     throw err;
   }
@@ -106,6 +93,13 @@ export async function checkoutViaApi(payload, { fetchFn = globalThis.fetch, url 
 const field = (kind, label, list) => list.length
   ? `<label class="cp-fld"><span>${label}</span><select data-cp="${kind}">${list.map(o => `<option>${esc(o)}</option>`).join('')}</select></label>` : '';
 
+const noteField = () =>
+  `<div class="cp-fld cp-note-wrap">
+    <label for="" class="cp-note-label"><span>Personalisation or note</span>
+      <textarea data-cp="note" rows="2" maxlength="200" placeholder="Name, wording, colours — anything we should know"></textarea></label>
+    <span class="cp-note-counter" data-cp="note-counter" aria-live="polite">0 / 200</span>
+  </div>`;
+
 export function cardHtml(p) {
   const url = safeUrl(p.image_url);
   return `<article class="cp-card" data-id="${esc(p.id)}">
@@ -114,6 +108,7 @@ export function cardHtml(p) {
     <p class="cp-price">${money(p.price)}</p>
     ${p.description ? `<p class="cp-desc">${esc(p.description)}</p>` : ''}
     ${field('size', 'Size', splitList(p.sizes))}${field('colour', 'Colour', splitList(p.colours))}
+    ${p.allow_notes ? noteField() : ''}
     <button type="button" class="cp-btn" data-cp="add">Add to basket</button>
   </article>`;
 }
@@ -127,8 +122,11 @@ export const emptyHtml = href => `<div class="cp-empty"><h3>New products coming 
 export const errorHtml = phone => `<div class="cp-empty"><h3>We can't show the range just now.</h3>
   <p>Please ring us${phone ? ' on ' + esc(phone) : ''} and we will help.</p></div>`;
 
-export const linesHtml = b => b.lines.map((l, i) => `<li><span>${l.qty} × ${esc(l.name)}${l.opts.length ? ' · ' + esc(l.opts.join(' · ')) : ''}</span>
-  <span>${money(l.price * l.qty)}<button type="button" class="cp-rm" data-cp="rm" data-i="${i}" aria-label="Remove ${esc(l.name)}">&times;</button></span></li>`).join('');
+export const linesHtml = b => b.lines.map((l, i) => `<li>
+  <span>${l.qty} × ${esc(l.name)}${l.opts.length ? ' · ' + esc(l.opts.join(' · ')) : ''}</span>
+  <span>${money(l.price * l.qty)}<button type="button" class="cp-rm" data-cp="rm" data-i="${i}" aria-label="Remove ${esc(l.name)}">&times;</button></span>
+  ${l.note ? `<div class="cp-note-inline"><span class="cp-note-label-sm">Note:</span> ${esc(l.note)}</div>` : ''}
+</li>`).join('');
 
 export const basketShell = () => `<div class="cp-basket"><h3>Your basket</h3>
   <ul data-cp="lines"></ul>
@@ -137,7 +135,7 @@ export const basketShell = () => `<div class="cp-basket"><h3>Your basket</h3>
   <label class="cp-fld"><span>Your name</span><input data-cp="name" type="text" autocomplete="name"></label>
   <label class="cp-fld"><span>Phone</span><input data-cp="phone" type="tel" autocomplete="tel"></label>
   <label class="cp-fld"><span>Email (optional)</span><input data-cp="email" type="email" autocomplete="email"></label>
-  <label class="cp-fld"><span>Personalisation / notes (optional)</span><textarea data-cp="note-text"></textarea></label>
+  <label class="cp-fld"><span>Any other notes (optional)</span><textarea data-cp="note-text"></textarea></label>
   <label class="cp-consent"><input data-cp="consent" type="checkbox"><span>I agree to my details being used to process this order, as set out in the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
   <div class="cp-note" data-cp="note" role="status"></div>
   <button type="button" class="cp-btn cp-pay" data-cp="pay">Pay with card</button>
@@ -166,6 +164,14 @@ export function mountCategoryPage(o) {
     o.basket.hidden = false;
   }
 
+  /* Note counter: update character count as user types. */
+  o.grid.addEventListener('input', e => {
+    const ta = e.target.closest('[data-cp="note"]');
+    if (!ta) return;
+    const counter = ta.closest('.cp-note-wrap')?.querySelector('[data-cp="note-counter"]');
+    if (counter) counter.textContent = ta.value.length + ' / 200';
+  });
+
   o.grid.addEventListener('click', e => {
     const btn = e.target.closest('[data-cp="add"]');
     if (!btn) return;
@@ -173,8 +179,11 @@ export function mountCategoryPage(o) {
     const p = products.find(x => String(x.id) === card.dataset.id);
     if (!p) return;
     const val = n => (card.querySelector(`[data-cp="${n}"]`) || {}).value || '';
-    try { basket.add(p, { size: val('size'), colour: val('colour') }); } catch (err) { onError(err.message); return; }
+    const noteEl = card.querySelector('[data-cp="note"]');
+    const note = noteEl ? noteEl.value.trim().slice(0, 200) : '';
+    try { basket.add(p, { size: val('size'), colour: val('colour'), note }); } catch (err) { onError(err.message); return; }
     paintBasket();
+    if (noteEl) { noteEl.value = ''; const c = card.querySelector('[data-cp="note-counter"]'); if (c) c.textContent = '0 / 200'; }
     const was = btn.textContent;
     btn.textContent = 'Added';
     setTimeout(() => { btn.textContent = was; }, 1100);

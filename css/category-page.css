@@ -1,5 +1,7 @@
 /* Launchpad Feature — Category page. Tokens only (core/tokens.css). A host re-maps
-   --brand, --bg, --bg-2, --border, --text, --text-2, --font-head, --font-body on .cp-root. */
+   --brand, --bg, --bg-2, --border, --text, --text-2, --font-head, --font-body on .cp-root.
+   Job 3 addition: .cp-note-wrap, .cp-note-counter, .cp-basket li flex-wrap,
+   .cp-note-inline, .cp-note-label-sm. */
 .cp-root,.cp-root *{box-sizing:border-box}
 .cp-root [hidden]{display:none!important}
 .cp-root{font-family:var(--font-body);color:var(--text)}
@@ -39,7 +41,8 @@
 
 .cp-basket{margin:36px 20px 0;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .cp-basket ul{list-style:none;margin:10px 0 0;padding:0}
-.cp-basket li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px}
+/* flex-wrap allows the per-item note to sit below the name/price row */
+.cp-basket li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px}
 .cp-rm{min-height:var(--tap);min-width:var(--tap);margin-left:6px;background:none;border:none;color:var(--text-2);font-size:18px}
 .cp-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
 .cp-total b{font-family:var(--font-head);font-weight:400;font-size:28px}
@@ -56,6 +59,14 @@
 .cp-note.ok{background:var(--bg-2);color:var(--ok)}
 .cp-note.busy{background:var(--bg-2);color:var(--text-2)}
 .cp-note.info{background:var(--bg-2);color:var(--text);border-left:3px solid var(--brand);padding-left:16px}
+
+/* Per-item note field on product card */
+.cp-note-wrap{margin-top:12px}
+.cp-note-wrap textarea{min-height:60px}
+.cp-note-counter{display:block;font-size:11px;color:var(--text-2);margin-top:4px;text-align:right}
+/* Per-item note shown in basket line */
+.cp-note-inline{width:100%;font-size:13px;color:var(--text-2);padding-top:2px;font-style:italic}
+.cp-note-label-sm{font-style:normal;font-weight:600;color:var(--text-2)}
 
 .cp-admin{background:var(--surface);border:1px solid var(--border);padding:20px}
 .cp-admin h2{font-size:21px}
