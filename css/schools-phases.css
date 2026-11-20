@@ -9,9 +9,10 @@
 .su-phase:focus{outline:none}
 .su-phase:focus-visible .su-school-circle{outline:2px solid var(--terracotta-deep);outline-offset:3px}
 
-/* Selected school header */
+/* Selected school header — spans all grid columns */
 .su-school-header{
   display:flex;align-items:center;gap:12px;
+  grid-column:1/-1;width:100%;
   padding:14px 0 10px;
   border-bottom:1px solid var(--line);
   margin-bottom:12px;
@@ -40,9 +41,10 @@
 }
 .su-change-school:hover{background:var(--line)}
 
-/* "N items below" cue */
+/* "N items below" cue — spans all grid columns */
 .su-items-cue{
   display:flex;align-items:center;justify-content:space-between;
+  grid-column:1/-1;width:100%;
   padding:10px 14px;
   margin-bottom:12px;
   background:var(--cream-deep);
@@ -55,3 +57,11 @@
   font-size:18px;
   color:var(--terracotta);
 }
+
+/* Faded/selected states when a school is active.
+   Faded circles stay clickable so the customer can switch school
+   without tapping "Change school" first. */
+.su-school--faded{opacity:.25;transition:opacity .2s}
+.su-school--faded:hover,.su-school--faded:focus-visible{opacity:.7}
+.su-school--selected .su-school-circle{border:2px solid #EF9F27;background:#FAEEDA}
+.su-school--selected .su-school-name{color:#9B6400;font-weight:600}
