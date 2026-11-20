@@ -144,14 +144,15 @@ function renderPreview(){
 const EMPTY_SCHOOL_LINE = `<p class="body dim">No uniform listed for this school yet — give us a ring and we'll sort it.</p>`;
 
 /* A school with none of its own items says so, then still lists the
-   shared pieces (plain bottoms) underneath so they can be ordered. */
+   shared pieces (plain bottoms) underneath so they can be ordered.
+   Sizes are intentionally omitted here — they appear as a dropdown
+   in the picker once an item is selected. */
 function renderList(){
   const items = getSchoolItems(activeSchool);
   const rows = items.map(p => `
     <div class="su-row${activeItem && activeItem.id === p.id ? " on" : ""}" data-item="${escHtml(p.id)}">
       <div>
         <div class="su-row-name">${escHtml(p.name)}</div>
-        ${p.sizes ? `<div class="su-row-meta">Sizes: ${escHtml(p.sizes)}</div>` : ""}
         <div class="su-row-price">${money(p.price)}</div>
       </div>
     </div>`).join("");
