@@ -69,8 +69,8 @@ body{background:var(--cream-deep)}
     <h1>Order management</h1>
     <p>Enter your PIN to continue.</p>
     <input id="pin" type="password" inputmode="numeric" autocomplete="off"
-           maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')tryPin()">
-    <div class="pinerr" id="pinerr">That's not right — try again.</div>
+           maxlength="8" placeholder="&bull;&bull;&bull;&bull;" onkeydown="if(event.key==='Enter')tryPin()">
+    <div class="pinerr" id="pinerr">That's not right &mdash; try again.</div>
     <button class="btn-solid" id="pinbtn" onclick="tryPin()">Unlock</button>
   </div>
 </div>
@@ -126,12 +126,14 @@ body{background:var(--cream-deep)}
 <script src="js/admin-edit-site.js?v=0.9.3"></script>
 <script src="js/admin-catalog.js?v=0.9.7"></script>
 <script src="js/pool-overrides.js?v=j06a"></script>
-<script src="js/admin-schools.js?v=j06a"></script>
+<script src="js/admin-schools.js?v=j08b"></script>
 <script src="js/admin-schools-hidden.js?v=j16b"></script>
 <script src="js/admin-school-kit.js?v=j05a"></script>
+<script src="js/admin-school-picker.js?v=k03a"></script>
+<script src="js/admin-school-add-item.js?v=k03a"></script>
 <script src="js/admin-pages.js?v=0.9.6"></script>
 <script src="js/admin-pin.js?v=0.9.6"></script>
-<script src="js/admin-photo-history.js?v=j23a"></script>
+<script src="js/admin-photo-history.js?v=j24a"></script>
 <script src="js/admin-tab-restore.js?v=j23a"></script>
 <script type="module" src="js/admin-category.js?v=0.1.1"></script>
 </body>
