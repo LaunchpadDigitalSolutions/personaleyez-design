@@ -10,6 +10,7 @@
   <url><loc>https://peachstate.co.uk/shop.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://peachstate.co.uk/clubs.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://peachstate.co.uk/news.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://peachstate.co.uk/news-article.html</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://peachstate.co.uk/contact.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://peachstate.co.uk/track.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://peachstate.co.uk/privacy.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>

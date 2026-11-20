@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="img/icon-180.png?v=0.9.0">
 <link rel="stylesheet" href="css/style.css?v=0.9.0">
-<title>Orders &mdash; Peach State</title>
+<title>Orders — Peach State</title>
 <style>
 body{background:var(--cream-deep)}
 .adminbar{background:var(--charcoal);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 20px 14px}
@@ -36,13 +36,14 @@ body{background:var(--cream-deep)}
 .odesc{color:var(--text-muted);font-size:14.5px;margin-top:2px}
 .ometa{font-size:13px;color:var(--text-muted);margin-top:8px}
 .oact{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.oact button,.oact .btn{flex:1;min-width:130px;min-height:44px;border-radius:2px;
-  font-weight:600;font-size:14px;background:var(--terracotta);color:#fff;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.oact button{flex:1;min-width:130px;min-height:44px;border-radius:2px;
+  font-weight:600;font-size:14px;background:var(--terracotta);color:#fff}
 .oact .ghost{background:var(--cream-deep);color:var(--text)}
 .newcard{background:#fff;border:1px solid var(--line);border-radius:2px;
   padding:20px;max-width:640px;margin:0 auto}
 @media(min-width:768px){.stats{grid-template-columns:repeat(4,1fr)}}
 
+/* ---- demo PIN gate ---- */
 .pingate{position:fixed;inset:0;z-index:500;background:var(--cream);
   display:flex;align-items:center;justify-content:center;padding:24px}
 .pingate.hidden{display:none}
@@ -58,6 +59,10 @@ body{background:var(--cream-deep)}
 </style>
 </head>
 <body>
+<!-- ============================================================
+     PIN GATE — checked server-side by functions/api/admin.js
+     against env.STAFF_PIN, not against anything in this page.
+     ============================================================ -->
 <div class="pingate" id="pingate">
   <div class="pinbox">
     <img src="img/logo.png?v=0.9.0" alt="Peach State" class="pinlogo">
@@ -115,32 +120,31 @@ body{background:var(--cream-deep)}
 <div class="toast" id="toast"></div>
 <script src="js/config.js?v=0.9.0"></script>
 <script src="js/api.js?v=0.9.0"></script>
-<script src="js/partials.js?v=j04a"></script>
+<script src="js/partials.js?v=0.9.0"></script>
 <script src="js/admin.js?v=j18a"></script>
 <script src="js/admin-shop.js?v=j18a"></script>
 <script src="js/admin-square.js?v=j18a"></script>
 <script src="js/admin-edit-site.js?v=0.9.3"></script>
 <script src="js/admin-catalog.js?v=0.9.7"></script>
 <script src="js/pool-overrides.js?v=j06a"></script>
-<script src="js/admin-schools.js?v=j06a"></script>
+<script src="js/admin-schools.js?v=j08b"></script>
 <script src="js/admin-schools-hidden.js?v=j16b"></script>
 <script src="js/admin-school-kit.js?v=j05a"></script>
+<script src="js/admin-school-picker.js?v=k03a"></script>
+<script src="js/admin-school-add-item.js?v=k03a"></script>
 <script src="js/admin-pages.js?v=0.9.6"></script>
 <script src="js/admin-pin.js?v=0.9.6"></script>
-<script src="js/admin-photo-history.js?v=j23a"></script>
+<script src="js/admin-photo-history.js?v=j24a"></script>
 <script src="js/admin-tab-restore.js?v=j23a"></script>
-<script type="module" src="js/admin-category.js?v=0.1.1"></script>
+<script type="module" src="js/admin-category.js?v=j01a"></script>
 <script src="js/admin-news.js?v=j04a"></script>
 <script>
-/* Patch setTab to handle the News tab, which admin.js doesn't know about. */
 (function(){
   const _orig = window.setTab;
   if (typeof _orig !== 'function') return;
   window.setTab = function(tab) {
     if (tab === 'news') {
-      /* Activate the tab button */
       document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === 'news'));
-      /* Clear stats, render into panel */
       const stats = document.getElementById('stats');
       const panel = document.getElementById('panel');
       if (stats) stats.innerHTML = '';
