@@ -56,6 +56,43 @@ body{background:var(--cream-deep)}
 .pinbox .btn-solid{margin-top:26px}
 .pinerr{display:none;color:#9B3B1E;font-size:14px;margin-top:14px}
 .pinerr.show{display:block}
+
+/* ---- Page builder ---- */
+.pg-wrap{max-width:640px;margin:0 auto;padding:16px 20px 60px}
+.pg-list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pg-row{background:#fff;border:1px solid var(--line);border-radius:2px;padding:16px;margin-bottom:12px}
+.pg-row-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pg-row-title{font-family:var(--display);font-weight:700;font-size:16px;flex:1}
+.pg-row-sub{color:var(--text-muted);font-size:13px;margin-top:4px}
+.pg-row-actions{display:flex;gap:8px;margin-top:12px}
+.pg-row-actions a,.pg-row-actions button{flex:1;min-height:44px;text-align:center;line-height:44px;border-radius:2px;font-size:14px;font-weight:600;text-decoration:none}
+.pg-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.pg-badge--draft{background:#F5F0E8;color:#7A6B5A}
+.pg-badge--live{background:#EAF5EA;color:#2A7A2A}
+.pg-empty{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.pg-back{background:none;color:var(--terracotta);font-weight:600;font-size:15px;padding:0;min-height:44px}
+.pg-hint{font-size:13px;color:var(--text-muted);margin:4px 0 8px}
+.pg-editor{padding:16px 20px 60px;max-width:640px;margin:0 auto}
+.pg-editor-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pg-editor-title{font-family:var(--display);font-size:22px;margin:0 0 20px}
+.pg-secs{margin-bottom:16px}
+.pg-sec-row{background:#fff;border:1px solid var(--line);border-radius:2px;padding:12px 16px;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pg-sec-type{flex:1;font-weight:600;font-size:14px}
+.pg-sec-actions{display:flex;gap:6px;align-items:center}
+.pg-icon-btn{min-width:44px;min-height:44px;border-radius:2px;background:var(--cream-deep);font-size:14px;font-weight:600}
+.pg-icon-gap{display:inline-block;width:44px;min-height:44px}
+.pg-del-btn{background:#FDF0EE;color:#9B3B1E}
+.pg-add-btn{width:100%;margin-bottom:12px}
+.pg-editor-bar{display:flex;gap:8px}
+.pg-editor-bar button{flex:1;min-height:44px}
+.pg-no-secs{text-align:center;padding:32px 0;color:var(--text-muted);font-size:14px}
+.pg-loading{text-align:center;padding:48px 0;color:var(--text-muted)}
+.pg-status-pill{font-size:13px;font-weight:600;color:var(--text-muted)}
+.pg-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pg-type-card{background:#fff;border:1px solid var(--line);border-radius:2px;padding:16px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:100px}
+.pg-type-card:active{background:var(--cream-deep)}
+.pg-type-emoji{font-size:24px;line-height:1}
+.pg-type-desc{font-size:12.5px;color:var(--text-muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -69,8 +106,8 @@ body{background:var(--cream-deep)}
     <h1>Order management</h1>
     <p>Enter your PIN to continue.</p>
     <input id="pin" type="password" inputmode="numeric" autocomplete="off"
-           maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')tryPin()">
-    <div class="pinerr" id="pinerr">That's not right — try again.</div>
+           maxlength="8" placeholder="&bull;&bull;&bull;&bull;" onkeydown="if(event.key==='Enter')tryPin()">
+    <div class="pinerr" id="pinerr">That's not right &mdash; try again.</div>
     <button class="btn-solid" id="pinbtn" onclick="tryPin()">Unlock</button>
   </div>
 </div>
@@ -108,9 +145,11 @@ body{background:var(--cream-deep)}
   <button class="tab" data-tab="new" onclick="setTab('new')">New order</button>
   <button class="tab" data-tab="groups" onclick="setTab('groups')">Club shops</button>
   <button class="tab" data-tab="catalog" onclick="setTab('catalog')">Catalog</button>
+  <button class="tab" data-tab="schools" onclick="setTab('schools')">Schools</button>
   <button class="tab" data-tab="shop" onclick="setTab('shop')">Shop</button>
   <button class="tab" data-tab="products" onclick="setTab('products')">Products</button>
   <button class="tab" data-tab="editsite" onclick="setTab('editsite')">Edit site</button>
+  <button class="tab" data-tab="pages" onclick="setTab('pages')">Pages</button>
 </div>
 
 <div class="stats" id="stats"></div>
@@ -119,11 +158,22 @@ body{background:var(--cream-deep)}
 <script src="js/config.js?v=0.9.0"></script>
 <script src="js/api.js?v=0.9.0"></script>
 <script src="js/partials.js?v=0.9.0"></script>
-<script src="js/admin.js?v=0.9.0"></script>
-<script src="js/admin-shop.js?v=0.9.0"></script>
-<script src="js/admin-square.js?v=0.9.0"></script>
+<script src="js/admin.js?v=j18a"></script>
+<script src="js/admin-shop.js?v=j18a"></script>
+<script src="js/admin-square.js?v=j18a"></script>
 <script src="js/admin-edit-site.js?v=0.9.3"></script>
-<script src="js/admin-catalog.js?v=0.9.6"></script>
-<script src="js/admin-pages.js?v=0.9.5"></script>
+<script src="js/admin-catalog.js?v=0.9.7"></script>
+<script src="js/pool-overrides.js?v=j06a"></script>
+<script src="js/admin-schools.js?v=j08b"></script>
+<script src="js/admin-schools-hidden.js?v=j16b"></script>
+<script src="js/admin-school-kit.js?v=j05a"></script>
+<script src="js/admin-school-picker.js?v=k03a"></script>
+<script src="js/admin-school-add-item.js?v=k03a"></script>
+<script src="js/admin-pages-editor.js?v=1.0.0"></script>
+<script src="js/admin-pages.js?v=1.0.0"></script>
+<script src="js/admin-pin.js?v=0.9.6"></script>
+<script src="js/admin-photo-history.js?v=j24a"></script>
+<script src="js/admin-tab-restore.js?v=j23a"></script>
+<script type="module" src="js/admin-category.js?v=j01a"></script>
 </body>
 </html>
