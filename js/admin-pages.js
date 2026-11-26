@@ -81,7 +81,7 @@ function pgListHtml() {
           '<div class="pg-row-top"><span class="pg-row-title">' + hx(p.title) + '</span>' + pgBadge(p.status) + '</div>' +
           '<div class="pg-row-sub">/p/' + hx(p.slug) + '</div>' +
           '<div class="pg-row-actions">' +
-            '<button class="btn-solid" onclick="pgGoEditorById(\'' + hx(p.id) + \')">Edit</button>' +
+            '<button class="btn-solid" onclick="pgGoEditorById(\'' + hx(p.id) + '\')">Edit</button>' +
             '<a href="/p/' + hx(p.slug) + '" target="_blank" class="ghost" style="display:inline-flex;align-items:center;min-height:44px;padding:0 14px;text-decoration:none;border-radius:2px;font-weight:600;font-size:14px">Preview ↗</a>' +
           '</div>' +
         '</div>'
