@@ -1,20 +1,17 @@
 /* ============================================================
    GET /p/<name>
-   Serves pages made in the admin (Edit site > New page).
+   Serves pages made in the admin page builder.
 
-   Looks the page up in ps_pages (visitors can only ever see live
-   ones - removed pages are hidden by the database itself), then
-   serves page-shell.html with the title, description, sharing
+   Looks the page up in the `pages` table (visitors can only
+   ever see live ones - RLS restricts to published=true).
+   Serves page-shell.html with the title, description, sharing
    preview, canonical address and page key filled in on the server.
    Unknown or removed pages get a real 404, not an empty page.
-   The page's body text, photos and added sections are loaded in
-   the browser by js/page-shell.js, the same way as the built-in pages.
-   Error codes: PS-52x
+   The page's sections are loaded in the browser by js/page-sections.js.
+   Error codes: PSP-32x
    ============================================================ */
 
 const SB_URL = "https://coiwwbroycaznkmhevde.supabase.co";
-// The public (anon) key - same one shipped in js/config.js. RLS limits
-// it to live pages only.
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvaXd3YnJveWNhem5rbWhldmRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzIwMjksImV4cCI6MjA5OTU0ODAyOX0.r-k8RjKqouqjekvEXSMKzJykKbtgpGLMZQXcXhAmRW8";
 const SITE = "https://peachstate.co.uk";
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -26,20 +23,20 @@ export async function onRequestGet({ request, env, params }) {
   let page = null;
   try {
     const res = await fetch(
-      SB_URL + "/rest/v1/ps_pages?select=slug,title&published=eq.true&limit=1&slug=eq." + encodeURIComponent(slug),
+      SB_URL + "/rest/v1/pages?select=slug,title&published=eq.true&status=eq.live&limit=1&slug=eq." + encodeURIComponent(slug),
       { headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY } }
     );
-    if (!res.ok) { console.error("PS-520", res.status); return unavailable(); }
+    if (!res.ok) { console.error("PSP-320", res.status); return unavailable(); }
     const rows = await res.json();
     page = rows[0] || null;
   } catch (e) {
-    console.error("PS-521", e.message);
+    console.error("PSP-321", e.message);
     return unavailable();
   }
   if (!page) return notFound();
 
   const shell = await fetchShell(env, request);
-  if (!shell) { console.error("PS-522: page-shell.html not found"); return unavailable(); }
+  if (!shell) { console.error("PSP-322: page-shell.html not found"); return unavailable(); }
 
   const fullTitle = page.title + " — Peach State, Hartlepool";
   const desc = page.title + " — Peach State, Hartlepool. Personalised embroidery and print, made by hand at 184 York Road.";
@@ -56,7 +53,7 @@ export async function onRequestGet({ request, env, params }) {
     .on('meta[name="twitter:description"]', setContent(desc))
     .on('link[rel="canonical"]', { element(e) { e.setAttribute("href", url); } })
     .on('meta[name="robots"]', { element(e) { e.remove(); } })
-    .on("body", { element(e) { e.setAttribute("data-page", "p-" + page.slug); } })
+    .on("body", { element(e) { e.setAttribute("data-page", page.slug); } })
     .on("#pg-title", { element(e) { e.setInnerContent(page.title); } })
     .transform(new Response(shell.body, {
       status: 200,
@@ -68,8 +65,6 @@ export async function onRequestGet({ request, env, params }) {
   return new Response(out.body, { status: 200, headers });
 }
 
-// Cloudflare's pretty-URL handling may answer /page-shell.html with a
-// redirect, so follow up to two.
 async function fetchShell(env, request) {
   let u = new URL("/page-shell.html", request.url);
   for (let i = 0; i < 3; i++) {
