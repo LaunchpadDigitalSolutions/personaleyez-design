@@ -21,7 +21,7 @@ function ago(ts) {
   if (h < 24) return h + "h ago";
   return Math.floor(h / 24) + "d ago";
 }
-const money = n => n == null ? "—" : "£" + Number(n).toFixed(2);
+const money = n => n == null ? "—" : "\xa3" + Number(n).toFixed(2);
 const attr = v => v == null ? "" : String(v).replace(/"/g, "&quot;");
 // Full HTML-escape for customer-submitted text going into innerHTML as
 // content (not just inside an attribute, which is what attr() is for).
@@ -117,7 +117,7 @@ function orderRow(o) {
     </div>
     ${o.notes ? `<div class="ometa" style="color:var(--warning)">Note: ${esc(o.notes)}</div>` : ""}
     <div class="oact">
-      ${n ? `<button onclick="advance('${o.id}','${n.to}')">${n.label}</button>` : ""}
+      ${n ? `<button onclick="advance('${o.id}','${n.to}')">` + n.label + "</button>" : ""}
       <button class="ghost" onclick="copyLink('${o.order_ref}')">Copy tracking link</button>
       ${o.status !== "collected" && o.status !== "cancelled"
         ? `<button class="ghost" onclick="advance('${o.id}','cancelled')">Cancel</button>` : ""}
@@ -164,8 +164,8 @@ function newOrderForm() {
     <div class="fld"><label for="n-desc">What are we making?</label>
       <textarea id="n-desc" style="min-height:90px" placeholder="12 navy polos, left breast logo"></textarea></div>
     <div class="fld"><label for="n-qty">Quantity</label><input id="n-qty" type="number" value="1" min="1"></div>
-    <div class="fld"><label for="n-total">Quoted total (£)</label><input id="n-total" type="number" step="0.01" inputmode="decimal"></div>
-    <div class="fld"><label for="n-dep">Deposit paid (£)</label><input id="n-dep" type="number" step="0.01" value="0" inputmode="decimal"></div>
+    <div class="fld"><label for="n-total">Quoted total (\xa3)</label><input id="n-total" type="number" step="0.01" inputmode="decimal"></div>
+    <div class="fld"><label for="n-dep">Deposit paid (\xa3)</label><input id="n-dep" type="number" step="0.01" value="0" inputmode="decimal"></div>
     <div class="fld"><label for="n-due">Due date <span class="hint">(optional)</span></label><input id="n-due" type="date"></div>
     <div class="fld"><label for="n-notes">Notes <span class="hint">(optional)</span></label><textarea id="n-notes" style="min-height:70px"></textarea></div>
     <div class="notice" id="n-notice"></div>
@@ -391,15 +391,20 @@ function renderGroupDetail(p){
     <div class="newcard" style="margin:18px 0" id="np-card">
       <h2 style="font-size:19px;font-family:var(--display)">${editing ? "Edit item" : "Add an item"}</h2>
       <div class="fld"><label for="np-name">Item name</label>
-        <input id="np-name" type="text" placeholder="Club hoodie" autocomplete="off" value="${editing?attr(editing.name):""}"></div>
+        <input id="np-name" type="text" placeholder="Club hoodie" autocomplete="off" value="${editing?attr(editing.name):""}">
+      </div>
       <div class="fld"><label for="np-desc">Description (optional)</label>
-        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off" value="${editing?attr(editing.description):""}"></div>
-      <div class="fld"><label for="np-price">Price (£)</label>
-        <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off" value="${editing&&editing.price!=null?editing.price:""}"></div>
+        <input id="np-desc" type="text" placeholder="Embroidered club logo, name on the back" autocomplete="off" value="${editing?attr(editing.description):""}">
+      </div>
+      <div class="fld"><label for="np-price">Price (\xa3)</label>
+        <input id="np-price" type="number" step="0.01" inputmode="decimal" autocomplete="off" value="${editing&&editing.price!=null?editing.price:""}">
+      </div>
       <div class="fld"><label for="np-sizes">Sizes, comma separated <span class="hint">(optional — add later if you don't have them yet)</span></label>
-        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off" value="${editing?attr(editing.sizes):""}"></div>
+        <input id="np-sizes" type="text" placeholder="3-4, 5-6, 7-8, S, M, L" autocomplete="off" value="${editing?attr(editing.sizes):""}">
+      </div>
       <div class="fld"><label for="np-cols">Colours, comma separated (optional)</label>
-        <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off" value="${editing?attr(editing.colours):""}"></div>
+        <input id="np-cols" type="text" placeholder="Navy, Black" autocomplete="off" value="${editing?attr(editing.colours):""}">
+      </div>
       <div class="fld"><label>Photo (optional)</label>
         <div style="display:flex;align-items:center;gap:10px">
           <div id="np-img-preview" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;
@@ -408,8 +413,7 @@ function renderGroupDetail(p){
           </div>
           <button type="button" class="ghost" onclick="chooseGroupProductPhoto()">${editing && editing.image_url ? "Replace photo" : "Upload photo"}</button>
         </div>
-        <input type="hidden" id="np-img" value="${editing?attr(editing.image_url):""}">
-        <input type="file" id="gp-file-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onGroupProductPhotoChosen(event)">
+        <input type="hidden" id="np-img" value="${editing?attr(editing.image_url):""}">        <input type="file" id="gp-file-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onGroupProductPhotoChosen(event)">
       </div>
       <div class="notice" id="np-notice"></div>
       <div style="display:flex;gap:10px;margin-top:18px">
@@ -607,4 +611,22 @@ document.addEventListener("DOMContentLoaded", () => {
   try { unlocked = !!sessionStorage.getItem("ps_admin_pin"); } catch(e) {}
   if (unlocked) unlockAdmin();
   else setTimeout(()=>{ const p=document.getElementById("pin"); if(p) p.focus(); }, 300);
+});
+
+/* ============================================================
+   VERSION STAMP — Ctrl+Shift+V → build info modal
+   ============================================================ */
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && (e.key === "V" || e.key === "v")) {
+    e.preventDefault();
+    const m = document.getElementById("version-modal");
+    if (!m) return;
+    if (m.style.display === "flex") {
+      m.style.display = "none";
+    } else {
+      const t = document.getElementById("version-time");
+      if (t) t.textContent = new Date().toLocaleString("en-GB");
+      m.style.display = "flex";
+    }
+  }
 });

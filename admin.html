@@ -138,6 +138,26 @@ body{background:var(--cream-deep)}
   </div>
 </div>
 
+<!-- ============================================================
+     VERSION STAMP — Ctrl+Shift+V (build standard)
+     ============================================================ -->
+<div id="version-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:min(400px,90vw)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:17px;font-family:var(--display);margin:0">Build info</h2>
+      <button onclick="document.getElementById('version-modal').style.display='none'" style="background:none;font-size:22px;line-height:1;padding:0 4px;color:var(--muted)">&times;</button>
+    </div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tr><td style="color:var(--muted);padding:5px 16px 5px 0">App</td><td style="font-weight:600">Peach State Prints &mdash; Admin</td></tr>
+      <tr><td style="color:var(--muted);padding:5px 16px 5px 0">Version</td><td style="font-weight:600">1.0.1</td></tr>
+      <tr><td style="color:var(--muted);padding:5px 16px 5px 0">Pages</td><td style="font-weight:600">admin-pages.js v1.0.1 &middot; editor v1.0.1</td></tr>
+      <tr><td style="color:var(--muted);padding:5px 16px 5px 0">Supabase</td><td style="font-weight:600">coiwwbroycaznkmhevde</td></tr>
+      <tr><td style="color:var(--muted);padding:5px 16px 5px 0">Opened</td><td id="version-time" style="font-weight:600"></td></tr>
+    </table>
+    <p style="font-size:11px;color:var(--muted);margin:16px 0 0">Press Ctrl+Shift+V again to close</p>
+  </div>
+</div>
+
 <div class="tabs">
   <button class="tab on" data-tab="live" onclick="setTab('live')">Live</button>
   <button class="tab" data-tab="all" onclick="setTab('all')">All orders</button>
